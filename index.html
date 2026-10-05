@@ -302,4 +302,132 @@ Coliseo Manager 1.1 · Playas de Tijuana
 
 </div>
 
-<label>Promoción utilizada</label
+<label>Promoción utilizada</label>
+
+<input type="text" id="promo" placeholder="Ej. Caguama Miller $75">
+
+<label>Notas</label>
+<textarea id="notas" placeholder="Observaciones del día..."></textarea>
+
+<div class="summary">
+
+<div class="summary-row">
+<span>Venta total</span>
+<strong id="ventaTotal">$0</strong>
+</div>
+
+<div class="summary-row">
+<span>Ticket promedio</span>
+<strong id="ticket">$0</strong>
+</div>
+
+<div class="summary-row">
+<span>Gastos</span>
+<strong id="gastoResumen">$0</strong>
+</div>
+
+<div class="summary-row total">
+<span>Resultado estimado</span>
+<strong id="resultado">$0</strong>
+</div>
+
+</div>
+
+<button class="save" onclick="prepararGuardado()">
+Guardar cierre
+</button>
+
+<div class="notice" id="mensaje">
+Versión 1.1 · Próximamente guardado permanente.
+</div>
+
+</section>
+</main>
+
+<script>
+
+const $ = id => document.getElementById(id);
+
+function abrirCierre(){
+  $("inicio").classList.remove("active");
+  $("cierre").classList.add("active");
+  window.scrollTo(0,0);
+}
+
+function volver(){
+  $("cierre").classList.remove("active");
+  $("inicio").classList.add("active");
+  window.scrollTo(0,0);
+}
+
+function numero(id){
+  return Number($(id).value) || 0;
+}
+
+function dinero(valor){
+  return valor.toLocaleString("es-MX",{
+    style:"currency",
+    currency:"MXN",
+    maximumFractionDigits:2
+  });
+}
+
+function calcular(){
+
+  const ventas =
+    numero("cuervos") +
+    numero("club") +
+    numero("otros");
+
+  const gastos = numero("gastos");
+  const clientes = numero("clientes");
+
+  const ticket =
+    clientes > 0 ? ventas / clientes : 0;
+
+  const resultado = ventas - gastos;
+
+  $("ventaTotal").textContent = dinero(ventas);
+  $("ticket").textContent = dinero(ticket);
+  $("gastoResumen").textContent = dinero(gastos);
+  $("resultado").textContent = dinero(resultado);
+
+  const porcentaje =
+    Math.min((ventas / 10000) * 100,100);
+
+  $("barra").style.width =
+    porcentaje + "%";
+}
+
+function prepararGuardado(){
+
+  if(!$("fecha").value){
+    $("mensaje").textContent =
+      "⚠️ Selecciona una fecha.";
+    return;
+  }
+
+  $("mensaje").textContent =
+    "✓ Cierre capturado correctamente.";
+}
+
+function fechaLocal(){
+
+  const ahora = new Date();
+
+  const y = ahora.getFullYear();
+  const m =
+    String(ahora.getMonth()+1).padStart(2,"0");
+  const d =
+    String(ahora.getDate()).padStart(2,"0");
+
+  $("fecha").value =
+    `${y}-${m}-${d}`;
+}
+
+fechaLocal();
+
+</script>
+
+</body>
+</html>
