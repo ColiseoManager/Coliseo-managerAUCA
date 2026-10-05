@@ -6,9 +6,71 @@
 <title>Coliseo Manager</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial,sans-serif}.app{max-width:500px;margin:auto;padding:28px 20px 50px}.brand{color:#f4c430;font-size:13px;letter-spacing:2px;font-weight:bold}h1{font-size:32px;margin:8px 0 4px}h2{margin:5px 0 20px}.subtitle{color:#999;margin-bottom:25px}.card,.module,.saleCard{background:#171717;border:1px solid #292929;border-radius:18px}.card{padding:20px;margin-bottom:15px}.goal{font-size:28px;font-weight:bold;margin:8px 0}.progress{height:8px;background:#333;border-radius:10px;overflow:hidden;margin-top:15px}.progress div{width:0;height:100%;background:#f4c430}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:25px}.module{padding:18px 14px;min-height:110px;cursor:pointer}.module strong{display:block;margin-bottom:8px;font-size:18px}.module span,.saleInfo{color:#888;font-size:13px;line-height:1.5}.screen{display:none}.screen.active{display:block}label{display:block;color:#aaa;font-size:13px;margin:18px 0 7px}input,select,textarea{width:100%;background:#111;border:1px solid #333;color:#fff;border-radius:12px;padding:14px;font-size:16px}textarea{min-height:85px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary{margin-top:22px;padding:20px;background:#171717;border:1px solid #292929;border-radius:18px}.summary-row{display:flex;justify-content:space-between;margin:10px 0;color:#aaa;gap:10px}.summary-row strong{color:#fff}.total{border-top:1px solid #333;padding-top:15px;margin-top:15px}.save,.loginButton{width:100%;border:0;border-radius:14px;background:#f4c430;color:#111;font-size:17px;font-weight:bold;padding:16px;margin-top:20px}.back{border:0;background:none;color:#f4c430;padding:0;margin-bottom:20px;font-size:16px}.logout,.editButton,.deleteButton{border-radius:10px;padding:10px 12px}.logout,.editButton{background:#171717;color:#aaa;border:1px solid #333}.deleteButton{background:#351313;color:#ff8d8d;border:1px solid #692727}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.notice{color:#888;font-size:12px;text-align:center;margin-top:12px}.status{margin-top:30px;color:#666;font-size:12px;text-align:center}.loginBox{min-height:90vh;display:flex;flex-direction:column;justify-content:center}.loginCard{background:#171717;border:1px solid #292929;border-radius:22px;padding:24px}.loginTitle{font-size:30px;font-weight:bold;margin:8px 0}.loginMessage{min-height:18px;color:#aaa;font-size:13px;text-align:center;margin-top:14px}.userText{color:#777;font-size:11px;margin-top:4px}.roleBadge{display:inline-block;padding:6px 10px;border-radius:20px;background:#29240f;color:#f4c430;font-size:11px;margin-top:8px}.saleCard{padding:17px;margin-bottom:12px}.saleTop{display:flex;justify-content:space-between;gap:10px}.saleAmount{color:#f4c430;font-size:20px;font-weight:bold}.actions{display:flex;gap:8px;margin-top:14px}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial,sans-serif}
+.app{max-width:520px;margin:auto;padding:26px 18px 60px}
+.brand{color:#f4c430;font-size:13px;letter-spacing:2px;font-weight:bold}
+h1{font-size:31px;margin:8px 0 4px}
+h2{margin:5px 0 20px}
+h3{margin:8px 0 15px}
+.subtitle{color:#999;margin-bottom:24px}
+.card,.module,.saleCard,.product,.cartBox{background:#171717;border:1px solid #292929;border-radius:18px}
+.card{padding:20px;margin-bottom:15px}
+.goal{font-size:28px;font-weight:bold;margin:8px 0}
+.progress{height:8px;background:#333;border-radius:10px;overflow:hidden;margin-top:15px}
+.progress div{width:0;height:100%;background:#f4c430}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.module{padding:18px 14px;min-height:110px;cursor:pointer}
+.module strong{display:block;margin-bottom:8px;font-size:17px}
+.module span,.saleInfo{color:#888;font-size:13px;line-height:1.5}
+.screen{display:none}
+.screen.active{display:block}
+label{display:block;color:#aaa;font-size:13px;margin:16px 0 7px}
+input,select,textarea{width:100%;background:#111;border:1px solid #333;color:#fff;border-radius:12px;padding:14px;font-size:16px}
+textarea{min-height:75px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.summary,.cartBox{margin-top:20px;padding:18px}
+.summary-row,.cartRow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+.summary-row{color:#aaa}
+.summary-row strong{color:#fff}
+.total{border-top:1px solid #333;padding-top:15px;margin-top:15px}
+.save,.loginButton,.yellowButton{width:100%;border:0;border-radius:14px;background:#f4c430;color:#111;font-size:16px;font-weight:bold;padding:15px;margin-top:18px}
+.back{border:0;background:none;color:#f4c430;padding:0;margin-bottom:20px;font-size:16px}
+.logout,.editButton,.deleteButton,.smallButton{border-radius:10px;padding:10px 12px}
+.logout,.editButton,.smallButton{background:#171717;color:#ddd;border:1px solid #333}
+.deleteButton{background:#351313;color:#ff8d8d;border:1px solid #692727}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.notice{color:#888;font-size:12px;text-align:center;margin-top:12px}
+.status{margin-top:30px;color:#666;font-size:12px;text-align:center}
+.loginBox{min-height:90vh;display:flex;flex-direction:column;justify-content:center}
+.loginCard{background:#171717;border:1px solid #292929;border-radius:22px;padding:24px}
+.loginTitle{font-size:30px;font-weight:bold;margin:8px 0}
+.loginMessage{min-height:18px;color:#aaa;font-size:13px;text-align:center;margin-top:14px}
+.userText{color:#777;font-size:11px;margin-top:4px}
+.roleBadge{display:inline-block;padding:6px 10px;border-radius:20px;background:#29240f;color:#f4c430;font-size:11px;margin-top:8px}
+.saleCard{padding:17px;margin-bottom:12px}
+.saleTop{display:flex;justify-content:space-between;gap:10px}
+.saleAmount{color:#f4c430;font-size:20px;font-weight:bold}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.sectionTitle{margin-top:28px;border-bottom:1px solid #292929;padding-bottom:10px}
+.categoryTabs{display:flex;gap:8px;overflow-x:auto;padding:5px 0 12px}
+.categoryButton{white-space:nowrap;background:#171717;color:#ddd;border:1px solid #333;border-radius:20px;padding:10px 14px}
+.categoryButton.active{background:#f4c430;color:#111;border-color:#f4c430}
+.products{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.product{padding:15px;cursor:pointer}
+.productName{font-weight:bold;font-size:15px}
+.productPrice{color:#f4c430;margin-top:7px;font-weight:bold}
+.cartName{flex:1}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:30px;height:30px;border-radius:50%;border:1px solid #444;background:#222;color:#fff;font-size:18px}
+.cartTotal{font-size:27px;color:#f4c430;font-weight:bold;text-align:right;margin-top:16px}
+.menuRow{background:#171717;border:1px solid #292929;border-radius:14px;padding:14px;margin:9px 0}
+.menuRowTop{display:flex;justify-content:space-between;gap:10px}
+.muted{color:#888;font-size:12px}
+.empty{padding:25px;text-align:center;color:#777}
 </style>
 </head>
+
 <body>
 <main class="app">
 
@@ -38,6 +100,7 @@
 </div>
 <button class="logout" onclick="cerrarSesion()">Salir</button>
 </div>
+
 <div class="subtitle">Panel de administración</div>
 
 <div class="card">
@@ -47,36 +110,100 @@
 </div>
 
 <div class="grid">
-<div class="module" onclick="abrirCierre()"><strong>📊 Cierre diario</strong><span>Ventas, clientes y ticket promedio</span></div>
-<div class="module" onclick="abrirHistorial()"><strong>🧾 Historial</strong><span>Editar o eliminar ventas</span></div>
-<div class="module"><strong>💸 Gastos</strong><span>Control de egresos</span></div>
-<div class="module"><strong>📅 Reservaciones</strong><span>Eventos y apartados</span></div>
-<div class="module"><strong>🎤 Eventos</strong><span>Costos, ventas y resultados</span></div>
-<div class="module"><strong>📦 Inventario</strong><span>Cuervo's Pizza y EL CLúB</span></div>
+<div class="module" onclick="abrirCierre()">
+<strong>📊 Cierre diario</strong>
+<span>Ventas, clientes y ticket promedio</span>
 </div>
-<div class="status">Coliseo Manager 1.3</div>
+
+<div class="module" onclick="abrirHistorial()">
+<strong>🧾 Historial</strong>
+<span>Ventas, mesas y personal</span>
+</div>
+
+<div class="module" onclick="abrirMenu()">
+<strong>🍽️ Menú</strong>
+<span>Categorías, artículos y precios</span>
+</div>
+
+<div class="module">
+<strong>💸 Gastos</strong>
+<span>Control de egresos</span>
+</div>
+
+<div class="module">
+<strong>📅 Reservaciones</strong>
+<span>Eventos y apartados</span>
+</div>
+
+<div class="module">
+<strong>📦 Inventario</strong>
+<span>Control de productos</span>
+</div>
+</div>
+
+<div class="status">Coliseo Manager 1.4</div>
+</section>
+
+<section id="menuAdmin" class="screen">
+<button class="back" onclick="volver()">← Volver al inicio</button>
+<div class="brand">COLISEO MANAGER</div>
+<h2>🍽️ Menú</h2>
+<div class="subtitle">Administra las categorías y artículos que verá el personal.</div>
+
+<div class="card">
+<h3>Nueva categoría</h3>
+<label>Nombre</label>
+<input id="nuevaCategoria" placeholder="Ej. Pizzas">
+<button class="yellowButton" onclick="crearCategoria()">Crear categoría</button>
+<div id="catMensaje" class="notice"></div>
+</div>
+
+<div class="card">
+<h3>Nuevo artículo</h3>
+<label>Categoría</label>
+<select id="categoriaArticulo"></select>
+
+<label>Nombre del artículo</label>
+<input id="nuevoArticulo" placeholder="Ej. Pizza Pepperoni">
+
+<label>Precio</label>
+<input type="number" id="precioArticulo" min="0" step="0.01" placeholder="$0">
+
+<button class="yellowButton" onclick="crearArticulo()">Crear artículo</button>
+<div id="artMensaje" class="notice"></div>
+</div>
+
+<h3 class="sectionTitle">Categorías</h3>
+<div id="listaCategorias"></div>
+
+<h3 class="sectionTitle">Artículos</h3>
+<div id="listaArticulos"></div>
 </section>
 
 <section id="ventaPersonal" class="screen">
 <div class="top">
 <div>
 <div class="brand">COLISEO FOOD PARK</div>
-<h2>💵 Registrar venta</h2>
+<h2>🧾 Nueva venta</h2>
 <div id="staffUser" class="userText"></div>
 <div class="roleBadge">PERSONAL</div>
 </div>
 <button class="logout" onclick="cerrarSesion()">Salir</button>
 </div>
 
-<label>Negocio</label>
-<select id="ventaNegocio">
-<option>Cuervos Pizza</option>
-<option>EL CLúB</option>
-<option>Otro</option>
-</select>
+<label>Número de mesa</label>
+<input id="ventaMesa" placeholder="Ej. 4">
 
-<label>Importe</label>
-<input type="number" id="ventaImporte" min="0.01" step="0.01" placeholder="$0">
+<div id="staffCategorias" class="categoryTabs"></div>
+<div id="staffProductos" class="products"></div>
+
+<div class="cartBox">
+<h3>Pedido</h3>
+<div id="carritoLista">
+<div class="empty">Selecciona los artículos del pedido.</div>
+</div>
+<div class="cartTotal" id="carritoTotal">$0.00</div>
+</div>
 
 <label>Método de pago</label>
 <select id="ventaPago">
@@ -89,7 +216,7 @@
 <label>Notas</label>
 <textarea id="ventaNotas" placeholder="Opcional"></textarea>
 
-<button id="ventaBtn" class="save" onclick="registrarVenta()">Guardar venta</button>
+<button id="ventaBtn" class="save" onclick="registrarPedido()">Guardar venta</button>
 <div id="ventaMensaje" class="notice"></div>
 </section>
 
@@ -97,6 +224,12 @@
 <button class="back" onclick="volver()">← Volver al inicio</button>
 <div class="brand">COLISEO MANAGER</div>
 <h2>🧾 Historial de ventas</h2>
+
+<div class="card">
+<small>TOTAL REGISTRADO HOY</small>
+<div class="goal" id="totalHoy">$0.00</div>
+</div>
+
 <div id="listaVentas"></div>
 </section>
 
@@ -117,8 +250,14 @@
 </select>
 
 <div class="two">
-<div><label>Cuervo's Pizza</label><input type="number" id="cuervos" placeholder="$0" oninput="calcular()"></div>
-<div><label>EL CLúB</label><input type="number" id="club" placeholder="$0" oninput="calcular()"></div>
+<div>
+<label>Cuervo's Pizza</label>
+<input type="number" id="cuervos" placeholder="$0" oninput="calcular()">
+</div>
+<div>
+<label>EL CLúB</label>
+<input type="number" id="club" placeholder="$0" oninput="calcular()">
+</div>
 </div>
 
 <label>Otros ingresos</label>
@@ -128,8 +267,14 @@
 <input type="number" id="gastos" placeholder="$0" oninput="calcular()">
 
 <div class="two">
-<div><label>Clientes</label><input type="number" id="clientes" placeholder="0" oninput="calcular()"></div>
-<div><label>Mesas ocupadas</label><input type="number" id="mesas" placeholder="0"></div>
+<div>
+<label>Clientes</label>
+<input type="number" id="clientes" placeholder="0" oninput="calcular()">
+</div>
+<div>
+<label>Mesas ocupadas</label>
+<input type="number" id="mesas" placeholder="0">
+</div>
 </div>
 
 <label>Promoción utilizada</label>
@@ -157,31 +302,69 @@ const SUPABASE_KEY="sb_publishable_7ey94d3udNRBYj5o85XeYQ_XXsqDwsM";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 
+let categorias=[];
+let subcategorias=[];
+let articulos=[];
+let carrito=[];
+let categoriaSeleccionada=null;
+
 function mostrar(id){
  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
  $(id).classList.add("active");
  window.scrollTo(0,0);
 }
 
+function esc(v){
+ return String(v??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#039;"
+ })[c]);
+}
+
+function dinero(v){
+ return Number(v||0).toLocaleString("es-MX",{
+  style:"currency",
+  currency:"MXN",
+  maximumFractionDigits:2
+ });
+}
+
+function fechaActual(){
+ const a=new Date();
+ const y=a.getFullYear();
+ const m=String(a.getMonth()+1).padStart(2,"0");
+ const d=String(a.getDate()).padStart(2,"0");
+ return `${y}-${m}-${d}`;
+}
+
 async function iniciarSesion(){
  const email=$("email").value.trim();
  const password=$("password").value;
+
  if(!email||!password){
   $("loginMessage").textContent="Ingresa tu correo y contraseña.";
   return;
  }
+
  $("loginMessage").textContent="Ingresando...";
+
  const {data,error}=await db.auth.signInWithPassword({email,password});
+
  if(error){
   $("loginMessage").textContent="No se pudo iniciar sesión. Revisa tus datos.";
   return;
  }
+
  $("password").value="";
  $("loginMessage").textContent="";
  await enrutarUsuario(data.user);
 }
 
 async function cerrarSesion(){
+ carrito=[];
  await db.auth.signOut();
  $("email").value="";
  $("password").value="";
@@ -190,7 +373,9 @@ async function cerrarSesion(){
 
 async function enrutarUsuario(user){
  const {data:p,error}=await db.from("profiles")
-  .select("role,full_name,active").eq("id",user.id).single();
+  .select("role,full_name,active")
+  .eq("id",user.id)
+  .single();
 
  if(error||!p){
   await db.auth.signOut();
@@ -212,25 +397,432 @@ async function enrutarUsuario(user){
  }else{
   $("staffUser").textContent=(p.full_name||user.email)+" · Personal";
   mostrar("ventaPersonal");
+  await cargarPOS();
  }
 }
 
-function fechaActual(){
- const a=new Date();
- const y=a.getFullYear();
- const m=String(a.getMonth()+1).padStart(2,"0");
- const d=String(a.getDate()).padStart(2,"0");
- return `${y}-${m}-${d}`;
+function volver(){
+ mostrar("inicio");
 }
 
-async function registrarVenta(){
- const importe=Number($("ventaImporte").value)||0;
- if(importe<=0){
-  $("ventaMensaje").textContent="⚠️ Ingresa un importe válido.";
+async function abrirMenu(){
+ mostrar("menuAdmin");
+ await cargarMenuAdmin();
+}
+
+async function cargarMenuAdmin(){
+ $("listaCategorias").innerHTML='<div class="notice">Cargando...</div>';
+ $("listaArticulos").innerHTML='<div class="notice">Cargando...</div>';
+
+ const c=await db.from("menu_categories")
+  .select("*")
+  .order("sort_order")
+  .order("name");
+
+ const s=await db.from("menu_subcategories")
+  .select("*");
+
+ const a=await db.from("menu_items")
+  .select("*")
+  .order("name");
+
+ if(c.error||s.error||a.error){
+  $("listaCategorias").innerHTML='<div class="notice">No se pudo cargar el menú.</div>';
+  return;
+ }
+
+ categorias=c.data||[];
+ subcategorias=s.data||[];
+ articulos=a.data||[];
+
+ $("categoriaArticulo").innerHTML=
+  categorias.filter(x=>x.active).map(x=>
+   `<option value="${x.id}">${esc(x.name)}</option>`
+  ).join("");
+
+ if(!categorias.length){
+  $("categoriaArticulo").innerHTML='<option value="">Primero crea una categoría</option>';
+ }
+
+ $("listaCategorias").innerHTML=categorias.length?
+ categorias.map(c=>`
+  <div class="menuRow">
+   <div class="menuRowTop">
+    <div>
+     <strong>${esc(c.name)}</strong>
+     <div class="muted">${c.active?"Activa":"Desactivada"}</div>
+    </div>
+   </div>
+   <div class="actions">
+    <button class="editButton" onclick="editarCategoria('${c.id}','${encodeURIComponent(c.name)}')">✏️ Editar</button>
+    <button class="smallButton" onclick="toggleCategoria('${c.id}',${!c.active})">${c.active?"Desactivar":"Activar"}</button>
+    <button class="deleteButton" onclick="eliminarCategoria('${c.id}')">🗑 Eliminar</button>
+   </div>
+  </div>
+ `).join(""):'<div class="empty">Todavía no hay categorías.</div>';
+
+ $("listaArticulos").innerHTML=articulos.length?
+ articulos.map(a=>{
+  const sub=subcategorias.find(s=>s.id===a.subcategory_id);
+  const cat=sub?categorias.find(c=>c.id===sub.category_id):null;
+
+  return `
+  <div class="menuRow">
+   <div class="menuRowTop">
+    <div>
+     <strong>${esc(a.name)}</strong>
+     <div class="muted">${cat?esc(cat.name):"Sin categoría"} · ${a.active?"Activo":"Desactivado"}</div>
+    </div>
+    <strong>${dinero(a.price)}</strong>
+   </div>
+   <div class="actions">
+    <button class="editButton" onclick="editarArticulo('${a.id}','${encodeURIComponent(a.name)}',${Number(a.price)})">✏️ Editar</button>
+    <button class="smallButton" onclick="toggleArticulo('${a.id}',${!a.active})">${a.active?"Desactivar":"Activar"}</button>
+    <button class="deleteButton" onclick="eliminarArticulo('${a.id}')">🗑 Eliminar</button>
+   </div>
+  </div>`;
+ }).join(""):'<div class="empty">Todavía no hay artículos.</div>';
+}
+
+async function crearCategoria(){
+ const nombre=$("nuevaCategoria").value.trim();
+
+ if(!nombre){
+  $("catMensaje").textContent="Escribe el nombre de la categoría.";
+  return;
+ }
+
+ $("catMensaje").textContent="Guardando...";
+
+ const {data,error}=await db.from("menu_categories")
+  .insert({name:nombre})
+  .select()
+  .single();
+
+ if(error){
+  $("catMensaje").textContent="No se pudo crear. Revisa que no exista.";
+  return;
+ }
+
+ const {error:subError}=await db.from("menu_subcategories")
+  .insert({
+   category_id:data.id,
+   name:"General"
+  });
+
+ if(subError){
+  await db.from("menu_categories").delete().eq("id",data.id);
+  $("catMensaje").textContent="No se pudo preparar la categoría.";
+  return;
+ }
+
+ $("nuevaCategoria").value="";
+ $("catMensaje").textContent="✓ Categoría creada.";
+ await cargarMenuAdmin();
+}
+
+async function crearArticulo(){
+ const categoriaId=$("categoriaArticulo").value;
+ const nombre=$("nuevoArticulo").value.trim();
+ const precio=Number($("precioArticulo").value);
+
+ if(!categoriaId){
+  $("artMensaje").textContent="Primero crea una categoría.";
+  return;
+ }
+
+ if(!nombre||precio<0||$("precioArticulo").value===""){
+  $("artMensaje").textContent="Completa nombre y precio.";
+  return;
+ }
+
+ let sub=subcategorias.find(s=>
+  s.category_id===categoriaId &&
+  s.name==="General"
+ );
+
+ if(!sub){
+  const r=await db.from("menu_subcategories")
+   .insert({category_id:categoriaId,name:"General"})
+   .select()
+   .single();
+
+  if(r.error){
+   $("artMensaje").textContent="No se pudo preparar la categoría.";
+   return;
+  }
+
+  sub=r.data;
+ }
+
+ const {error}=await db.from("menu_items").insert({
+  subcategory_id:sub.id,
+  name:nombre,
+  price:precio
+ });
+
+ if(error){
+  $("artMensaje").textContent="No se pudo crear el artículo.";
+  return;
+ }
+
+ $("nuevoArticulo").value="";
+ $("precioArticulo").value="";
+ $("artMensaje").textContent="✓ Artículo creado.";
+ await cargarMenuAdmin();
+}
+
+async function editarCategoria(id,nombreCodificado){
+ const actual=decodeURIComponent(nombreCodificado);
+ const nuevo=prompt("Nombre de la categoría:",actual);
+
+ if(nuevo===null)return;
+ if(!nuevo.trim())return;
+
+ const {error}=await db.from("menu_categories")
+  .update({name:nuevo.trim()})
+  .eq("id",id);
+
+ if(error){
+  alert("No se pudo editar.");
+  return;
+ }
+
+ await cargarMenuAdmin();
+}
+
+async function toggleCategoria(id,estado){
+ const {error}=await db.from("menu_categories")
+  .update({active:estado})
+  .eq("id",id);
+
+ if(error){
+  alert("No se pudo cambiar el estado.");
+  return;
+ }
+
+ await cargarMenuAdmin();
+}
+
+async function eliminarCategoria(id){
+ if(!confirm("¿Eliminar esta categoría?"))return;
+
+ if(!confirm("También se eliminarán los artículos de esta categoría. Esta acción no se puede deshacer. ¿Continuar?"))return;
+
+ const {error}=await db.from("menu_categories")
+  .delete()
+  .eq("id",id);
+
+ if(error){
+  alert("No se pudo eliminar.");
+  return;
+ }
+
+ await cargarMenuAdmin();
+}
+
+async function editarArticulo(id,nombreCodificado,precioActual){
+ const actual=decodeURIComponent(nombreCodificado);
+ const nombre=prompt("Nombre del artículo:",actual);
+
+ if(nombre===null)return;
+ if(!nombre.trim())return;
+
+ const p=prompt("Precio:",precioActual);
+
+ if(p===null)return;
+
+ const precio=Number(p);
+
+ if(precio<0||isNaN(precio)){
+  alert("Precio no válido.");
+  return;
+ }
+
+ const {error}=await db.from("menu_items")
+  .update({
+   name:nombre.trim(),
+   price:precio
+  })
+  .eq("id",id);
+
+ if(error){
+  alert("No se pudo editar.");
+  return;
+ }
+
+ await cargarMenuAdmin();
+}
+
+async function toggleArticulo(id,estado){
+ const {error}=await db.from("menu_items")
+  .update({active:estado})
+  .eq("id",id);
+
+ if(error){
+  alert("No se pudo cambiar el estado.");
+  return;
+ }
+
+ await cargarMenuAdmin();
+}
+
+async function eliminarArticulo(id){
+ if(!confirm("¿Eliminar este artículo?"))return;
+ if(!confirm("Esta acción no se puede deshacer. ¿Continuar?"))return;
+
+ const {error}=await db.from("menu_items")
+  .delete()
+  .eq("id",id);
+
+ if(error){
+  alert("No se pudo eliminar.");
+  return;
+ }
+
+ await cargarMenuAdmin();
+}
+
+async function cargarPOS(){
+ const c=await db.from("menu_categories")
+  .select("*")
+  .eq("active",true)
+  .order("sort_order")
+  .order("name");
+
+ const s=await db.from("menu_subcategories")
+  .select("*")
+  .eq("active",true);
+
+ const a=await db.from("menu_items")
+  .select("*")
+  .eq("active",true)
+  .order("name");
+
+ if(c.error||s.error||a.error){
+  $("staffProductos").innerHTML='<div class="notice">No se pudo cargar el menú.</div>';
+  return;
+ }
+
+ categorias=c.data||[];
+ subcategorias=s.data||[];
+ articulos=a.data||[];
+
+ if(!categorias.length){
+  $("staffCategorias").innerHTML="";
+  $("staffProductos").innerHTML='<div class="empty">El administrador todavía no ha creado el menú.</div>';
+  return;
+ }
+
+ categoriaSeleccionada=categorias[0].id;
+ pintarCategoriasPOS();
+ pintarProductosPOS();
+ pintarCarrito();
+}
+
+function pintarCategoriasPOS(){
+ $("staffCategorias").innerHTML=categorias.map(c=>`
+  <button class="categoryButton ${c.id===categoriaSeleccionada?"active":""}"
+  onclick="seleccionarCategoria('${c.id}')">${esc(c.name)}</button>
+ `).join("");
+}
+
+function seleccionarCategoria(id){
+ categoriaSeleccionada=id;
+ pintarCategoriasPOS();
+ pintarProductosPOS();
+}
+
+function pintarProductosPOS(){
+ const subs=subcategorias
+  .filter(s=>s.category_id===categoriaSeleccionada)
+  .map(s=>s.id);
+
+ const lista=articulos.filter(a=>subs.includes(a.subcategory_id));
+
+ $("staffProductos").innerHTML=lista.length?
+ lista.map(a=>`
+  <div class="product" onclick="agregarCarrito('${a.id}')">
+   <div class="productName">${esc(a.name)}</div>
+   <div class="productPrice">${dinero(a.price)}</div>
+  </div>
+ `).join(""):'<div class="empty">No hay artículos en esta categoría.</div>';
+}
+
+function agregarCarrito(id){
+ const articulo=articulos.find(a=>a.id===id);
+ if(!articulo)return;
+
+ const existe=carrito.find(x=>x.id===id);
+
+ if(existe){
+  existe.qty++;
+ }else{
+  carrito.push({
+   id:articulo.id,
+   name:articulo.name,
+   price:Number(articulo.price),
+   qty:1
+  });
+ }
+
+ pintarCarrito();
+}
+
+function cambiarCantidad(id,cambio){
+ const item=carrito.find(x=>x.id===id);
+ if(!item)return;
+
+ item.qty+=cambio;
+
+ if(item.qty<=0){
+  carrito=carrito.filter(x=>x.id!==id);
+ }
+
+ pintarCarrito();
+}
+
+function pintarCarrito(){
+ if(!carrito.length){
+  $("carritoLista").innerHTML='<div class="empty">Selecciona los artículos del pedido.</div>';
+  $("carritoTotal").textContent=dinero(0);
+  return;
+ }
+
+ $("carritoLista").innerHTML=carrito.map(x=>`
+  <div class="cartRow">
+   <div class="cartName">
+    <strong>${esc(x.name)}</strong>
+    <div class="muted">${dinero(x.price)} c/u</div>
+   </div>
+   <div class="qty">
+    <button onclick="cambiarCantidad('${x.id}',-1)">−</button>
+    <strong>${x.qty}</strong>
+    <button onclick="cambiarCantidad('${x.id}',1)">+</button>
+   </div>
+   <strong>${dinero(x.price*x.qty)}</strong>
+  </div>
+ `).join("");
+
+ const total=carrito.reduce((s,x)=>s+(x.price*x.qty),0);
+ $("carritoTotal").textContent=dinero(total);
+}
+
+async function registrarPedido(){
+ const mesa=$("ventaMesa").value.trim();
+
+ if(!mesa){
+  $("ventaMensaje").textContent="⚠️ Ingresa el número de mesa.";
+  return;
+ }
+
+ if(!carrito.length){
+  $("ventaMensaje").textContent="⚠️ Agrega al menos un artículo.";
   return;
  }
 
  const {data:u}=await db.auth.getUser();
+
  if(!u.user){
   $("ventaMensaje").textContent="Tu sesión terminó.";
   return;
@@ -239,27 +831,38 @@ async function registrarVenta(){
  const b=$("ventaBtn");
  b.disabled=true;
  b.textContent="Guardando...";
+ $("ventaMensaje").textContent="";
 
- const {error}=await db.from("sales").insert({
+ const pago=$("ventaPago").value;
+ const notas=$("ventaNotas").value.trim()||null;
+
+ const registros=carrito.map(x=>({
   business_date:fechaActual(),
-  business:$("ventaNegocio").value,
-  amount:importe,
-  payment_method:$("ventaPago").value,
-  notes:$("ventaNotas").value.trim()||null,
-  created_by:u.user.id
- });
+  business:"Otro",
+  amount:Number((x.price*x.qty).toFixed(2)),
+  payment_method:pago,
+  notes:notas,
+  created_by:u.user.id,
+  table_number:mesa,
+  menu_item_id:x.id,
+  quantity:x.qty
+ }));
+
+ const {error}=await db.from("sales").insert(registros);
 
  b.disabled=false;
  b.textContent="Guardar venta";
 
  if(error){
   console.error(error);
-  $("ventaMensaje").textContent="❌ No se pudo guardar.";
+  $("ventaMensaje").textContent="❌ No se pudo guardar la venta.";
   return;
  }
 
- $("ventaImporte").value="";
+ carrito=[];
+ $("ventaMesa").value="";
  $("ventaNotas").value="";
+ pintarCarrito();
  $("ventaMensaje").textContent="✓ Venta registrada correctamente.";
 }
 
@@ -267,41 +870,79 @@ async function abrirHistorial(){
  mostrar("historial");
  $("listaVentas").innerHTML='<div class="notice">Cargando...</div>';
 
- const {data,error}=await db.from("sales")
-  .select("*").order("created_at",{ascending:false}).limit(100);
+ const ventasR=await db.from("sales")
+  .select("*")
+  .order("created_at",{ascending:false})
+  .limit(200);
 
- if(error){
+ const perfilesR=await db.from("profiles")
+  .select("id,full_name");
+
+ const articulosR=await db.from("menu_items")
+  .select("id,name");
+
+ if(ventasR.error){
   $("listaVentas").innerHTML='<div class="notice">No se pudo cargar.</div>';
   return;
  }
 
- if(!data.length){
-  $("listaVentas").innerHTML='<div class="notice">Todavía no hay ventas registradas.</div>';
+ const ventas=ventasR.data||[];
+ const perfiles=perfilesR.data||[];
+ const arts=articulosR.data||[];
+
+ const hoy=ventas
+  .filter(v=>v.business_date===fechaActual())
+  .reduce((s,v)=>s+Number(v.amount||0),0);
+
+ $("totalHoy").textContent=dinero(hoy);
+
+ if(!ventas.length){
+  $("listaVentas").innerHTML='<div class="empty">Todavía no hay ventas registradas.</div>';
   return;
  }
 
- $("listaVentas").innerHTML=data.map(v=>`
- <div class="saleCard">
-  <div class="saleTop">
-   <strong>${esc(v.business)}</strong>
-   <div class="saleAmount">${dinero(Number(v.amount))}</div>
-  </div>
-  <div class="saleInfo">
-   ${esc(v.business_date)} · ${esc(v.payment_method||"Sin método")}
-   ${v.notes?"<br>"+esc(v.notes):""}
-  </div>
-  <div class="actions">
-   <button class="editButton" onclick="editarVenta('${v.id}',${Number(v.amount)})">✏️ Editar</button>
-   <button class="deleteButton" onclick="eliminarVenta('${v.id}')">🗑 Eliminar</button>
-  </div>
- </div>`).join("");
+ $("listaVentas").innerHTML=ventas.map(v=>{
+  const p=perfiles.find(x=>x.id===v.created_by);
+  const a=arts.find(x=>x.id===v.menu_item_id);
+  const fechaHora=new Date(v.created_at).toLocaleString("es-MX",{
+   day:"2-digit",
+   month:"2-digit",
+   year:"numeric",
+   hour:"2-digit",
+   minute:"2-digit"
+  });
+
+  return `
+  <div class="saleCard">
+   <div class="saleTop">
+    <strong>${a?esc(a.name):esc(v.business||"Venta")}</strong>
+    <div class="saleAmount">${dinero(v.amount)}</div>
+   </div>
+
+   <div class="saleInfo">
+    ${esc(fechaHora)}
+    ${v.table_number?"<br>Mesa: "+esc(v.table_number):""}
+    ${v.quantity>1?" · Cantidad: "+esc(v.quantity):""}
+    <br>Pago: ${esc(v.payment_method||"Sin método")}
+    <br>Registró: ${esc(p?.full_name||"Personal")}
+    ${v.notes?"<br>Notas: "+esc(v.notes):""}
+   </div>
+
+   <div class="actions">
+    <button class="editButton" onclick="editarVenta('${v.id}',${Number(v.amount)})">✏️ Editar</button>
+    <button class="deleteButton" onclick="eliminarVenta('${v.id}')">🗑 Eliminar</button>
+   </div>
+  </div>`;
+ }).join("");
 }
 
 async function editarVenta(id,actual){
  const n=prompt("Nuevo importe:",actual);
+
  if(n===null)return;
 
  const importe=Number(n);
+
  if(!(importe>0)){
   alert("Importe no válido.");
   return;
@@ -309,7 +950,9 @@ async function editarVenta(id,actual){
 
  if(!confirm("¿Guardar este nuevo importe?"))return;
 
- const {error}=await db.from("sales").update({amount:importe}).eq("id",id);
+ const {error}=await db.from("sales")
+  .update({amount:importe})
+  .eq("id",id);
 
  if(error){
   alert("No se pudo editar.");
@@ -325,48 +968,35 @@ async function eliminarVenta(id){
 
  if(!confirm(
   "ELIMINACIÓN PERMANENTE\n\n"+
-  "La venta y su bitácora serán eliminadas.\n"+
+  "La venta será eliminada definitivamente.\n"+
   "Esta acción no se puede deshacer.\n\n"+
   "¿Continuar?"
  ))return;
 
- const {error}=await db.from("sales").delete().eq("id",id);
+ const {error}=await db.from("sales")
+  .delete()
+  .eq("id",id);
 
  if(error){
   alert("No se pudo eliminar.");
   return;
  }
 
- const {error:auditError}=await db.from("audit_log")
-  .delete().eq("table_name","sales").eq("record_id",id);
-
- if(auditError){
-  alert("La venta se eliminó, pero la bitácora no pudo limpiarse.");
-  await abrirHistorial();
-  return;
- }
+ await db.from("audit_log")
+  .delete()
+  .eq("table_name","sales")
+  .eq("record_id",id);
 
  alert("Venta eliminada permanentemente.");
  await abrirHistorial();
 }
 
-function esc(v){
- return String(v??"").replace(/[&<>"']/g,c=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",
-  '"':"&quot;","'":"&#039;"
- })[c]);
+function abrirCierre(){
+ mostrar("cierre");
 }
 
-function abrirCierre(){mostrar("cierre")}
-function volver(){mostrar("inicio")}
-function numero(id){return Number($(id).value)||0}
-
-function dinero(v){
- return v.toLocaleString("es-MX",{
-  style:"currency",
-  currency:"MXN",
-  maximumFractionDigits:2
- });
+function numero(id){
+ return Number($(id).value)||0;
 }
 
 function calcular(){
@@ -406,7 +1036,8 @@ async function guardarCierre(){
   notes:$("notas").value.trim()||null
  };
 
- const {error}=await db.from("daily_closings").insert(registro);
+ const {error}=await db.from("daily_closings")
+  .insert(registro);
 
  b.disabled=false;
  b.textContent="Guardar cierre";
