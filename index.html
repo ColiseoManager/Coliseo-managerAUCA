@@ -5,427 +5,519 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coliseo Manager</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 
 body{
- margin:0;
- background:#0b0b0b;
- color:#fff;
+ margin:0;background:#0b0b0b;color:#fff;
  font-family:Arial,sans-serif
 }
 
-.app{
- max-width:500px;
- margin:auto;
- padding:28px 20px 50px
-}
+.app{max-width:500px;margin:auto;padding:28px 20px 50px}
 
 .brand{
- color:#f4c430;
- font-size:13px;
- letter-spacing:2px;
- font-weight:bold
+ color:#f4c430;font-size:13px;letter-spacing:2px;font-weight:bold
 }
 
 h1{font-size:32px;margin:8px 0 4px}
 h2{margin:5px 0 20px}
 
-.subtitle{
- color:#999;
- margin-bottom:30px
-}
+.subtitle{color:#999;margin-bottom:30px}
 
 .card,.module{
- background:#171717;
- border:1px solid #292929;
- border-radius:18px
+ background:#171717;border:1px solid #292929;border-radius:18px
 }
 
-.card{
- padding:20px;
- margin-bottom:15px
-}
+.card{padding:20px;margin-bottom:15px}
 
-.goal{
- font-size:28px;
- font-weight:bold;
- margin:8px 0
-}
+.goal{font-size:28px;font-weight:bold;margin:8px 0}
 
 .progress{
- height:8px;
- background:#333;
- border-radius:10px;
- overflow:hidden;
- margin-top:15px
+ height:8px;background:#333;border-radius:10px;
+ overflow:hidden;margin-top:15px
 }
 
-.progress div{
- width:0%;
- height:100%;
- background:#f4c430
-}
+.progress div{width:0;height:100%;background:#f4c430}
 
 .grid{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:12px;
- margin-top:25px
+ display:grid;grid-template-columns:1fr 1fr;
+ gap:12px;margin-top:25px
 }
 
 .module{
- padding:18px 14px;
- min-height:110px;
- cursor:pointer
+ padding:18px 14px;min-height:110px;cursor:pointer
 }
 
-.module:active{
- transform:scale(.98);
- background:#202020
-}
-
-.module strong{
- display:block;
- margin-bottom:8px;
- font-size:18px
-}
-
-.module span{
- color:#888;
- font-size:13px;
- line-height:1.4
-}
-
-.status{
- margin-top:30px;
- color:#666;
- font-size:12px;
- text-align:center
-}
+.module:active{transform:scale(.98);background:#202020}
+.module strong{display:block;margin-bottom:8px;font-size:18px}
+.module span{color:#888;font-size:13px;line-height:1.4}
 
 .screen{display:none}
 .screen.active{display:block}
 
-.back{
- border:0;
- background:none;
- color:#f4c430;
- padding:0;
- margin-bottom:20px;
- font-size:16px;
- cursor:pointer
-}
-
 label{
- display:block;
- color:#aaa;
- font-size:13px;
- margin:18px 0 7px
+ display:block;color:#aaa;font-size:13px;margin:18px 0 7px
 }
 
 input,select,textarea{
- width:100%;
- background:#111;
- border:1px solid #333;
- color:#fff;
- border-radius:12px;
- padding:14px;
- font-size:16px
+ width:100%;background:#111;border:1px solid #333;color:#fff;
+ border-radius:12px;padding:14px;font-size:16px
 }
 
-textarea{
- min-height:90px;
- resize:vertical
-}
+textarea{min-height:90px;resize:vertical}
 
 .two{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:12px
+ display:grid;grid-template-columns:1fr 1fr;gap:12px
 }
 
 .summary{
- margin-top:22px;
- padding:20px;
- background:#171717;
- border:1px solid #292929;
- border-radius:18px
+ margin-top:22px;padding:20px;background:#171717;
+ border:1px solid #292929;border-radius:18px
 }
 
 .summary-row{
- display:flex;
- justify-content:space-between;
- margin:10px 0;
- color:#aaa
+ display:flex;justify-content:space-between;
+ margin:10px 0;color:#aaa;gap:10px
 }
 
 .summary-row strong{color:#fff}
 
 .total{
- border-top:1px solid #333;
- padding-top:15px;
- margin-top:15px;
- font-size:19px
+ border-top:1px solid #333;padding-top:15px;
+ margin-top:15px;font-size:19px
 }
 
-.save{
- width:100%;
- border:0;
- border-radius:14px;
- background:#f4c430;
- color:#111;
- font-size:17px;
- font-weight:bold;
- padding:16px;
- margin-top:20px;
- cursor:pointer
+button{
+ font-family:inherit
+}
+
+.save,.loginButton{
+ width:100%;border:0;border-radius:14px;
+ background:#f4c430;color:#111;font-size:17px;
+ font-weight:bold;padding:16px;margin-top:20px;cursor:pointer
+}
+
+.back{
+ border:0;background:none;color:#f4c430;
+ padding:0;margin-bottom:20px;font-size:16px;cursor:pointer
+}
+
+.logout{
+ background:#171717;color:#aaa;border:1px solid #333;
+ border-radius:10px;padding:9px 12px;cursor:pointer
+}
+
+.top{
+ display:flex;justify-content:space-between;
+ align-items:flex-start;gap:12px
 }
 
 .notice{
- color:#888;
- font-size:12px;
- line-height:1.5;
- text-align:center;
- margin-top:12px
+ color:#888;font-size:12px;line-height:1.5;
+ text-align:center;margin-top:12px
+}
+
+.status{
+ margin-top:30px;color:#666;font-size:12px;text-align:center
+}
+
+.loginBox{
+ min-height:90vh;display:flex;
+ flex-direction:column;justify-content:center
+}
+
+.loginCard{
+ background:#171717;border:1px solid #292929;
+ border-radius:22px;padding:24px
+}
+
+.loginTitle{
+ font-size:30px;font-weight:bold;margin:8px 0
+}
+
+.loginMessage{
+ min-height:18px;color:#aaa;font-size:13px;
+ text-align:center;margin-top:14px
+}
+
+.userText{
+ color:#777;font-size:11px;margin-top:4px
 }
 </style>
 </head>
 
 <body>
+
 <main class="app">
 
-<!-- INICIO -->
-<section id="inicio" class="screen active">
+<!-- LOGIN -->
+<section id="login" class="screen active">
+ <div class="loginBox">
+  <div class="brand">COLISEO FOOD PARK</div>
+  <div class="loginTitle">Coliseo Manager</div>
+  <div class="subtitle">Acceso administrativo</div>
 
-<div class="brand">COLISEO FOOD PARK</div>
-<h1>Coliseo Manager</h1>
-<div class="subtitle">Panel de administración</div>
+  <div class="loginCard">
+   <label>Correo electrónico</label>
+   <input type="email" id="email" autocomplete="username"
+          placeholder="correo@ejemplo.com">
 
-<div class="card">
-<small>META DE VENTA POR NOCHE</small>
-<div class="goal">$10,000 MXN</div>
-<div class="progress"><div id="barra"></div></div>
-</div>
+   <label>Contraseña</label>
+   <input type="password" id="password"
+          autocomplete="current-password"
+          placeholder="••••••••">
 
-<div class="grid">
+   <button class="loginButton" onclick="iniciarSesion()">
+    Iniciar sesión
+   </button>
 
-<div class="module" onclick="abrirCierre()">
-<strong>📊 Cierre diario</strong>
-<span>Ventas, clientes y ticket promedio</span>
-</div>
-
-<div class="module">
-<strong>💸 Gastos</strong>
-<span>Control de egresos</span>
-</div>
-
-<div class="module">
-<strong>📅 Reservaciones</strong>
-<span>Eventos y apartados</span>
-</div>
-
-<div class="module">
-<strong>🎤 Eventos</strong>
-<span>Costos, ventas y resultados</span>
-</div>
-
-<div class="module">
-<strong>📦 Inventario</strong>
-<span>Cuervo's Pizza y EL CLúB</span>
-</div>
-
-<div class="module">
-<strong>✓ Pendientes</strong>
-<span>Tareas de operación</span>
-</div>
-
-</div>
-
-<div class="status">
-Coliseo Manager 1.1 · Playas de Tijuana
-</div>
-
+   <div id="loginMessage" class="loginMessage"></div>
+  </div>
+ </div>
 </section>
 
 
-<!-- CIERRE DIARIO -->
+<!-- INICIO -->
+<section id="inicio" class="screen">
+
+ <div class="top">
+  <div>
+   <div class="brand">COLISEO FOOD PARK</div>
+   <h1>Coliseo Manager</h1>
+   <div id="usuarioActual" class="userText"></div>
+  </div>
+
+  <button class="logout" onclick="cerrarSesion()">
+   Salir
+  </button>
+ </div>
+
+ <div class="subtitle">Panel de administración</div>
+
+ <div class="card">
+  <small>META DE VENTA POR NOCHE</small>
+  <div class="goal">$10,000 MXN</div>
+  <div class="progress"><div id="barra"></div></div>
+ </div>
+
+ <div class="grid">
+
+  <div class="module" onclick="abrirCierre()">
+   <strong>📊 Cierre diario</strong>
+   <span>Ventas, clientes y ticket promedio</span>
+  </div>
+
+  <div class="module">
+   <strong>💸 Gastos</strong>
+   <span>Control de egresos</span>
+  </div>
+
+  <div class="module">
+   <strong>📅 Reservaciones</strong>
+   <span>Eventos y apartados</span>
+  </div>
+
+  <div class="module">
+   <strong>🎤 Eventos</strong>
+   <span>Costos, ventas y resultados</span>
+  </div>
+
+  <div class="module">
+   <strong>📦 Inventario</strong>
+   <span>Cuervo's Pizza y EL CLúB</span>
+  </div>
+
+  <div class="module">
+   <strong>✓ Pendientes</strong>
+   <span>Tareas de operación</span>
+  </div>
+
+ </div>
+
+ <div class="status">Coliseo Manager 1.2</div>
+</section>
+
+
+<!-- CIERRE -->
 <section id="cierre" class="screen">
 
-<button class="back" onclick="volver()">← Volver al inicio</button>
+ <button class="back" onclick="volver()">← Volver al inicio</button>
 
-<div class="brand">COLISEO MANAGER</div>
-<h2>📊 Cierre diario</h2>
+ <div class="brand">COLISEO MANAGER</div>
+ <h2>📊 Cierre diario</h2>
 
-<label>Fecha</label>
-<input type="date" id="fecha">
+ <label>Fecha</label>
+ <input type="date" id="fecha">
 
-<label>Tipo de día</label>
-<select id="tipo">
-<option>Día normal</option>
-<option>Promoción</option>
-<option>Evento</option>
-<option>Fin de semana</option>
-</select>
+ <label>Tipo de día</label>
+ <select id="tipo">
+  <option>Día normal</option>
+  <option>Promoción</option>
+  <option>Evento</option>
+  <option>Fin de semana</option>
+ </select>
 
-<div class="two">
+ <div class="two">
+  <div>
+   <label>Cuervo's Pizza</label>
+   <input type="number" id="cuervos" placeholder="$0"
+          oninput="calcular()">
+  </div>
 
-<div>
-<label>Cuervo's Pizza</label>
-<input type="number" id="cuervos" placeholder="$0" oninput="calcular()">
-</div>
+  <div>
+   <label>EL CLúB</label>
+   <input type="number" id="club" placeholder="$0"
+          oninput="calcular()">
+  </div>
+ </div>
 
-<div>
-<label>EL CLúB</label>
-<input type="number" id="club" placeholder="$0" oninput="calcular()">
-</div>
+ <label>Otros ingresos</label>
+ <input type="number" id="otros" placeholder="$0"
+        oninput="calcular()">
 
-</div>
+ <label>Gastos del día</label>
+ <input type="number" id="gastos" placeholder="$0"
+        oninput="calcular()">
 
-<label>Otros ingresos</label>
-<input type="number" id="otros" placeholder="$0" oninput="calcular()">
+ <div class="two">
+  <div>
+   <label>Clientes</label>
+   <input type="number" id="clientes" placeholder="0"
+          oninput="calcular()">
+  </div>
 
-<label>Gastos del día</label>
-<input type="number" id="gastos" placeholder="$0" oninput="calcular()">
+  <div>
+   <label>Mesas ocupadas</label>
+   <input type="number" id="mesas" placeholder="0">
+  </div>
+ </div>
 
-<div class="two">
+ <label>Promoción utilizada</label>
+ <input type="text" id="promo"
+        placeholder="Ej. Caguama Miller $75">
 
-<div>
-<label>Clientes</label>
-<input type="number" id="clientes" placeholder="0" oninput="calcular()">
-</div>
+ <label>Notas</label>
+ <textarea id="notas"
+           placeholder="Observaciones del día..."></textarea>
 
-<div>
-<label>Mesas ocupadas</label>
-<input type="number" id="mesas" placeholder="0">
-</div>
+ <div class="summary">
 
-</div>
+  <div class="summary-row">
+   <span>Venta total</span>
+   <strong id="ventaTotal">$0</strong>
+  </div>
 
-<label>Promoción utilizada</label>
+  <div class="summary-row">
+   <span>Ticket promedio</span>
+   <strong id="ticket">$0</strong>
+  </div>
 
-<input type="text" id="promo" placeholder="Ej. Caguama Miller $75">
+  <div class="summary-row">
+   <span>Gastos</span>
+   <strong id="gastoResumen">$0</strong>
+  </div>
 
-<label>Notas</label>
-<textarea id="notas" placeholder="Observaciones del día..."></textarea>
+  <div class="summary-row total">
+   <span>Resultado estimado</span>
+   <strong id="resultado">$0</strong>
+  </div>
 
-<div class="summary">
+ </div>
 
-<div class="summary-row">
-<span>Venta total</span>
-<strong id="ventaTotal">$0</strong>
-</div>
+ <button id="guardarBtn" class="save" onclick="guardarCierre()">
+  Guardar cierre
+ </button>
 
-<div class="summary-row">
-<span>Ticket promedio</span>
-<strong id="ticket">$0</strong>
-</div>
-
-<div class="summary-row">
-<span>Gastos</span>
-<strong id="gastoResumen">$0</strong>
-</div>
-
-<div class="summary-row total">
-<span>Resultado estimado</span>
-<strong id="resultado">$0</strong>
-</div>
-
-</div>
-
-<button class="save" onclick="prepararGuardado()">
-Guardar cierre
-</button>
-
-<div class="notice" id="mensaje">
-Versión 1.1 · Próximamente guardado permanente.
-</div>
+ <div id="mensaje" class="notice"></div>
 
 </section>
+
 </main>
 
+
 <script>
+const SUPABASE_URL =
+ "https://vrxkxfsysfnlcuxdsxfx.supabase.co";
+
+const SUPABASE_KEY =
+ "sb_publishable_7ey94d3udNRBYj5o85XeYQ_XXsqDwsM";
+
+const db = window.supabase.createClient(
+ SUPABASE_URL,
+ SUPABASE_KEY
+);
 
 const $ = id => document.getElementById(id);
 
+function mostrar(id){
+ document.querySelectorAll(".screen").forEach(
+  pantalla => pantalla.classList.remove("active")
+ );
+ $(id).classList.add("active");
+ window.scrollTo(0,0);
+}
+
+async function iniciarSesion(){
+
+ const email = $("email").value.trim();
+ const password = $("password").value;
+
+ if(!email || !password){
+  $("loginMessage").textContent =
+   "Ingresa tu correo y contraseña.";
+  return;
+ }
+
+ $("loginMessage").textContent = "Ingresando...";
+
+ const {data,error} =
+  await db.auth.signInWithPassword({
+   email:email,
+   password:password
+  });
+
+ if(error){
+  $("loginMessage").textContent =
+   "No se pudo iniciar sesión. Revisa tus datos.";
+  return;
+ }
+
+ $("password").value = "";
+ $("loginMessage").textContent = "";
+
+ $("usuarioActual").textContent =
+  data.user.email || "";
+
+ mostrar("inicio");
+}
+
+async function cerrarSesion(){
+ await db.auth.signOut();
+ $("email").value = "";
+ $("password").value = "";
+ mostrar("login");
+}
+
 function abrirCierre(){
-  $("inicio").classList.remove("active");
-  $("cierre").classList.add("active");
-  window.scrollTo(0,0);
+ mostrar("cierre");
 }
 
 function volver(){
-  $("cierre").classList.remove("active");
-  $("inicio").classList.add("active");
-  window.scrollTo(0,0);
+ mostrar("inicio");
 }
 
 function numero(id){
-  return Number($(id).value) || 0;
+ return Number($(id).value) || 0;
 }
 
 function dinero(valor){
-  return valor.toLocaleString("es-MX",{
-    style:"currency",
-    currency:"MXN",
-    maximumFractionDigits:2
-  });
+ return valor.toLocaleString("es-MX",{
+  style:"currency",
+  currency:"MXN",
+  maximumFractionDigits:2
+ });
 }
 
 function calcular(){
 
-  const ventas =
-    numero("cuervos") +
-    numero("club") +
-    numero("otros");
+ const ventas =
+  numero("cuervos") +
+  numero("club") +
+  numero("otros");
 
-  const gastos = numero("gastos");
-  const clientes = numero("clientes");
+ const gastos = numero("gastos");
+ const clientes = numero("clientes");
 
-  const ticket =
-    clientes > 0 ? ventas / clientes : 0;
+ const ticket =
+  clientes > 0 ? ventas/clientes : 0;
 
-  const resultado = ventas - gastos;
+ const resultado = ventas-gastos;
 
-  $("ventaTotal").textContent = dinero(ventas);
-  $("ticket").textContent = dinero(ticket);
-  $("gastoResumen").textContent = dinero(gastos);
-  $("resultado").textContent = dinero(resultado);
+ $("ventaTotal").textContent = dinero(ventas);
+ $("ticket").textContent = dinero(ticket);
+ $("gastoResumen").textContent = dinero(gastos);
+ $("resultado").textContent = dinero(resultado);
 
-  const porcentaje =
-    Math.min((ventas / 10000) * 100,100);
+ const porcentaje =
+  Math.min((ventas/10000)*100,100);
 
-  $("barra").style.width =
-    porcentaje + "%";
+ $("barra").style.width =
+  porcentaje+"%";
 }
 
-function prepararGuardado(){
+async function guardarCierre(){
 
-  if(!$("fecha").value){
-    $("mensaje").textContent =
-      "⚠️ Selecciona una fecha.";
-    return;
-  }
-
+ if(!$("fecha").value){
   $("mensaje").textContent =
-    "✓ Cierre capturado correctamente.";
+   "⚠️ Selecciona una fecha.";
+  return;
+ }
+
+ const boton = $("guardarBtn");
+ boton.disabled = true;
+ boton.textContent = "Guardando...";
+ $("mensaje").textContent = "";
+
+ const registro = {
+  business_date:$("fecha").value,
+  day_type:$("tipo").value,
+  cuervos_sales:numero("cuervos"),
+  club_sales:numero("club"),
+  other_income:numero("otros"),
+  expenses:numero("gastos"),
+  customers:Math.trunc(numero("clientes")),
+  occupied_tables:Math.trunc(numero("mesas")),
+  promotion:$("promo").value.trim() || null,
+  notes:$("notas").value.trim() || null
+ };
+
+ const {error} =
+  await db
+   .from("daily_closings")
+   .insert(registro);
+
+ boton.disabled = false;
+ boton.textContent = "Guardar cierre";
+
+ if(error){
+  console.error(error);
+  $("mensaje").textContent =
+   "❌ No se pudo guardar. Intenta nuevamente.";
+  return;
+ }
+
+ $("mensaje").textContent =
+  "✓ Cierre guardado correctamente en Coliseo Manager.";
 }
 
 function fechaLocal(){
+ const ahora = new Date();
+ const y = ahora.getFullYear();
+ const m =
+  String(ahora.getMonth()+1).padStart(2,"0");
+ const d =
+  String(ahora.getDate()).padStart(2,"0");
 
-  const ahora = new Date();
+ $("fecha").value = `${y}-${m}-${d}`;
+}
 
-  const y = ahora.getFullYear();
-  const m =
-    String(ahora.getMonth()+1).padStart(2,"0");
-  const d =
-    String(ahora.getDate()).padStart(2,"0");
+async function comprobarSesion(){
 
-  $("fecha").value =
-    `${y}-${m}-${d}`;
+ const {data} = await db.auth.getSession();
+
+ if(data.session){
+  $("usuarioActual").textContent =
+   data.session.user.email || "";
+  mostrar("inicio");
+ }else{
+  mostrar("login");
+ }
 }
 
 fechaLocal();
+comprobarSesion();
 
 </script>
 
