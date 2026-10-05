@@ -6,19 +6,106 @@
 <title>Coliseo Manager</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial,sans-serif}.app{max-width:600px;margin:auto;padding:24px 18px 70px}.screen{display:none}.screen.on{display:block}.brand{color:#f6c62e;font-size:13px;font-weight:800;letter-spacing:2px}h1{font-size:31px;margin:7px 0}h2{margin:7px 0 20px}.muted{color:#888;font-size:12px}.card,.module,.order,.product{background:#171717;border:1px solid #292929;border-radius:17px;padding:16px;margin:10px 0}.grid,.products,.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.module{min-height:105px;cursor:pointer}.module b{display:block;margin-bottom:7px}.module span{color:#888;font-size:12px}.top,.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.top{align-items:flex-start}.role,.badge{display:inline-block;border-radius:20px;padding:6px 9px;font-size:11px}.role{background:#30280b;color:#f6c62e}.open{background:#14371f;color:#7deb9e}.closed{background:#292929;color:#aaa}.cash{background:#332b0c;color:#f6c62e}label{display:block;color:#aaa;font-size:13px;margin:13px 0 6px}input,select,textarea{width:100%;background:#101010;border:1px solid #333;color:#fff;border-radius:12px;padding:13px;font-size:16px}textarea{min-height:70px}.yellow,.dark,.danger,.back{border-radius:11px;padding:12px;border:0;font-weight:700}.yellow{background:#f6c62e;color:#111;width:100%;margin-top:14px}.dark{background:#222;color:#ddd;border:1px solid #383838}.danger{background:#351414;color:#ff9292;border:1px solid #642929}.back{background:none;color:#f6c62e;padding-left:0}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.price,.amount,.total{color:#f6c62e;font-weight:800}.amount{font-size:21px}.total{text-align:right;font-size:26px;margin-top:12px}.tabs{display:flex;gap:7px;overflow:auto;margin:12px 0}.tab{white-space:nowrap;background:#1a1a1a;color:#ddd;border:1px solid #333;border-radius:20px;padding:9px 13px}.tab.on{background:#f6c62e;color:#111}.product{cursor:pointer;margin:0}.cartline{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border-bottom:1px solid #292929;padding:10px 0}.qty button{border-radius:50%;width:29px;height:29px;background:#222;color:white;border:1px solid #444}.empty{text-align:center;color:#777;padding:22px}.section{margin-top:25px;border-bottom:1px solid #292929;padding-bottom:8px}.login{min-height:88vh;display:flex;flex-direction:column;justify-content:center}.loginbox{background:#171717;border:1px solid #292929;border-radius:22px;padding:24px}.msg{text-align:center;color:#aaa;font-size:12px;margin-top:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.big{font-size:20px;color:#f6c62e;font-weight:bold}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial,sans-serif}
+.app{max-width:600px;margin:auto;padding:24px 18px 70px}
+.screen{display:none}.screen.on{display:block}
+.brand{color:#f6c62e;font-size:13px;font-weight:800;letter-spacing:2px}
+h1{font-size:31px;margin:7px 0}h2{margin:7px 0 20px}
+.muted{color:#888;font-size:12px}
+.card,.module,.order,.product{background:#171717;border:1px solid #292929;border-radius:17px;padding:16px;margin:10px 0}
+.grid,.products,.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.module{min-height:105px;cursor:pointer}.module b{display:block;margin-bottom:7px}.module span{color:#888;font-size:12px}
+.top,.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.top{align-items:flex-start}
+.role,.badge{display:inline-block;border-radius:20px;padding:6px 9px;font-size:11px}
+.role{background:#30280b;color:#f6c62e}.open{background:#14371f;color:#7deb9e}.closed{background:#292929;color:#aaa}.cash{background:#332b0c;color:#f6c62e}
+label{display:block;color:#aaa;font-size:13px;margin:13px 0 6px}
+input,select,textarea{width:100%;background:#101010;border:1px solid #333;color:#fff;border-radius:12px;padding:13px;font-size:16px}
+textarea{min-height:70px}
+.yellow,.dark,.danger,.back{border-radius:11px;padding:12px;border:0;font-weight:700}
+.yellow{background:#f6c62e;color:#111;width:100%;margin-top:14px}
+.dark{background:#222;color:#ddd;border:1px solid #383838}
+.danger{background:#351414;color:#ff9292;border:1px solid #642929}
+.back{background:none;color:#f6c62e;padding-left:0}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.price,.amount,.total{color:#f6c62e;font-weight:800}.amount{font-size:21px}.total{text-align:right;font-size:26px;margin-top:12px}
+.tabs{display:flex;gap:7px;overflow:auto;margin:12px 0}
+.tab{white-space:nowrap;background:#1a1a1a;color:#ddd;border:1px solid #333;border-radius:20px;padding:9px 13px}.tab.on{background:#f6c62e;color:#111}
+.product{cursor:pointer;margin:0}
+.cartline{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border-bottom:1px solid #292929;padding:10px 0}
+.qty button{border-radius:50%;width:29px;height:29px;background:#222;color:white;border:1px solid #444}
+.empty{text-align:center;color:#777;padding:22px}
+.section{margin-top:25px;border-bottom:1px solid #292929;padding-bottom:8px}
+.login{min-height:88vh;display:flex;flex-direction:column;justify-content:center}
+.loginbox{background:#171717;border:1px solid #292929;border-radius:22px;padding:24px}
+.msg{text-align:center;color:#aaa;font-size:12px;margin-top:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{font-size:20px;color:#f6c62e;font-weight:bold}
+
+/* VENTANA PERSONALIZADA DE CUENTA */
+.modalWrap{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.82);
+display:none;
+align-items:center;
+justify-content:center;
+padding:20px;
+z-index:9999
+}
+.modalWrap.on{display:flex}
+.modalCard{
+width:min(100%,480px);
+max-height:85vh;
+overflow:auto;
+background:#171717;
+border:1px solid #333;
+border-radius:22px;
+padding:22px;
+box-shadow:0 18px 60px rgba(0,0,0,.65)
+}
+.modalHead{text-align:center;border-bottom:1px solid #292929;padding-bottom:15px;margin-bottom:8px}
+.modalHead h2{margin:8px 0 3px}
+.modalLine{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #292929}
+.modalLine b:last-child{white-space:nowrap}
+.modalNotes{background:#101010;border-radius:12px;padding:12px;margin-top:14px}
+.modalTotal{font-size:28px;color:#f6c62e;font-weight:800;text-align:right;margin:20px 0 8px}
 </style>
 </head>
+
 <body>
 <main class="app">
 
-<section id="login" class="screen on"><div class="login">
-<div class="brand">COLISEO FOOD PARK</div><h1>Coliseo Manager</h1><div class="muted">Control y administración</div>
-<div class="loginbox"><label>Correo electrónico</label><input id="email" type="email" autocomplete="username"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password"><button id="loginBtn" class="yellow" onclick="login()">Iniciar sesión</button><div id="loginMsg" class="msg"></div></div>
-</div></section>
+<section id="login" class="screen on">
+<div class="login">
+<div class="brand">COLISEO FOOD PARK</div>
+<h1>Coliseo Manager</h1>
+<div class="muted">Control y administración</div>
+
+<div class="loginbox">
+<label>Correo electrónico</label>
+<input id="email" type="email" autocomplete="username">
+
+<label>Contraseña</label>
+<input id="password" type="password" autocomplete="current-password">
+
+<button id="loginBtn" class="yellow" onclick="login()">Iniciar sesión</button>
+<div id="loginMsg" class="msg"></div>
+</div>
+</div>
+</section>
 
 <section id="admin" class="screen">
-<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h1>Coliseo Manager</h1><div id="adminUser" class="muted"></div><span class="role">ADMINISTRADOR</span></div><button class="dark" onclick="logout()">Salir</button></div>
+<div class="top">
+<div>
+<div class="brand">COLISEO FOOD PARK</div>
+<h1>Coliseo Manager</h1>
+<div id="adminUser" class="muted"></div>
+<span class="role">ADMINISTRADOR</span>
+</div>
+<button class="dark" onclick="logout()">Salir</button>
+</div>
+
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, costos y precios</span></div>
@@ -29,210 +116,1902 @@
 <div class="module"><b>🔧 Mantenimiento</b><span>Pintura, remodelación, sonido y mejoras</span></div>
 <div class="module"><b>📦 Inventario</b><span>Existencias e insumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Eventos y apartados</span></div>
-</div><div class="msg">Coliseo Manager 1.6</div>
+</div>
+
+<div class="msg">Coliseo Manager 1.6.1</div>
 </section>
 
 <section id="staff" class="screen">
-<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>🧾 Comandas</h2><div id="staffUser" class="muted"></div><span class="role">PERSONAL</span></div><button class="dark" onclick="logout()">Salir</button></div>
-<button class="yellow" onclick="nuevoPedido(false)">＋ Abrir nueva cuenta</button><h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
+<div class="top">
+<div>
+<div class="brand">COLISEO FOOD PARK</div>
+<h2>🧾 Comandas</h2>
+<div id="staffUser" class="muted"></div>
+<span class="role">PERSONAL</span>
+</div>
+<button class="dark" onclick="logout()">Salir</button>
+</div>
+
+<button class="yellow" onclick="nuevoPedido(false)">＋ Abrir nueva cuenta</button>
+<h3 class="section">Mis cuentas abiertas</h3>
+<div id="staffOrders"></div>
 </section>
 
 <section id="cashier" class="screen">
-<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>💳 Caja</h2><div id="cashierUser" class="muted"></div><span class="role">CAJA</span></div><button class="dark" onclick="logout()">Salir</button></div>
-<button class="yellow" onclick="nuevoPedido(true)">＋ Nueva venta</button><h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
+<div class="top">
+<div>
+<div class="brand">COLISEO FOOD PARK</div>
+<h2>💳 Caja</h2>
+<div id="cashierUser" class="muted"></div>
+<span class="role">CAJA</span>
+</div>
+<button class="dark" onclick="logout()">Salir</button>
+</div>
+
+<button class="yellow" onclick="nuevoPedido(true)">＋ Nueva venta</button>
+<h3 class="section">Cuentas por cobrar</h3>
+<div id="cashOrders"></div>
 </section>
 
 <section id="pos" class="screen">
-<button class="back" onclick="volverRol()">← Volver</button><div class="brand">COLISEO MANAGER</div><h2 id="posTitle">Nueva cuenta</h2>
-<label>Tipo de pedido</label><select id="orderType" onchange="tipoUI()"><option value="table">🍽️ Consumo en mesa</option><option value="takeaway">🥡 Para llevar</option><option value="delivery">🛵 Delivery</option></select>
-<div id="tableBox"><label>Número de mesa</label><input id="tableNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12"></div>
-<div id="deliveryBox" style="display:none"><label>Plataforma</label><select id="deliveryPlatform"><option>Uber Eats</option><option>DiDi Food</option><option>Otra</option></select></div>
-<div id="tabs" class="tabs"></div><div id="products" class="products"></div>
-<div class="card"><h3>Pedido</h3><div id="cart"></div><div id="cartTotal" class="total">$0.00</div></div>
-<label>Notas</label><textarea id="notes"></textarea><button class="yellow" onclick="guardarPedido()">Guardar cuenta</button><div id="orderMsg" class="msg"></div>
+<button class="back" onclick="volverRol()">← Volver</button>
+<div class="brand">COLISEO MANAGER</div>
+<h2 id="posTitle">Nueva cuenta</h2>
+
+<label>Tipo de pedido</label>
+<select id="orderType" onchange="tipoUI()">
+<option value="table">🍽️ Consumo en mesa</option>
+<option value="takeaway">🥡 Para llevar</option>
+<option value="delivery">🛵 Delivery</option>
+</select>
+
+<div id="tableBox">
+<label>Número de mesa</label>
+<input id="tableNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12">
+</div>
+
+<div id="deliveryBox" style="display:none">
+<label>Plataforma</label>
+<select id="deliveryPlatform">
+<option>Uber Eats</option>
+<option>DiDi Food</option>
+<option>Otra</option>
+</select>
+</div>
+
+<div id="tabs" class="tabs"></div>
+<div id="products" class="products"></div>
+
+<div class="card">
+<h3>Pedido</h3>
+<div id="cart"></div>
+<div id="cartTotal" class="total">$0.00</div>
+</div>
+
+<label>Notas</label>
+<textarea id="notes"></textarea>
+
+<button class="yellow" onclick="guardarPedido()">Guardar cuenta</button>
+<div id="orderMsg" class="msg"></div>
 </section>
 
 <section id="menu" class="screen">
-<button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>🍽️ Menú</h2>
-<div class="card"><h3>Nueva categoría</h3><input id="newCat" placeholder="Ej. Pizzas"><button class="yellow" onclick="crearCat()">Crear categoría</button></div>
-<div class="card"><h3>Nuevo artículo</h3><label>Categoría</label><select id="itemCat"></select><label>Negocio</label><select id="itemBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option></select><label>Artículo</label><input id="itemName"><div class="two"><div><label>Costo</label><input id="itemCost" type="number" min="0" step=".01"></div><div><label>Precio de venta</label><input id="itemPrice" type="number" min="0" step=".01"></div></div><button class="yellow" onclick="crearItem()">Crear artículo</button></div>
-<h3 class="section">Categorías</h3><div id="catList"></div><h3 class="section">Artículos</h3><div id="itemList"></div>
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div>
+<h2>🍽️ Menú</h2>
+
+<div class="card">
+<h3>Nueva categoría</h3>
+<input id="newCat" placeholder="Ej. Pizzas">
+<button class="yellow" onclick="crearCat()">Crear categoría</button>
+</div>
+
+<div class="card">
+<h3>Nuevo artículo</h3>
+
+<label>Categoría</label>
+<select id="itemCat"></select>
+
+<label>Negocio</label>
+<select id="itemBusiness">
+<option value="Cuervos Pizza">Cuervo’s Pizza</option>
+<option value="EL CLúB">EL CLúB</option>
+</select>
+
+<label>Artículo</label>
+<input id="itemName">
+
+<div class="two">
+<div>
+<label>Costo</label>
+<input id="itemCost" type="number" min="0" step=".01">
+</div>
+<div>
+<label>Precio de venta</label>
+<input id="itemPrice" type="number" min="0" step=".01">
+</div>
+</div>
+
+<button class="yellow" onclick="crearItem()">Crear artículo</button>
+</div>
+
+<h3 class="section">Categorías</h3>
+<div id="catList"></div>
+
+<h3 class="section">Artículos</h3>
+<div id="itemList"></div>
 </section>
 
 <section id="orders" class="screen">
-<button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>🧾 Comandas</h2><h3 class="section">Abiertas</h3><div id="openOrders"></div><h3 class="section">Cerradas</h3><div id="closedOrders"></div>
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div>
+<h2>🧾 Comandas</h2>
+
+<h3 class="section">Abiertas</h3>
+<div id="openOrders"></div>
+
+<h3 class="section">Cerradas</h3>
+<div id="closedOrders"></div>
 </section>
 
-<section id="detail" class="screen"><button class="back" onclick="comandas()">← Comandas</button><div class="brand">ADMINISTRACIÓN</div><h2>Cuenta</h2><div id="detailBody"></div></section>
+<section id="detail" class="screen">
+<button class="back" onclick="comandas()">← Comandas</button>
+<div class="brand">ADMINISTRACIÓN</div>
+<h2>Cuenta</h2>
+<div id="detailBody"></div>
+</section>
 
-<section id="history" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>📚 Historial</h2><div id="historyList"></div></section>
+<section id="history" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div>
+<h2>📚 Historial</h2>
+<div id="historyList"></div>
+</section>
+
 </main>
 
+<!-- VENTANA PERSONALIZADA -->
+<div id="accountModal" class="modalWrap" onclick="if(event.target===this)closeAccountModal()">
+<div class="modalCard">
+
+<div class="modalHead">
+<div class="brand">COLISEO FOOD PARK</div>
+<h2 id="accountModalTitle">Cuenta</h2>
+<div class="muted">Detalle de consumo</div>
+</div>
+
+<div id="accountModalBody"></div>
+
+<button class="yellow" onclick="closeAccountModal()">Cerrar</button>
+
+</div>
+</div>
+
 <script>
+
 const SB_URL="https://vrxkxfsysfnlcuxdsxfx.supabase.co";
 const SB_KEY="sb_publishable_7ey94d3udNRBYj5o85XeYQ_XXsqDwsM";
+
 const db=supabase.createClient(SB_URL,SB_KEY);
+
 const $=id=>document.getElementById(id);
+
 let me=null,cats=[],subs=[],items=[],basket=[],activeCat=null,current=null,cashMode=false;
-const money=n=>Number(n||0).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
-const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const stamp=s=>new Date(s).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("on"));$(id).classList.add("on");scrollTo(0,0)}
-function orderName(o){return o.order_type==="takeaway"?"Para llevar":o.order_type==="delivery"?"Delivery · "+(o.delivery_platform||""): "Mesa "+o.table_number}
+
+const money=n=>Number(n||0).toLocaleString("es-MX",{
+style:"currency",
+currency:"MXN"
+});
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+}[m]));
+
+const stamp=s=>new Date(s).toLocaleString("es-MX",{
+day:"2-digit",
+month:"2-digit",
+hour:"2-digit",
+minute:"2-digit"
+});
+
+function show(id){
+document.querySelectorAll(".screen").forEach(x=>x.classList.remove("on"));
+$(id).classList.add("on");
+scrollTo(0,0)
+}
+
+function orderName(o){
+return o.order_type==="takeaway"
+?"Para llevar"
+:o.order_type==="delivery"
+?"Delivery · "+(o.delivery_platform||"")
+:"Mesa "+o.table_number
+}
 
 async function login(){
- const btn=$("loginBtn"),msg=$("loginMsg"),email=$("email").value.trim(),password=$("password").value;
- if(!email||!password){msg.textContent="Escribe correo y contraseña.";return}
- btn.disabled=true;btn.textContent="Iniciando sesión…";msg.textContent="Conectando…";
- try{
-  const {data,error}=await db.auth.signInWithPassword({email,password});
-  if(error)throw error;
-  if(!data.user)throw new Error("No se recibió usuario.");
-  msg.textContent="Sesión iniciada.";
-  await route(data.user);
- }catch(e){
-  console.error(e);msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.");
- }finally{btn.disabled=false;btn.textContent="Iniciar sesión"}
+
+const btn=$("loginBtn");
+const msg=$("loginMsg");
+const email=$("email").value.trim();
+const password=$("password").value;
+
+if(!email||!password){
+msg.textContent="Escribe correo y contraseña.";
+return
 }
-async function logout(){await db.auth.signOut();me=null;show("login");$("loginMsg").textContent=""}
+
+btn.disabled=true;
+btn.textContent="Iniciando sesión…";
+msg.textContent="Conectando…";
+
+try{
+
+const {data,error}=await db.auth.signInWithPassword({email,password});
+
+if(error)throw error;
+if(!data.user)throw new Error("No se recibió usuario.");
+
+msg.textContent="Sesión iniciada.";
+
+await route(data.user);
+
+}catch(e){
+
+console.error(e);
+msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.");
+
+}finally{
+
+btn.disabled=false;
+btn.textContent="Iniciar sesión";
+
+}
+}
+
+async function logout(){
+
+await db.auth.signOut();
+
+me=null;
+
+show("login");
+
+$("loginMsg").textContent="";
+
+}
+
 async function route(u){
- const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();
- if(error){$("loginMsg").textContent="Sesión válida, pero no se pudo cargar el perfil: "+error.message;show("login");return}
- if(!p){$("loginMsg").textContent="La cuenta existe pero no tiene perfil de Coliseo.";show("login");return}
- if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}
- me={...p,id:u.id};
- if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin")}
- else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}
- else{$("staffUser").textContent=p.full_name||u.email;await staff()}
+
+const {data:p,error}=await db
+.from("profiles")
+.select("*")
+.eq("id",u.id)
+.maybeSingle();
+
+if(error){
+
+$("loginMsg").textContent=
+"Sesión válida, pero no se pudo cargar el perfil: "+error.message;
+
+show("login");
+
+return
 }
-function goAdmin(){show("admin")}
-async function volverRol(){me.role==="cashier"?await caja():await staff()}
+
+if(!p){
+
+$("loginMsg").textContent=
+"La cuenta existe pero no tiene perfil de Coliseo.";
+
+show("login");
+
+return
+}
+
+if(!p.active){
+
+$("loginMsg").textContent=
+"Esta cuenta está desactivada.";
+
+show("login");
+
+return
+}
+
+me={...p,id:u.id};
+
+if(p.role==="admin"){
+
+$("adminUser").textContent=p.full_name||u.email;
+
+show("admin");
+
+}
+
+else if(p.role==="cashier"){
+
+$("cashierUser").textContent=p.full_name||u.email;
+
+await caja();
+
+}
+
+else{
+
+$("staffUser").textContent=p.full_name||u.email;
+
+await staff();
+
+}
+
+}
+
+function goAdmin(){
+show("admin")
+}
+
+async function volverRol(){
+
+me.role==="cashier"
+?await caja()
+:await staff()
+
+}
 
 async function loadMenu(){
- const [a,b,c]=await Promise.all([
-  db.from("menu_categories").select("*").order("sort_order").order("name"),
-  db.from("menu_subcategories").select("*").order("sort_order"),
-  db.from("menu_items").select("*").order("sort_order").order("name")
- ]);
- cats=a.data||[];subs=b.data||[];items=c.data||[];
+
+const [a,b,c]=await Promise.all([
+
+db.from("menu_categories")
+.select("*")
+.order("sort_order")
+.order("name"),
+
+db.from("menu_subcategories")
+.select("*")
+.order("sort_order"),
+
+db.from("menu_items")
+.select("*")
+.order("sort_order")
+.order("name")
+
+]);
+
+cats=a.data||[];
+subs=b.data||[];
+items=c.data||[];
+
 }
 
 async function menuAdmin(){
- show("menu");await loadMenu();
- $("itemCat").innerHTML=cats.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");
- $("catList").innerHTML=cats.map(x=>`<div class="card"><b>${esc(x.name)}</b><div class="muted">${x.active?"Activa":"Desactivada"}</div><div class="actions"><button class="dark" onclick="editCat('${x.id}')">Editar</button><button class="dark" onclick="toggleCat('${x.id}',${!x.active})">${x.active?"Desactivar":"Activar"}</button></div></div>`).join("")||'<div class="empty">Sin categorías</div>';
- $("itemList").innerHTML=items.map(x=>{
-  const s=subs.find(y=>y.id===x.subcategory_id),c=s&&cats.find(y=>y.id===s.category_id),profit=Number(x.price)-Number(x.unit_cost||0),margin=Number(x.price)>0?profit/Number(x.price)*100:0,b=x.business==="Cuervos Pizza"?"Cuervo’s Pizza":x.business||"Sin asignar";
-  return `<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(c?.name||"")} · ${esc(b)}</div><div class="muted">Costo ${money(x.unit_cost)} · Utilidad ${money(profit)} · Margen ${margin.toFixed(1)}%</div></div><div class="price">${money(x.price)}</div></div><div class="actions"><button class="dark" onclick="editItem('${x.id}')">Editar</button><button class="dark" onclick="toggleItem('${x.id}',${!x.active})">${x.active?"Desactivar":"Activar"}</button></div></div>`
- }).join("")||'<div class="empty">Sin artículos</div>';
+
+show("menu");
+
+await loadMenu();
+
+$("itemCat").innerHTML=
+cats
+.filter(x=>x.active)
+.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`)
+.join("");
+
+$("catList").innerHTML=
+cats.map(x=>`
+
+<div class="card">
+
+<b>${esc(x.name)}</b>
+
+<div class="muted">
+${x.active?"Activa":"Desactivada"}
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="editCat('${x.id}')">
+Editar
+</button>
+
+<button class="dark"
+onclick="toggleCat('${x.id}',${!x.active})">
+${x.active?"Desactivar":"Activar"}
+</button>
+
+</div>
+
+</div>
+
+`).join("")
+||
+'<div class="empty">Sin categorías</div>';
+
+$("itemList").innerHTML=
+items.map(x=>{
+
+const s=subs.find(y=>y.id===x.subcategory_id);
+
+const c=s&&cats.find(y=>y.id===s.category_id);
+
+const profit=
+Number(x.price)-Number(x.unit_cost||0);
+
+const margin=
+Number(x.price)>0
+?profit/Number(x.price)*100
+:0;
+
+const b=
+x.business==="Cuervos Pizza"
+?"Cuervo’s Pizza"
+:x.business||"Sin asignar";
+
+return `
+
+<div class="card">
+
+<div class="row">
+
+<div>
+
+<b>${esc(x.name)}</b>
+
+<div class="muted">
+${esc(c?.name||"")} · ${esc(b)}
+</div>
+
+<div class="muted">
+Costo ${money(x.unit_cost)}
+· Utilidad ${money(profit)}
+· Margen ${margin.toFixed(1)}%
+</div>
+
+</div>
+
+<div class="price">
+${money(x.price)}
+</div>
+
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="editItem('${x.id}')">
+Editar
+</button>
+
+<button class="dark"
+onclick="toggleItem('${x.id}',${!x.active})">
+
+${x.active?"Desactivar":"Activar"}
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("")
+||
+'<div class="empty">Sin artículos</div>';
+
 }
+
 async function crearCat(){
- const n=$("newCat").value.trim();if(!n)return;
- const {data,error}=await db.from("menu_categories").insert({name:n}).select().single();if(error)return alert(error.message);
- await db.from("menu_subcategories").insert({category_id:data.id,name:"General"});$("newCat").value="";await menuAdmin()
+
+const n=$("newCat").value.trim();
+
+if(!n)return;
+
+const {data,error}=await db
+.from("menu_categories")
+.insert({name:n})
+.select()
+.single();
+
+if(error){
+alert(error.message);
+return
 }
+
+await db
+.from("menu_subcategories")
+.insert({
+category_id:data.id,
+name:"General"
+});
+
+$("newCat").value="";
+
+await menuAdmin();
+
+}
+
 async function crearItem(){
- const cid=$("itemCat").value,n=$("itemName").value.trim(),cost=Number($("itemCost").value||0),price=Number($("itemPrice").value),business=$("itemBusiness").value;
- if(!cid||!n||isNaN(cost)||isNaN(price))return alert("Completa los datos.");
- let s=subs.find(x=>x.category_id===cid&&x.name==="General");
- if(!s){const r=await db.from("menu_subcategories").insert({category_id:cid,name:"General"}).select().single();if(r.error)return alert(r.error.message);s=r.data}
- const {error}=await db.from("menu_items").insert({subcategory_id:s.id,name:n,unit_cost:cost,price,business});if(error)return alert(error.message);
- $("itemName").value=$("itemCost").value=$("itemPrice").value="";await menuAdmin()
+
+const cid=$("itemCat").value;
+
+const n=$("itemName").value.trim();
+
+const cost=Number($("itemCost").value||0);
+
+const price=Number($("itemPrice").value);
+
+const business=$("itemBusiness").value;
+
+if(!cid||!n||isNaN(cost)||isNaN(price)){
+
+alert("Completa los datos.");
+
+return
+
 }
-async function editCat(id){const x=cats.find(a=>a.id===id),n=prompt("Nombre:",x.name);if(n)await db.from("menu_categories").update({name:n.trim()}).eq("id",id);await menuAdmin()}
-async function toggleCat(id,v){await db.from("menu_categories").update({active:v}).eq("id",id);await menuAdmin()}
-async function toggleItem(id,v){await db.from("menu_items").update({active:v}).eq("id",id);await menuAdmin()}
+
+let s=subs.find(
+x=>x.category_id===cid&&x.name==="General"
+);
+
+if(!s){
+
+const r=await db
+.from("menu_subcategories")
+.insert({
+category_id:cid,
+name:"General"
+})
+.select()
+.single();
+
+if(r.error){
+
+alert(r.error.message);
+
+return
+
+}
+
+s=r.data;
+
+}
+
+const {error}=await db
+.from("menu_items")
+.insert({
+
+subcategory_id:s.id,
+name:n,
+unit_cost:cost,
+price,
+business
+
+});
+
+if(error){
+
+alert(error.message);
+
+return
+
+}
+
+$("itemName").value="";
+$("itemCost").value="";
+$("itemPrice").value="";
+
+await menuAdmin();
+
+}
+
+async function editCat(id){
+
+const x=cats.find(a=>a.id===id);
+
+const n=prompt("Nombre:",x.name);
+
+if(n){
+
+await db
+.from("menu_categories")
+.update({name:n.trim()})
+.eq("id",id);
+
+}
+
+await menuAdmin();
+
+}
+
+async function toggleCat(id,v){
+
+await db
+.from("menu_categories")
+.update({active:v})
+.eq("id",id);
+
+await menuAdmin();
+
+}
+
+async function toggleItem(id,v){
+
+await db
+.from("menu_items")
+.update({active:v})
+.eq("id",id);
+
+await menuAdmin();
+
+}
+
 async function editItem(id){
- const x=items.find(a=>a.id===id),n=prompt("Artículo:",x.name);if(!n)return;
- const p=prompt("Precio de venta:",x.price);if(p===null||isNaN(+p))return;
- const c=prompt("Costo:",x.unit_cost||0);if(c===null||isNaN(+c))return;
- const b=prompt("Negocio: Cuervos Pizza o EL CLúB",x.business||"Cuervos Pizza");if(!["Cuervos Pizza","EL CLúB"].includes(b))return alert("Negocio no válido.");
- const {error}=await db.from("menu_items").update({name:n.trim(),price:+p,unit_cost:+c,business:b}).eq("id",id);if(error)alert(error.message);await menuAdmin()
+
+const x=items.find(a=>a.id===id);
+
+const n=prompt("Artículo:",x.name);
+
+if(!n)return;
+
+const p=prompt("Precio de venta:",x.price);
+
+if(p===null||isNaN(+p))return;
+
+const c=prompt("Costo:",x.unit_cost||0);
+
+if(c===null||isNaN(+c))return;
+
+const b=prompt(
+"Negocio: Cuervos Pizza o EL CLúB",
+x.business||"Cuervos Pizza"
+);
+
+if(!["Cuervos Pizza","EL CLúB"].includes(b)){
+
+alert("Negocio no válido.");
+
+return
+
+}
+
+const {error}=await db
+.from("menu_items")
+.update({
+
+name:n.trim(),
+price:+p,
+unit_cost:+c,
+business:b
+
+})
+.eq("id",id);
+
+if(error)alert(error.message);
+
+await menuAdmin();
+
 }
 
 async function nuevoPedido(isCash){
- cashMode=isCash;basket=[];show("pos");$("posTitle").textContent=isCash?"Nueva venta de Caja":"Abrir nueva cuenta";$("orderType").value="table";$("tableNumber").value="";$("notes").value="";$("orderMsg").textContent="";tipoUI();
- await loadMenu();cats=cats.filter(x=>x.active);subs=subs.filter(x=>x.active);items=items.filter(x=>x.active);activeCat=cats[0]?.id||null;drawPOS()
+
+cashMode=isCash;
+
+basket=[];
+
+show("pos");
+
+$("posTitle").textContent=
+isCash
+?"Nueva venta de Caja"
+:"Abrir nueva cuenta";
+
+$("orderType").value="table";
+
+$("tableNumber").value="";
+
+$("notes").value="";
+
+$("orderMsg").textContent="";
+
+tipoUI();
+
+await loadMenu();
+
+cats=cats.filter(x=>x.active);
+subs=subs.filter(x=>x.active);
+items=items.filter(x=>x.active);
+
+activeCat=cats[0]?.id||null;
+
+drawPOS();
+
 }
-function tipoUI(){$("tableBox").style.display=$("orderType").value==="table"?"block":"none";$("deliveryBox").style.display=$("orderType").value==="delivery"?"block":"none"}
+
+function tipoUI(){
+
+$("tableBox").style.display=
+$("orderType").value==="table"
+?"block"
+:"none";
+
+$("deliveryBox").style.display=
+$("orderType").value==="delivery"
+?"block"
+:"none";
+
+}
+
 function drawPOS(){
- $("tabs").innerHTML=cats.map(x=>`<button class="tab ${x.id===activeCat?"on":""}" onclick="selectCat('${x.id}')">${esc(x.name)}</button>`).join("");
- const ss=subs.filter(x=>x.category_id===activeCat).map(x=>x.id),list=items.filter(x=>ss.includes(x.subcategory_id));
- $("products").innerHTML=list.map(x=>`<div class="product" onclick="addItem('${x.id}')"><b>${esc(x.name)}</b><div class="muted">${x.business==="Cuervos Pizza"?"Cuervo’s Pizza":esc(x.business||"Sin negocio")}</div><div class="price">${money(x.price)}</div></div>`).join("")||'<div class="empty">Sin productos</div>';drawCart()
+
+$("tabs").innerHTML=
+cats.map(x=>`
+
+<button class="tab ${x.id===activeCat?"on":""}"
+onclick="selectCat('${x.id}')">
+
+${esc(x.name)}
+
+</button>
+
+`).join("");
+
+const ss=
+subs
+.filter(x=>x.category_id===activeCat)
+.map(x=>x.id);
+
+const list=
+items.filter(x=>ss.includes(x.subcategory_id));
+
+$("products").innerHTML=
+list.map(x=>`
+
+<div class="product"
+onclick="addItem('${x.id}')">
+
+<b>${esc(x.name)}</b>
+
+<div class="muted">
+
+${x.business==="Cuervos Pizza"
+?"Cuervo’s Pizza"
+:esc(x.business||"Sin negocio")}
+
+</div>
+
+<div class="price">
+${money(x.price)}
+</div>
+
+</div>
+
+`).join("")
+||
+'<div class="empty">Sin productos</div>';
+
+drawCart();
+
 }
-function selectCat(id){activeCat=id;drawPOS()}
+
+function selectCat(id){
+
+activeCat=id;
+
+drawPOS();
+
+}
+
 function addItem(id){
- const x=items.find(a=>a.id===id);if(!x.business)return alert("El administrador debe asignar este artículo a Cuervo’s Pizza o EL CLúB.");
- const b=basket.find(a=>a.id===id);b?b.q++:basket.push({id:x.id,name:x.name,price:+x.price,cost:+(x.unit_cost||0),business:x.business,q:1});drawCart()
+
+const x=items.find(a=>a.id===id);
+
+if(!x.business){
+
+alert(
+"El administrador debe asignar este artículo a Cuervo’s Pizza o EL CLúB."
+);
+
+return
+
 }
-function changeQty(id,d){const x=basket.find(a=>a.id===id);x.q+=d;if(x.q<1)basket=basket.filter(a=>a.id!==id);drawCart()}
+
+const b=basket.find(a=>a.id===id);
+
+b
+?b.q++
+:basket.push({
+
+id:x.id,
+name:x.name,
+price:+x.price,
+cost:+(x.unit_cost||0),
+business:x.business,
+q:1
+
+});
+
+drawCart();
+
+}
+
+function changeQty(id,d){
+
+const x=basket.find(a=>a.id===id);
+
+x.q+=d;
+
+if(x.q<1){
+
+basket=basket.filter(a=>a.id!==id);
+
+}
+
+drawCart();
+
+}
+
 function drawCart(){
- $("cart").innerHTML=basket.length?basket.map(x=>`<div class="cartline"><div><b>${esc(x.name)}</b><div class="muted">${x.business==="Cuervos Pizza"?"Cuervo’s Pizza":"EL CLúB"} · ${money(x.price)}</div></div><div class="qty"><button onclick="changeQty('${x.id}',-1)">−</button> ${x.q} <button onclick="changeQty('${x.id}',1)">+</button></div><b>${money(x.price*x.q)}</b></div>`).join(""):'<div class="empty">Selecciona productos</div>';
- $("cartTotal").textContent=money(basket.reduce((s,x)=>s+x.price*x.q,0))
+
+$("cart").innerHTML=
+basket.length
+?basket.map(x=>`
+
+<div class="cartline">
+
+<div>
+
+<b>${esc(x.name)}</b>
+
+<div class="muted">
+
+${x.business==="Cuervos Pizza"
+?"Cuervo’s Pizza"
+:"EL CLúB"}
+
+· ${money(x.price)}
+
+</div>
+
+</div>
+
+<div class="qty">
+
+<button onclick="changeQty('${x.id}',-1)">
+−
+</button>
+
+${x.q}
+
+<button onclick="changeQty('${x.id}',1)">
++
+</button>
+
+</div>
+
+<b>
+${money(x.price*x.q)}
+</b>
+
+</div>
+
+`).join("")
+:'<div class="empty">Selecciona productos</div>';
+
+$("cartTotal").textContent=
+money(
+basket.reduce(
+(s,x)=>s+x.price*x.q,
+0
+)
+);
+
 }
+
 async function guardarPedido(){
- const type=$("orderType").value,num=$("tableNumber").value.trim(),platform=type==="delivery"?$("deliveryPlatform").value:null;
- if(type==="table"&&(!num||+num<1))return $("orderMsg").textContent="Ingresa únicamente el número de mesa.";
- if(!basket.length)return $("orderMsg").textContent="Selecciona productos.";
- const table=type==="table"?num:type==="takeaway"?"Para llevar":"Delivery",total=basket.reduce((s,x)=>s+x.price*x.q,0);
- const {data:o,error}=await db.from("orders").insert({business_date:new Date().toISOString().slice(0,10),table_number:table,order_type:type,delivery_platform:platform,status:"open",notes:$("notes").value.trim()||null,total,created_by:me.id,assigned_to:me.id}).select().single();
- if(error)return $("orderMsg").textContent="Error: "+error.message;
- const rows=basket.map(x=>({order_id:o.id,menu_item_id:x.id,item_name:x.name,unit_price:x.price,quantity:x.q,line_total:x.price*x.q,business:x.business}));
- const r=await db.from("order_items").insert(rows);if(r.error)return $("orderMsg").textContent="Error: "+r.error.message;
- await db.rpc("recalc_order_total",{p_order:o.id});$("orderMsg").textContent="✓ Cuenta guardada.";basket=[];setTimeout(volverRol,500)
+
+const type=$("orderType").value;
+
+const num=$("tableNumber").value.trim();
+
+const platform=
+type==="delivery"
+?$("deliveryPlatform").value
+:null;
+
+if(type==="table"&&(!num||+num<1)){
+
+$("orderMsg").textContent=
+"Ingresa únicamente el número de mesa.";
+
+return
+
+}
+
+if(!basket.length){
+
+$("orderMsg").textContent=
+"Selecciona productos.";
+
+return
+
+}
+
+const table=
+type==="table"
+?num
+:type==="takeaway"
+?"Para llevar"
+:"Delivery";
+
+const total=
+basket.reduce(
+(s,x)=>s+x.price*x.q,
+0
+);
+
+const {data:o,error}=await db
+.from("orders")
+.insert({
+
+business_date:
+new Date().toISOString().slice(0,10),
+
+table_number:table,
+
+order_type:type,
+
+delivery_platform:platform,
+
+status:"open",
+
+notes:
+$("notes").value.trim()||null,
+
+total,
+
+created_by:me.id,
+
+assigned_to:me.id
+
+})
+.select()
+.single();
+
+if(error){
+
+$("orderMsg").textContent=
+"Error: "+error.message;
+
+return
+
+}
+
+const rows=basket.map(x=>({
+
+order_id:o.id,
+
+menu_item_id:x.id,
+
+item_name:x.name,
+
+unit_price:x.price,
+
+quantity:x.q,
+
+line_total:x.price*x.q,
+
+business:x.business
+
+}));
+
+const r=await db
+.from("order_items")
+.insert(rows);
+
+if(r.error){
+
+$("orderMsg").textContent=
+"Error: "+r.error.message;
+
+return
+
+}
+
+await db.rpc(
+"recalc_order_total",
+{p_order:o.id}
+);
+
+$("orderMsg").textContent=
+"✓ Cuenta guardada.";
+
+basket=[];
+
+setTimeout(volverRol,500);
+
 }
 
 async function staff(){
- show("staff");const {data}=await db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false});
- $("staffOrders").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge open">ABIERTA</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${o.id}')">Ver cuenta</button></div></div>`).join("")||'<div class="empty">No tienes cuentas abiertas.</div>'
+
+show("staff");
+
+const {data}=await db
+.from("orders")
+.select("*")
+.eq("status","open")
+.order("opened_at",{ascending:false});
+
+$("staffOrders").innerHTML=
+(data||[]).map(o=>`
+
+<div class="order">
+
+<div class="row">
+
+<div>
+
+<b>${orderName(o)}</b>
+
+<div class="muted">
+${stamp(o.opened_at)}
+</div>
+
+</div>
+
+<div>
+
+<span class="badge open">
+ABIERTA
+</span>
+
+<div class="amount">
+${money(o.total)}
+</div>
+
+</div>
+
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="verOrden('${o.id}')">
+
+Ver cuenta
+
+</button>
+
+</div>
+
+</div>
+
+`).join("")
+||
+'<div class="empty">No tienes cuentas abiertas.</div>';
+
 }
+
+/* NUEVA VENTANA DE VER CUENTA */
+
+function closeAccountModal(){
+
+$("accountModal").classList.remove("on");
+
+}
+
 async function verOrden(id){
- const [{data:o},{data:i}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id)]);
- alert(orderName(o)+"\n\n"+(i||[]).map(x=>`${x.quantity} x ${x.item_name} — ${money(x.line_total)}`).join("\n")+"\n\nTOTAL: "+money(o.total))
+
+const [
+{data:o,error:oe},
+{data:i,error:ie}
+]=await Promise.all([
+
+db.from("orders")
+.select("*")
+.eq("id",id)
+.single(),
+
+db.from("order_items")
+.select("*")
+.eq("order_id",id)
+.order("created_at")
+
+]);
+
+if(oe||ie||!o){
+
+alert("No fue posible cargar la cuenta.");
+
+return
+
+}
+
+$("accountModalTitle").textContent=
+orderName(o);
+
+const lines=(i||[]).map(x=>`
+
+<div class="modalLine">
+
+<div>
+
+<b>
+${x.quantity} × ${esc(x.item_name)}
+</b>
+
+<div class="muted">
+${money(x.unit_price)} c/u
+</div>
+
+</div>
+
+<b>
+${money(x.line_total)}
+</b>
+
+</div>
+
+`).join("");
+
+$("accountModalBody").innerHTML=
+
+(lines||
+'<div class="empty">Sin productos</div>')
+
++
+
+(o.notes
+?`
+
+<div class="modalNotes">
+
+<div class="muted">
+NOTAS
+</div>
+
+<div style="margin-top:5px">
+${esc(o.notes)}
+</div>
+
+</div>
+
+`
+:"")
+
++
+
+`
+
+<div class="modalTotal">
+
+TOTAL: ${money(o.total)}
+
+</div>
+
+`;
+
+$("accountModal").classList.add("on");
+
 }
 
 async function caja(){
- show("cashier");const [{data:o},{data:p}]=await Promise.all([db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false}),db.from("profiles").select("id,full_name")]);
- $("cashOrders").innerHTML=(o||[]).map(x=>{const u=(p||[]).find(y=>y.id===x.assigned_to);return `<div class="order"><div class="row"><div><b>${orderName(x)}</b><div class="muted">${stamp(x.opened_at)} · ${esc(u?.full_name||"Personal")}</div></div><div><span class="badge cash">POR COBRAR</span><div class="amount">${money(x.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${x.id}')">Ver</button><button class="yellow" style="width:auto;margin:0" onclick="cobrar('${x.id}')">Cobrar</button></div></div>`}).join("")||'<div class="empty">No hay cuentas por cobrar.</div>'
+
+show("cashier");
+
+const [
+{data:o},
+{data:p}
+]=await Promise.all([
+
+db.from("orders")
+.select("*")
+.eq("status","open")
+.order("opened_at",{ascending:false}),
+
+db.from("profiles")
+.select("id,full_name")
+
+]);
+
+$("cashOrders").innerHTML=
+(o||[]).map(x=>{
+
+const u=(p||[])
+.find(y=>y.id===x.assigned_to);
+
+return `
+
+<div class="order">
+
+<div class="row">
+
+<div>
+
+<b>
+${orderName(x)}
+</b>
+
+<div class="muted">
+
+${stamp(x.opened_at)}
+·
+${esc(u?.full_name||"Personal")}
+
+</div>
+
+</div>
+
+<div>
+
+<span class="badge cash">
+POR COBRAR
+</span>
+
+<div class="amount">
+${money(x.total)}
+</div>
+
+</div>
+
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="verOrden('${x.id}')">
+
+Ver
+
+</button>
+
+<button class="yellow"
+style="width:auto;margin:0"
+onclick="cobrar('${x.id}')">
+
+Cobrar
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("")
+||
+'<div class="empty">No hay cuentas por cobrar.</div>';
+
 }
+
 async function cobrar(id){
- const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;
- const {error}=await db.from("orders").update({status:"closed",payment_method:pay,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id);if(error)return alert(error.message);await caja()
+
+const pay=prompt(
+"Método de pago: Efectivo, Tarjeta, Transferencia u Otro",
+"Efectivo"
+);
+
+if(!pay||
+!confirm("¿Pago recibido y cerrar cuenta?"))
+return;
+
+const {error}=await db
+.from("orders")
+.update({
+
+status:"closed",
+
+payment_method:pay,
+
+closed_at:
+new Date().toISOString(),
+
+updated_by:me.id
+
+})
+.eq("id",id);
+
+if(error){
+
+alert(error.message);
+
+return
+
+}
+
+await caja();
+
 }
 
 async function comandas(){
- show("orders");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);
- const card=o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div></div>`;
- $("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';
- $("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'
+
+show("orders");
+
+const {data}=await db
+.from("orders")
+.select("*")
+.order("opened_at",{ascending:false})
+.limit(200);
+
+const card=o=>`
+
+<div class="order">
+
+<div class="row">
+
+<div>
+
+<b>
+${orderName(o)}
+</b>
+
+<div class="muted">
+${stamp(o.opened_at)}
+</div>
+
+</div>
+
+<div>
+
+<span class="badge ${o.status==="open"?"open":"closed"}">
+
+${o.status==="open"
+?"ABIERTA"
+:"CERRADA"}
+
+</span>
+
+<div class="amount">
+${money(o.total)}
+</div>
+
+</div>
+
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="detalle('${o.id}')">
+
+Administrar
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+$("openOrders").innerHTML=
+(data||[])
+.filter(x=>x.status==="open")
+.map(card)
+.join("")
+||
+'<div class="empty">Sin cuentas abiertas</div>';
+
+$("closedOrders").innerHTML=
+(data||[])
+.filter(x=>x.status==="closed")
+.slice(0,40)
+.map(card)
+.join("")
+||
+'<div class="empty">Sin cuentas cerradas</div>';
+
 }
+
 async function detalle(id){
- show("detail");const [{data:o},{data:i},{data:p}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id),db.from("profiles").select("id,full_name").eq("active",true)]);current={o,i:i||[],p:p||[]};
- const cv=current.i.filter(x=>x.business==="Cuervos Pizza").reduce((s,x)=>s+ +x.line_total,0),cl=current.i.filter(x=>x.business==="EL CLúB").reduce((s,x)=>s+ +x.line_total,0);
- $("detailBody").innerHTML=`<div class="card"><div class="row"><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><h3>${orderName(o)}</h3></div><div class="amount">${money(o.total)}</div></div><div class="summary"><div class="card"><div class="muted">Cuervo’s Pizza</div><div class="big">${money(cv)}</div></div><div class="card"><div class="muted">EL CLúB</div><div class="big">${money(cl)}</div></div></div>${o.order_type==="table"?`<label>Mesa</label><input id="dTable" type="number" min="1" value="${esc(o.table_number)}">`:""}<label>Personal asignado</label><select id="dStaff">${(p||[]).map(x=>`<option value="${x.id}" ${x.id===o.assigned_to?"selected":""}>${esc(x.full_name||"Personal")}</option>`).join("")}</select><button class="yellow" onclick="saveOrder()">Guardar cambios</button></div><h3 class="section">Productos</h3>${current.i.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.item_name)}</b><div class="muted">${x.quantity} × ${money(x.unit_price)} · ${x.business==="Cuervos Pizza"?"Cuervo’s Pizza":esc(x.business||"")}</div></div><b>${money(x.line_total)}</b></div><div class="actions"><button class="dark" onclick="qtyAdmin('${x.id}',${x.quantity})">Cantidad</button><button class="danger" onclick="removeItem('${x.id}')">Quitar</button></div></div>`).join("")}<div class="card"><label>Método de pago</label><select id="dPay"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Otro</option></select>${o.status==="open"?'<button class="yellow" onclick="closeAdmin()">Cerrar cuenta</button>':'<button class="yellow" onclick="reopen()">Reabrir cuenta</button>'}<button class="danger" style="width:100%;margin-top:12px" onclick="deleteOrder()">Eliminar permanentemente</button></div>`
+
+show("detail");
+
+const [
+{data:o},
+{data:i},
+{data:p}
+]=await Promise.all([
+
+db.from("orders")
+.select("*")
+.eq("id",id)
+.single(),
+
+db.from("order_items")
+.select("*")
+.eq("order_id",id),
+
+db.from("profiles")
+.select("id,full_name")
+.eq("active",true)
+
+]);
+
+current={
+o,
+i:i||[],
+p:p||[]
+};
+
+const cv=
+current.i
+.filter(x=>x.business==="Cuervos Pizza")
+.reduce((s,x)=>s+ +x.line_total,0);
+
+const cl=
+current.i
+.filter(x=>x.business==="EL CLúB")
+.reduce((s,x)=>s+ +x.line_total,0);
+
+$("detailBody").innerHTML=`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+
+<span class="badge ${o.status==="open"?"open":"closed"}">
+
+${o.status==="open"
+?"ABIERTA"
+:"CERRADA"}
+
+</span>
+
+<h3>
+${orderName(o)}
+</h3>
+
+</div>
+
+<div class="amount">
+${money(o.total)}
+</div>
+
+</div>
+
+<div class="summary">
+
+<div class="card">
+
+<div class="muted">
+Cuervo’s Pizza
+</div>
+
+<div class="big">
+${money(cv)}
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="muted">
+EL CLúB
+</div>
+
+<div class="big">
+${money(cl)}
+</div>
+
+</div>
+
+</div>
+
+${o.order_type==="table"
+?`
+
+<label>Mesa</label>
+
+<input
+id="dTable"
+type="number"
+min="1"
+value="${esc(o.table_number)}">
+
+`
+:""}
+
+<label>
+Personal asignado
+</label>
+
+<select id="dStaff">
+
+${(p||[]).map(x=>`
+
+<option
+value="${x.id}"
+${x.id===o.assigned_to?"selected":""}>
+
+${esc(x.full_name||"Personal")}
+
+</option>
+
+`).join("")}
+
+</select>
+
+<button class="yellow"
+onclick="saveOrder()">
+
+Guardar cambios
+
+</button>
+
+</div>
+
+<h3 class="section">
+Productos
+</h3>
+
+${current.i.map(x=>`
+
+<div class="card">
+
+<div class="row">
+
+<div>
+
+<b>
+${esc(x.item_name)}
+</b>
+
+<div class="muted">
+
+${x.quantity}
+×
+${money(x.unit_price)}
+·
+${x.business==="Cuervos Pizza"
+?"Cuervo’s Pizza"
+:esc(x.business||"")}
+
+</div>
+
+</div>
+
+<b>
+${money(x.line_total)}
+</b>
+
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="qtyAdmin('${x.id}',${x.quantity})">
+
+Cantidad
+
+</button>
+
+<button class="danger"
+onclick="removeItem('${x.id}')">
+
+Quitar
+
+</button>
+
+</div>
+
+</div>
+
+`).join("")}
+
+<div class="card">
+
+<label>
+Método de pago
+</label>
+
+<select id="dPay">
+
+<option>Efectivo</option>
+<option>Tarjeta</option>
+<option>Transferencia</option>
+<option>Otro</option>
+
+</select>
+
+${o.status==="open"
+?`
+
+<button class="yellow"
+onclick="closeAdmin()">
+
+Cerrar cuenta
+
+</button>
+
+`
+:`
+
+<button class="yellow"
+onclick="reopen()">
+
+Reabrir cuenta
+
+</button>
+
+`}
+
+<button
+class="danger"
+style="width:100%;margin-top:12px"
+onclick="deleteOrder()">
+
+Eliminar permanentemente
+
+</button>
+
+</div>
+
+`;
+
 }
+
 async function saveOrder(){
- const u={assigned_to:$("dStaff").value,updated_by:me.id};if(current.o.order_type==="table"){if(!$("dTable").value)return;u.table_number=$("dTable").value}
- const {error}=await db.from("orders").update(u).eq("id",current.o.id);if(error)alert(error.message);else await detalle(current.o.id)
+
+const u={
+assigned_to:$("dStaff").value,
+updated_by:me.id
+};
+
+if(current.o.order_type==="table"){
+
+if(!$("dTable").value)return;
+
+u.table_number=$("dTable").value;
+
 }
-async function qtyAdmin(id,q){const n=+prompt("Nueva cantidad:",q);if(!Number.isInteger(n)||n<1)return;const x=current.i.find(a=>a.id===id);await db.from("order_items").update({quantity:n,line_total:+x.unit_price*n}).eq("id",id);await db.rpc("recalc_order_total",{p_order:current.o.id});await detalle(current.o.id)}
-async function removeItem(id){if(!confirm("¿Quitar artículo?"))return;await db.from("order_items").delete().eq("id",id);await db.rpc("recalc_order_total",{p_order:current.o.id});await detalle(current.o.id)}
-async function closeAdmin(){if(!confirm("¿Confirmar pago y cerrar cuenta?"))return;await db.from("orders").update({status:"closed",payment_method:$("dPay").value,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",current.o.id);await comandas()}
-async function reopen(){if(!confirm("¿Reabrir cuenta?"))return;await db.from("orders").update({status:"open",closed_at:null,updated_by:me.id}).eq("id",current.o.id);await detalle(current.o.id)}
-async function deleteOrder(){if(!confirm("¿Eliminar esta cuenta?")||!confirm("ELIMINACIÓN PERMANENTE. ¿Continuar?"))return;const {error}=await db.from("orders").delete().eq("id",current.o.id);if(error)alert(error.message);else await comandas()}
+
+const {error}=await db
+.from("orders")
+.update(u)
+.eq("id",current.o.id);
+
+if(error){
+
+alert(error.message);
+
+}else{
+
+await detalle(current.o.id);
+
+}
+
+}
+
+async function qtyAdmin(id,q){
+
+const n=+prompt(
+"Nueva cantidad:",
+q
+);
+
+if(!Number.isInteger(n)||n<1)
+return;
+
+const x=current.i.find(a=>a.id===id);
+
+await db
+.from("order_items")
+.update({
+
+quantity:n,
+line_total:+x.unit_price*n
+
+})
+.eq("id",id);
+
+await db.rpc(
+"recalc_order_total",
+{p_order:current.o.id}
+);
+
+await detalle(current.o.id);
+
+}
+
+async function removeItem(id){
+
+if(!confirm("¿Quitar artículo?"))
+return;
+
+await db
+.from("order_items")
+.delete()
+.eq("id",id);
+
+await db.rpc(
+"recalc_order_total",
+{p_order:current.o.id}
+);
+
+await detalle(current.o.id);
+
+}
+
+async function closeAdmin(){
+
+if(!confirm(
+"¿Confirmar pago y cerrar cuenta?"
+))
+return;
+
+await db
+.from("orders")
+.update({
+
+status:"closed",
+
+payment_method:
+$("dPay").value,
+
+closed_at:
+new Date().toISOString(),
+
+updated_by:me.id
+
+})
+.eq("id",current.o.id);
+
+await comandas();
+
+}
+
+async function reopen(){
+
+if(!confirm("¿Reabrir cuenta?"))
+return;
+
+await db
+.from("orders")
+.update({
+
+status:"open",
+closed_at:null,
+updated_by:me.id
+
+})
+.eq("id",current.o.id);
+
+await detalle(current.o.id);
+
+}
+
+async function deleteOrder(){
+
+if(!confirm("¿Eliminar esta cuenta?"))
+return;
+
+if(!confirm(
+"ELIMINACIÓN PERMANENTE. ¿Continuar?"
+))
+return;
+
+const {error}=await db
+.from("orders")
+.delete()
+.eq("id",current.o.id);
+
+if(error){
+
+alert(error.message);
+
+}else{
+
+await comandas();
+
+}
+
+}
 
 async function historial(){
- show("history");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);
- $("historyList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div></div>`).join("")||'<div class="empty">Sin movimientos</div>'
+
+show("history");
+
+const {data}=await db
+.from("orders")
+.select("*")
+.order("opened_at",{ascending:false})
+.limit(200);
+
+$("historyList").innerHTML=
+(data||[]).map(o=>`
+
+<div class="order">
+
+<div class="row">
+
+<div>
+
+<b>
+${orderName(o)}
+</b>
+
+<div class="muted">
+
+${stamp(o.opened_at)}
+·
+${esc(o.payment_method||"Sin pago")}
+
+</div>
+
+</div>
+
+<div>
+
+<span class="badge ${o.status==="open"?"open":"closed"}">
+
+${o.status==="open"
+?"ABIERTA"
+:"CERRADA"}
+
+</span>
+
+<div class="amount">
+${money(o.total)}
+</div>
+
+</div>
+
+</div>
+
+<div class="actions">
+
+<button class="dark"
+onclick="detalle('${o.id}')">
+
+Ver / editar
+
+</button>
+
+</div>
+
+</div>
+
+`).join("")
+||
+'<div class="empty">Sin movimientos</div>';
+
 }
 
 (async()=>{
- try{
-  const {data,error}=await db.auth.getSession();
-  if(error)throw error;
-  if(data.session)await route(data.session.user);
- }catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}
+
+try{
+
+const {data,error}=
+await db.auth.getSession();
+
+if(error)throw error;
+
+if(data.session){
+
+await route(
+data.session.user
+);
+
+}
+
+}catch(e){
+
+$("loginMsg").textContent=
+"Error de conexión: "+e.message;
+
+}
+
 })();
+
 </script>
 </body>
 </html>
