@@ -60,7 +60,6 @@ button{cursor:pointer}
 .divider{height:1px;background:#292929;margin:18px 0}
 .smallbtn{padding:8px 10px;font-size:12px}
 .hidden{display:none!important}
-
 .modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999}
 .modalWrap.on{display:flex}
 .modalCard{width:min(100%,480px);max-height:85vh;overflow:auto;background:#171717;border:1px solid #333;border-radius:22px;padding:22px;box-shadow:0 18px 60px rgba(0,0,0,.65)}
@@ -69,13 +68,9 @@ button{cursor:pointer}
 .modalLine{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #292929}
 .modalNotes{background:#101010;border-radius:12px;padding:12px;margin-top:14px}
 .modalTotal{font-size:28px;color:#f6c62e;font-weight:800;text-align:right;margin:20px 0 8px}
-
-@media(max-width:420px){
-.grid,.products,.summary,.three{grid-template-columns:1fr}
-}
+@media(max-width:420px){.grid,.products,.summary,.three{grid-template-columns:1fr}}
 </style>
 </head>
-
 <body>
 <main class="app">
 
@@ -91,23 +86,17 @@ button{cursor:pointer}
 <input id="password" type="password" autocomplete="current-password">
 <button id="loginBtn" class="yellow" onclick="login()">Iniciar sesión</button>
 <div id="loginMsg" class="msg"></div>
-</div>
-</div>
+</div></div>
 </section>
 
 <section id="admin" class="screen">
-<div class="top">
-<div>
+<div class="top"><div>
 <div class="brand">COLISEO FOOD PARK</div>
 <h1>Coliseo Manager</h1>
 <div id="adminUser" class="muted"></div>
 <span class="role">ADMINISTRADOR</span>
-</div>
-<button class="dark" onclick="logout()">Salir</button>
-</div>
-
+</div><button class="dark" onclick="logout()">Salir</button></div>
 <div id="stockAlert"></div>
-
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
@@ -119,134 +108,60 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Eventos y apartados</span></div>
 </div>
-<div class="msg">Coliseo Manager 1.7</div>
+<div class="msg">Coliseo Manager 1.8</div>
 </section>
 
 <section id="staff" class="screen">
-<div class="top">
-<div>
-<div class="brand">COLISEO FOOD PARK</div>
-<h2>🧾 Comandas</h2>
-<div id="staffUser" class="muted"></div>
-<span class="role">PERSONAL</span>
-</div>
-<button class="dark" onclick="logout()">Salir</button>
-</div>
+<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>🧾 Comandas</h2>
+<div id="staffUser" class="muted"></div><span class="role">PERSONAL</span></div>
+<button class="dark" onclick="logout()">Salir</button></div>
 <button class="yellow" onclick="nuevoPedido(false)">＋ Abrir nueva cuenta</button>
-<h3 class="section">Mis cuentas abiertas</h3>
-<div id="staffOrders"></div>
+<h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
 </section>
 
 <section id="cashier" class="screen">
-<div class="top">
-<div>
-<div class="brand">COLISEO FOOD PARK</div>
-<h2>💳 Caja</h2>
-<div id="cashierUser" class="muted"></div>
-<span class="role">CAJA</span>
-</div>
-<button class="dark" onclick="logout()">Salir</button>
-</div>
+<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>💳 Caja</h2>
+<div id="cashierUser" class="muted"></div><span class="role">CAJA</span></div>
+<button class="dark" onclick="logout()">Salir</button></div>
 <button class="yellow" onclick="nuevoPedido(true)">＋ Nueva venta</button>
-<h3 class="section">Cuentas por cobrar</h3>
-<div id="cashOrders"></div>
+<h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
 </section>
 
 <section id="pos" class="screen">
 <button class="back" onclick="volverRol()">← Volver</button>
-<div class="brand">COLISEO MANAGER</div>
-<h2 id="posTitle">Nueva cuenta</h2>
-
+<div class="brand">COLISEO MANAGER</div><h2 id="posTitle">Nueva cuenta</h2>
 <label>Tipo de pedido</label>
 <select id="orderType" onchange="tipoUI()">
 <option value="table">🍽️ Consumo en mesa</option>
 <option value="takeaway">🥡 Para llevar</option>
 <option value="delivery">🛵 Delivery</option>
 </select>
-
-<div id="tableBox">
-<label>Número de mesa</label>
-<input id="tableNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12">
-</div>
-
-<div id="deliveryBox" style="display:none">
-<label>Plataforma</label>
-<select id="deliveryPlatform">
-<option>Uber Eats</option>
-<option>DiDi Food</option>
-<option>Otra</option>
-</select>
-</div>
-
-<div id="tabs" class="tabs"></div>
-<div id="products" class="products"></div>
-
-<div class="card">
-<h3>Pedido</h3>
-<div id="cart"></div>
-<div id="cartTotal" class="total">$0.00</div>
-</div>
-
-<label>Notas</label>
-<textarea id="notes"></textarea>
-<button class="yellow" onclick="guardarPedido()">Guardar cuenta</button>
-<div id="orderMsg" class="msg"></div>
+<div id="tableBox"><label>Número de mesa</label><input id="tableNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12"></div>
+<div id="deliveryBox" style="display:none"><label>Plataforma</label><select id="deliveryPlatform"><option>Uber Eats</option><option>DiDi Food</option><option>Otra</option></select></div>
+<div id="tabs" class="tabs"></div><div id="products" class="products"></div>
+<div class="card"><h3>Pedido</h3><div id="cart"></div><div id="cartTotal" class="total">$0.00</div></div>
+<label>Notas</label><textarea id="notes"></textarea>
+<button class="yellow" onclick="guardarPedido()">Guardar cuenta</button><div id="orderMsg" class="msg"></div>
 </section>
 
 <section id="menu" class="screen">
 <button class="back" onclick="goAdmin()">← Volver</button>
-<div class="brand">ADMINISTRACIÓN</div>
-<h2>🍽️ Menú</h2>
-
-<div class="card">
-<h3>Nueva categoría</h3>
-<input id="newCat" placeholder="Ej. Pizzas">
-<button class="yellow" onclick="crearCat()">Crear categoría</button>
-</div>
-
-<div class="card">
-<h3>Nuevo artículo</h3>
-<label>Categoría</label>
-<select id="itemCat"></select>
-
-<label>Negocio</label>
-<select id="itemBusiness">
-<option value="Cuervos Pizza">Cuervo’s Pizza</option>
-<option value="EL CLúB">EL CLúB</option>
-</select>
-
-<label>Artículo</label>
-<input id="itemName">
-
-<div class="two">
-<div>
-<label>Costo estimado</label>
-<input id="itemCost" type="number" min="0" step=".01">
-</div>
-<div>
-<label>Precio de venta</label>
-<input id="itemPrice" type="number" min="0" step=".01">
-</div>
-</div>
-
-<button class="yellow" onclick="crearItem()">Crear artículo</button>
-</div>
-
-<h3 class="section">Categorías</h3>
-<div id="catList"></div>
-
-<h3 class="section">Artículos</h3>
-<div id="itemList"></div>
+<div class="brand">ADMINISTRACIÓN</div><h2>🍽️ Menú</h2>
+<div class="card"><h3>Nueva categoría</h3><input id="newCat" placeholder="Ej. Pizzas"><button class="yellow" onclick="crearCat()">Crear categoría</button></div>
+<div class="card"><h3>Nuevo artículo</h3>
+<label>Categoría</label><select id="itemCat"></select>
+<label>Negocio</label><select id="itemBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option></select>
+<label>Artículo</label><input id="itemName">
+<div class="two"><div><label>Costo estimado</label><input id="itemCost" type="number" min="0" step=".01"></div><div><label>Precio de venta</label><input id="itemPrice" type="number" min="0" step=".01"></div></div>
+<button class="yellow" onclick="crearItem()">Crear artículo</button></div>
+<h3 class="section">Categorías</h3><div id="catList"></div>
+<h3 class="section">Artículos</h3><div id="itemList"></div>
 </section>
 
-<!-- INVENTARIO -->
 <section id="inventory" class="screen">
 <button class="back" onclick="goAdmin()">← Volver</button>
-<div class="brand">ADMINISTRACIÓN</div>
-<h2>📦 Inventario</h2>
-
+<div class="brand">ADMINISTRACIÓN</div><h2>📦 Inventario</h2>
 <div id="inventorySummary"></div>
-
 <div class="tabs">
 <button class="tab on" id="invTabStock" onclick="invTab('stock')">Existencias</button>
 <button class="tab" id="invTabMove" onclick="invTab('move')">Salidas / Entradas</button>
@@ -255,878 +170,167 @@ button{cursor:pointer}
 </div>
 
 <div id="invStockPanel">
-<div class="card">
-<h3>＋ Nuevo insumo</h3>
-
-<label>Nombre</label>
-<input id="invName" placeholder="Ej. Harina">
-
-<div class="two">
-<div>
-<label>Negocio</label>
-<select id="invBusiness">
-<option value="Cuervos Pizza">Cuervo’s Pizza</option>
-<option value="EL CLúB">EL CLúB</option>
-<option value="Coliseo General">Coliseo General</option>
-</select>
-</div>
-<div>
-<label>Categoría</label>
-<input id="invCategory" placeholder="Ej. Ingredientes">
-</div>
-</div>
-
+<div class="card"><h3>＋ Nuevo insumo</h3>
+<label>Nombre</label><input id="invName" placeholder="Ej. Harina">
+<div class="two"><div><label>Negocio</label><select id="invBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option><option value="Coliseo General">Coliseo General</option></select></div>
+<div><label>Categoría</label><input id="invCategory" placeholder="Ej. Ingredientes"></div></div>
 <label>Unidad de control</label>
-<select id="invUnit">
-<option value="pieza">Piezas</option>
-<option value="kg">Kilogramos (kg)</option>
-<option value="g">Gramos (g)</option>
-<option value="litro">Litros</option>
-<option value="ml">Mililitros (ml)</option>
-<option value="botella">Botellas</option>
-<option value="lata">Latas</option>
-<option value="paquete">Paquetes</option>
-<option value="caja">Cajas</option>
-<option value="masa">Masas</option>
+<select id="invUnit" onchange="inventoryUnitUI()">
+<option value="pieza">Piezas</option><option value="kg">Kilogramos (kg)</option><option value="g">Gramos (g)</option>
+<option value="litro">Litros</option><option value="ml">Mililitros (ml)</option><option value="botella">Botellas</option>
+<option value="lata">Latas</option><option value="paquete">Paquetes</option><option value="caja">Cajas</option><option value="masa">Masas</option>
 </select>
+<div class="two"><div><label>Existencia inicial</label><input id="invStock" type="number" min="0" step=".001" value="0"></div>
+<div><label>Avisar cuando queden</label><input id="invMin" type="number" min="0" step=".001" value="0"></div></div>
+<label>Costo por unidad</label><input id="invCost" type="number" min="0" step=".01" value="0">
 
-<div class="two">
-<div>
-<label>Existencia inicial</label>
-<input id="invStock" type="number" min="0" step=".001" value="0">
-</div>
-<div>
-<label>Avisar cuando queden</label>
-<input id="invMin" type="number" min="0" step=".001" value="0">
-</div>
-</div>
-
-<label>Costo por unidad</label>
-<input id="invCost" type="number" min="0" step=".01" value="0">
-
-<button class="yellow" onclick="crearInsumo()">Guardar insumo</button>
+<div id="bottleBox" class="hidden">
+<div class="notice"><b>Control por botella</b><br>Indica cuántos ml contiene y el tamaño de cada shot. Coliseo Manager convertirá la botella a mililitros para controlar el inventario.</div>
+<div class="two"><div><label>Contenido de botella (ml)</label><input id="bottleMl" type="number" min="1" step="1" value="750"></div>
+<div><label>Tamaño de shot (ml)</label><input id="shotMl" type="number" min="1" step="1" value="45"></div></div>
+<div id="shotPreview" class="success"></div>
 </div>
 
-<h3 class="section">Existencias actuales</h3>
-<div id="inventoryList"></div>
+<button class="yellow" onclick="crearInsumo()">Guardar insumo</button></div>
+<h3 class="section">Existencias actuales</h3><div id="inventoryList"></div>
 </div>
 
 <div id="invMovePanel" class="hidden">
-<div class="card">
-<h3>Registrar movimiento</h3>
-
-<label>Insumo</label>
-<select id="moveItem"></select>
-
-<label>Tipo</label>
-<select id="moveType" onchange="moveTypeUI()">
-<option value="entrada">Entrada de mercancía</option>
-<option value="merma">Merma</option>
-<option value="empleado">Consumo de empleado</option>
-<option value="cortesia">Cortesía</option>
-<option value="ajuste">Ajuste de inventario</option>
-</select>
-
-<div id="moveDirectionBox" class="hidden">
-<label>Tipo de ajuste</label>
-<select id="moveDirection">
-<option value="entrada">Aumentar existencia</option>
-<option value="salida">Disminuir existencia</option>
-</select>
-</div>
-
-<div id="mermaReasonBox" class="hidden">
-<label>Motivo de merma</label>
-<select id="mermaReason">
-<option value="Mal estado">Mal estado</option>
-<option value="Vencido / caducado">Vencido / caducado</option>
-<option value="Derrame / accidente">Derrame / accidente</option>
-<option value="Error de preparación">Error de preparación</option>
-<option value="Otro">Otro</option>
-</select>
-</div>
-
-<div id="employeeBox" class="hidden">
-<label>Negocio del empleado</label>
-<select id="employeeBusiness">
-<option value="Cuervos Pizza">Cuervo’s Pizza</option>
-<option value="EL CLúB">EL CLúB</option>
-<option value="Coliseo General">Coliseo General</option>
-</select>
-<label>Área</label>
-<input id="employeeArea" placeholder="Ej. Cocina, barra, meseros">
-<label>Nombre de quien consumió</label>
-<input id="employeeName" placeholder="Nombre">
-</div>
-
-<label id="moveQtyLabel">Cantidad</label>
-<input id="moveQty" type="number" min=".001" step=".001">
-
-<label>Observaciones</label>
-<textarea id="moveNotes" placeholder="Opcional"></textarea>
-
-<button class="yellow" onclick="registrarMovimiento()">Registrar movimiento</button>
-<div id="moveMsg" class="msg"></div>
-</div>
-</div>
+<div class="card"><h3>Registrar movimiento</h3>
+<label>Insumo</label><select id="moveItem"></select>
+<label>Tipo</label><select id="moveType" onchange="moveTypeUI()"><option value="entrada">Entrada de mercancía</option><option value="merma">Merma</option><option value="empleado">Consumo de empleado</option><option value="cortesia">Cortesía</option><option value="ajuste">Ajuste de inventario</option></select>
+<div id="moveDirectionBox" class="hidden"><label>Tipo de ajuste</label><select id="moveDirection"><option value="entrada">Aumentar existencia</option><option value="salida">Disminuir existencia</option></select></div>
+<div id="mermaReasonBox" class="hidden"><label>Motivo de merma</label><select id="mermaReason"><option value="Mal estado">Mal estado</option><option value="Vencido / caducado">Vencido / caducado</option><option value="Derrame / accidente">Derrame / accidente</option><option value="Error de preparación">Error de preparación</option><option value="Otro">Otro</option></select></div>
+<div id="employeeBox" class="hidden"><label>Negocio del empleado</label><select id="employeeBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option><option value="Coliseo General">Coliseo General</option></select><label>Área</label><input id="employeeArea" placeholder="Ej. Cocina, barra, meseros"><label>Nombre de quien consumió</label><input id="employeeName" placeholder="Nombre"></div>
+<label id="moveQtyLabel">Cantidad</label><input id="moveQty" type="number" min=".001" step=".001">
+<label>Observaciones</label><textarea id="moveNotes" placeholder="Opcional"></textarea>
+<button class="yellow" onclick="registrarMovimiento()">Registrar movimiento</button><div id="moveMsg" class="msg"></div>
+</div></div>
 
 <div id="invRecipePanel" class="hidden">
-<div class="card">
-<h3>🍕 Crear receta</h3>
-<div class="muted">Relaciona un producto del menú con los insumos que utiliza.</div>
-
-<label>Producto del menú</label>
-<select id="recipeProduct" onchange="cargarReceta()"></select>
-
+<div class="card"><h3>🍕 Crear receta</h3><div class="muted">Relaciona un producto del menú con los insumos que utiliza.</div>
+<label>Producto del menú</label><select id="recipeProduct" onchange="cargarReceta()"></select>
 <div class="divider"></div>
-
-<label>Agregar ingrediente / insumo</label>
-<select id="recipeInventory" onchange="recipeUnitHint()"></select>
-
+<label>Agregar ingrediente / insumo</label><select id="recipeInventory" onchange="recipeUnitHint()"></select>
 <label id="recipeQtyLabel">Cantidad utilizada por cada producto</label>
-<input id="recipeQty" type="number" min=".0001" step=".0001">
-
+<div class="two"><div><input id="recipeQty" type="number" min=".0001" step=".0001"></div><div><select id="recipeUnit" onchange="recipeConvertPreview()"></select></div></div>
+<div id="recipeConvertHint" class="muted" style="margin-top:8px"></div>
 <button class="yellow" onclick="agregarIngrediente()">Agregar a receta</button>
 </div>
-
-<h3 class="section">Receta actual</h3>
-<div id="recipeList"></div>
-
-<div class="notice">
-Las cantidades de la receta utilizan la misma unidad que el inventario. Por ejemplo, si Harina está registrada en kg, una pizza que use 250 g se registra como <b>0.250 kg</b>.
-</div>
+<h3 class="section">Receta actual</h3><div id="recipeList"></div>
+<div class="notice">Puedes capturar la receta en la unidad que realmente utilizas. Ejemplo: si Harina está en kg, puedes escribir <b>250 g</b> y Coliseo Manager realizará la conversión automáticamente.</div>
 </div>
 
-<div id="invHistoryPanel" class="hidden">
-<h3 class="section">Movimientos recientes</h3>
-<div id="movementHistory"></div>
-</div>
+<div id="invHistoryPanel" class="hidden"><h3 class="section">Movimientos recientes</h3><div id="movementHistory"></div></div>
 </section>
 
-<section id="orders" class="screen">
-<button class="back" onclick="goAdmin()">← Volver</button>
-<div class="brand">ADMINISTRACIÓN</div>
-<h2>🧾 Comandas</h2>
-<h3 class="section">Abiertas</h3>
-<div id="openOrders"></div>
-<h3 class="section">Cerradas</h3>
-<div id="closedOrders"></div>
-</section>
-
-<section id="detail" class="screen">
-<button class="back" onclick="comandas()">← Comandas</button>
-<div class="brand">ADMINISTRACIÓN</div>
-<h2>Cuenta</h2>
-<div id="detailBody"></div>
-</section>
-
-<section id="history" class="screen">
-<button class="back" onclick="goAdmin()">← Volver</button>
-<div class="brand">ADMINISTRACIÓN</div>
-<h2>📚 Historial</h2>
-<div id="historyList"></div>
-</section>
-
+<section id="orders" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>🧾 Comandas</h2><h3 class="section">Abiertas</h3><div id="openOrders"></div><h3 class="section">Cerradas</h3><div id="closedOrders"></div></section>
+<section id="detail" class="screen"><button class="back" onclick="comandas()">← Comandas</button><div class="brand">ADMINISTRACIÓN</div><h2>Cuenta</h2><div id="detailBody"></div></section>
+<section id="history" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>📚 Historial</h2><div id="historyList"></div></section>
 </main>
 
-<div id="accountModal" class="modalWrap" onclick="if(event.target===this)closeAccountModal()">
-<div class="modalCard">
-<div class="modalHead">
-<div class="brand">COLISEO FOOD PARK</div>
-<h2 id="accountModalTitle">Cuenta</h2>
-<div class="muted">Detalle de consumo</div>
-</div>
-<div id="accountModalBody"></div>
-<button class="yellow" onclick="closeAccountModal()">Cerrar</button>
-</div>
-</div>
+<div id="accountModal" class="modalWrap" onclick="if(event.target===this)closeAccountModal()"><div class="modalCard"><div class="modalHead"><div class="brand">COLISEO FOOD PARK</div><h2 id="accountModalTitle">Cuenta</h2><div class="muted">Detalle de consumo</div></div><div id="accountModalBody"></div><button class="yellow" onclick="closeAccountModal()">Cerrar</button></div></div>
 
 <script>
 const SB_URL="https://vrxkxfsysfnlcuxdsxfx.supabase.co";
 const SB_KEY="sb_publishable_7ey94d3udNRBYj5o85XeYQ_XXsqDwsM";
 const db=supabase.createClient(SB_URL,SB_KEY);
-
 const $=id=>document.getElementById(id);
 let me=null,cats=[],subs=[],items=[],basket=[],activeCat=null,current=null,cashMode=false;
 let inventoryItems=[],recipes=[],movements=[];
-
 const money=n=>Number(n||0).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
 const num=n=>Number(n||0).toLocaleString("es-MX",{maximumFractionDigits:4});
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const stamp=s=>new Date(s).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"});
-
-function show(id){
-document.querySelectorAll(".screen").forEach(x=>x.classList.remove("on"));
-$(id).classList.add("on");
-scrollTo(0,0)
-}
-
+function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("on"));$(id).classList.add("on");scrollTo(0,0)}
 function businessName(b){return b==="Cuervos Pizza"?"Cuervo’s Pizza":b||""}
+function orderName(o){if(o.order_type==="takeaway")return"Para llevar";if(o.order_type==="delivery")return"Delivery · "+(o.delivery_platform||"");const n=String(o.table_number||"").replace(/^mesa\s*/i,"");return"Mesa "+n}
 
-function orderName(o){
-if(o.order_type==="takeaway")return"Para llevar";
-if(o.order_type==="delivery")return"Delivery · "+(o.delivery_platform||"");
-const n=String(o.table_number||"").replace(/^mesa\s*/i,"");
-return"Mesa "+n
-}
-
-async function login(){
-const btn=$("loginBtn"),msg=$("loginMsg");
-const email=$("email").value.trim(),password=$("password").value;
-if(!email||!password){msg.textContent="Escribe correo y contraseña.";return}
-btn.disabled=true;btn.textContent="Iniciando sesión…";msg.textContent="Conectando…";
-try{
-const {data,error}=await db.auth.signInWithPassword({email,password});
-if(error)throw error;
-await route(data.user)
-}catch(e){msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.")}
-finally{btn.disabled=false;btn.textContent="Iniciar sesión"}
-}
-
+async function login(){const btn=$("loginBtn"),msg=$("loginMsg");const email=$("email").value.trim(),password=$("password").value;if(!email||!password){msg.textContent="Escribe correo y contraseña.";return}btn.disabled=true;btn.textContent="Iniciando sesión…";msg.textContent="Conectando…";try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;await route(data.user)}catch(e){msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.")}finally{btn.disabled=false;btn.textContent="Iniciar sesión"}}
 async function logout(){await db.auth.signOut();me=null;show("login");$("loginMsg").textContent=""}
-
-async function route(u){
-const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();
-if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}
-if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}
-me={...p,id:u.id};
-if(p.role==="admin"){
-$("adminUser").textContent=p.full_name||u.email;
-show("admin");
-await dashboardStockAlert()
-}else if(p.role==="cashier"){
-$("cashierUser").textContent=p.full_name||u.email;
-await caja()
-}else{
-$("staffUser").textContent=p.full_name||u.email;
-await staff()
-}
-}
-
+async function route(u){const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}me={...p,id:u.id};if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin");await dashboardStockAlert()}else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}else{$("staffUser").textContent=p.full_name||u.email;await staff()}}
 function goAdmin(){show("admin");dashboardStockAlert()}
 async function volverRol(){me.role==="cashier"?await caja():await staff()}
 
 /* MENU */
-async function loadMenu(){
-const [a,b,c]=await Promise.all([
-db.from("menu_categories").select("*").order("sort_order").order("name"),
-db.from("menu_subcategories").select("*").order("sort_order"),
-db.from("menu_items").select("*").order("sort_order").order("name")
-]);
-cats=a.data||[];subs=b.data||[];items=c.data||[]
-}
-
-async function menuAdmin(){
-show("menu");await loadMenu();
-
-$("itemCat").innerHTML=cats.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");
-
-$("catList").innerHTML=cats.map(x=>`
-<div class="card">
-<b>${esc(x.name)}</b>
-<div class="muted">${x.active?"Disponible":"Fuera de venta"}</div>
-<div class="actions">
-<button class="dark" onclick="editCat('${x.id}')">Editar</button>
-<button class="dark" onclick="toggleCat('${x.id}',${!x.active})">${x.active?"Poner fuera de venta":"Hacer disponible"}</button>
-</div>
-</div>`).join("")||'<div class="empty">Sin categorías</div>';
-
-let html="";
-for(const x of items){
-const s=subs.find(y=>y.id===x.subcategory_id);
-const c=s&&cats.find(y=>y.id===s.category_id);
-const profit=Number(x.price)-Number(x.unit_cost||0);
-const margin=Number(x.price)>0?profit/Number(x.price)*100:0;
-let can=false;
-if(x.active&&!x.manual_unavailable){
-const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});
-can=!!r.data
-}
-html+=`
-<div class="card">
-<div class="row">
-<div>
-<b>${esc(x.name)}</b>
-<div class="muted">${esc(c?.name||"")} · ${esc(businessName(x.business))}</div>
-<div class="muted">Costo ${money(x.unit_cost)} · Utilidad ${money(profit)} · Margen ${margin.toFixed(1)}%</div>
-<div style="margin-top:7px"><span class="status ${can?"ok":"out"}">${can?"DISPONIBLE":"NO DISPONIBLE"}</span></div>
-</div>
-<div class="price">${money(x.price)}</div>
-</div>
-<div class="actions">
-<button class="dark" onclick="editItem('${x.id}')">Editar</button>
-<button class="dark" onclick="manualItem('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"Marcar agotado"}</button>
-<button class="danger" onclick="deleteMenuItem('${x.id}')">Eliminar</button>
-</div>
-</div>`
-}
-$("itemList").innerHTML=html||'<div class="empty">Sin artículos</div>'
-}
-
-async function crearCat(){
-const n=$("newCat").value.trim();if(!n)return;
-const {data,error}=await db.from("menu_categories").insert({name:n}).select().single();
-if(error){alert(error.message);return}
-await db.from("menu_subcategories").insert({category_id:data.id,name:"General"});
-$("newCat").value="";await menuAdmin()
-}
-
-async function crearItem(){
-const cid=$("itemCat").value,n=$("itemName").value.trim(),cost=Number($("itemCost").value||0),price=Number($("itemPrice").value),business=$("itemBusiness").value;
-if(!cid||!n||isNaN(cost)||isNaN(price)){alert("Completa los datos.");return}
-let s=subs.find(x=>x.category_id===cid&&x.name==="General");
-if(!s){
-const r=await db.from("menu_subcategories").insert({category_id:cid,name:"General"}).select().single();
-if(r.error){alert(r.error.message);return}s=r.data
-}
-const {error}=await db.from("menu_items").insert({subcategory_id:s.id,name:n,unit_cost:cost,price,business,active:true});
-if(error){alert(error.message);return}
-$("itemName").value="";$("itemCost").value="";$("itemPrice").value="";
-await menuAdmin()
-}
-
-async function editCat(id){
-const x=cats.find(a=>a.id===id),n=prompt("Nombre:",x.name);
-if(n)await db.from("menu_categories").update({name:n.trim()}).eq("id",id);
-await menuAdmin()
-}
-
+async function loadMenu(){const [a,b,c]=await Promise.all([db.from("menu_categories").select("*").order("sort_order").order("name"),db.from("menu_subcategories").select("*").order("sort_order"),db.from("menu_items").select("*").order("sort_order").order("name")]);cats=a.data||[];subs=b.data||[];items=c.data||[]}
+async function menuAdmin(){show("menu");await loadMenu();$("itemCat").innerHTML=cats.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("catList").innerHTML=cats.map(x=>`<div class="card"><b>${esc(x.name)}</b><div class="muted">${x.active?"Disponible":"Fuera de venta"}</div><div class="actions"><button class="dark" onclick="editCat('${x.id}')">Editar</button><button class="dark" onclick="toggleCat('${x.id}',${!x.active})">${x.active?"Poner fuera de venta":"Hacer disponible"}</button></div></div>`).join("")||'<div class="empty">Sin categorías</div>';let html="";for(const x of items){const s=subs.find(y=>y.id===x.subcategory_id);const c=s&&cats.find(y=>y.id===s.category_id);const profit=Number(x.price)-Number(x.unit_cost||0);const margin=Number(x.price)>0?profit/Number(x.price)*100:0;let can=false;if(x.active&&!x.manual_unavailable){const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});can=!!r.data}html+=`<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(c?.name||"")} · ${esc(businessName(x.business))}</div><div class="muted">Costo ${money(x.unit_cost)} · Utilidad ${money(profit)} · Margen ${margin.toFixed(1)}%</div><div style="margin-top:7px"><span class="status ${can?"ok":"out"}">${can?"DISPONIBLE":"NO DISPONIBLE"}</span></div></div><div class="price">${money(x.price)}</div></div><div class="actions"><button class="dark" onclick="editItem('${x.id}')">Editar</button><button class="dark" onclick="manualItem('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"Marcar agotado"}</button><button class="danger" onclick="deleteMenuItem('${x.id}')">Eliminar</button></div></div>`}$("itemList").innerHTML=html||'<div class="empty">Sin artículos</div>'}
+async function crearCat(){const n=$("newCat").value.trim();if(!n)return;const {data,error}=await db.from("menu_categories").insert({name:n}).select().single();if(error){alert(error.message);return}await db.from("menu_subcategories").insert({category_id:data.id,name:"General"});$("newCat").value="";await menuAdmin()}
+async function crearItem(){const cid=$("itemCat").value,n=$("itemName").value.trim(),cost=Number($("itemCost").value||0),price=Number($("itemPrice").value),business=$("itemBusiness").value;if(!cid||!n||isNaN(cost)||isNaN(price)){alert("Completa los datos.");return}let s=subs.find(x=>x.category_id===cid&&x.name==="General");if(!s){const r=await db.from("menu_subcategories").insert({category_id:cid,name:"General"}).select().single();if(r.error){alert(r.error.message);return}s=r.data}const {error}=await db.from("menu_items").insert({subcategory_id:s.id,name:n,unit_cost:cost,price,business,active:true});if(error){alert(error.message);return}$("itemName").value="";$("itemCost").value="";$("itemPrice").value="";await menuAdmin()}
+async function editCat(id){const x=cats.find(a=>a.id===id),n=prompt("Nombre:",x.name);if(n)await db.from("menu_categories").update({name:n.trim()}).eq("id",id);await menuAdmin()}
 async function toggleCat(id,v){await db.from("menu_categories").update({active:v}).eq("id",id);await menuAdmin()}
+async function manualItem(id,v){await db.from("menu_items").update({manual_unavailable:v}).eq("id",id);await menuAdmin()}
+async function deleteMenuItem(id){if(!confirm("¿Eliminar este artículo del menú?"))return;if(!confirm("Esta acción elimina el artículo. ¿Continuar?"))return;const {error}=await db.from("menu_items").delete().eq("id",id);if(error){alert("No se puede eliminar porque tiene información relacionada. Puedes marcarlo como no disponible.");return}await menuAdmin()}
+async function editItem(id){const x=items.find(a=>a.id===id);const n=prompt("Artículo:",x.name);if(!n)return;const p=prompt("Precio de venta:",x.price);if(p===null||isNaN(+p))return;const c=prompt("Costo estimado:",x.unit_cost||0);if(c===null||isNaN(+c))return;const b=prompt("Negocio: Cuervos Pizza o EL CLúB",x.business||"Cuervos Pizza");if(!["Cuervos Pizza","EL CLúB"].includes(b)){alert("Negocio no válido.");return}const {error}=await db.from("menu_items").update({name:n.trim(),price:+p,unit_cost:+c,business:b}).eq("id",id);if(error)alert(error.message);await menuAdmin()}
 
-async function manualItem(id,v){
-await db.from("menu_items").update({manual_unavailable:v}).eq("id",id);
-await menuAdmin()
-}
+/* INVENTARIO 1.8 */
+async function loadInventory(){const [a,b,c,d]=await Promise.all([db.from("inventory_status").select("*").order("business").order("name"),db.from("recipes").select("*"),db.from("inventory_movements").select("*").order("movement_date",{ascending:false}).limit(100),db.from("menu_items").select("*").order("name")]);inventoryItems=a.data||[];recipes=b.data||[];movements=c.data||[];items=d.data||[]}
+async function dashboardStockAlert(){const {data}=await db.from("inventory_status").select("stock_status");const arr=data||[];const low=arr.filter(x=>x.stock_status==="Existencia baja").length;const out=arr.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;$("stockAlert").innerHTML=(low||out)?`<div class="notice">📦 Inventario: <b>${low}</b> con existencia baja · <b>${out}</b> agotados/no disponibles</div>`:""}
+async function inventario(){show("inventory");await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts();renderMovementHistory();inventoryUnitUI();invTab("stock")}
+function stockClass(s){return s==="Disponible"?"ok":s==="Existencia baja"?"low":"out"}
 
-async function deleteMenuItem(id){
-if(!confirm("¿Eliminar este artículo del menú?"))return;
-if(!confirm("Esta acción elimina el artículo. ¿Continuar?"))return;
-const {error}=await db.from("menu_items").delete().eq("id",id);
-if(error){alert("No se puede eliminar porque tiene información relacionada. Puedes marcarlo como no disponible.");return}
-await menuAdmin()
-}
+function inventoryUnitUI(){const bottle=$("invUnit").value==="botella";$("bottleBox").classList.toggle("hidden",!bottle);updateShotPreview()}
+function updateShotPreview(){if(!$("shotPreview"))return;const ml=Number($("bottleMl").value||0),shot=Number($("shotMl").value||0);if(ml>0&&shot>0){const complete=Math.floor(ml/shot),rem=ml-(complete*shot);$("shotPreview").innerHTML=`🍸 Una botella rinde aproximadamente <b>${complete} shots de ${num(shot)} ml</b>${rem>0?` + ${num(rem)} ml restantes`:""}.`}else $("shotPreview").innerHTML=""}
+document.addEventListener("input",e=>{if(["bottleMl","shotMl"].includes(e.target.id))updateShotPreview();if(e.target.id==="recipeQty")recipeConvertPreview()});
 
-async function editItem(id){
-const x=items.find(a=>a.id===id);
-const n=prompt("Artículo:",x.name);if(!n)return;
-const p=prompt("Precio de venta:",x.price);if(p===null||isNaN(+p))return;
-const c=prompt("Costo estimado:",x.unit_cost||0);if(c===null||isNaN(+c))return;
-const b=prompt("Negocio: Cuervos Pizza o EL CLúB",x.business||"Cuervos Pizza");
-if(!["Cuervos Pizza","EL CLúB"].includes(b)){alert("Negocio no válido.");return}
-const {error}=await db.from("menu_items").update({name:n.trim(),price:+p,unit_cost:+c,business:b}).eq("id",id);
-if(error)alert(error.message);
-await menuAdmin()
-}
+function renderInventory(){const low=inventoryItems.filter(x=>x.stock_status==="Existencia baja").length;const out=inventoryItems.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;$("inventorySummary").innerHTML=`<div class="summary"><div class="card"><div class="muted">INSUMOS</div><div class="big">${inventoryItems.length}</div></div><div class="card"><div class="muted">EXISTENCIA BAJA</div><div class="big">${low}</div></div><div class="card"><div class="muted">AGOTADOS</div><div class="big">${out}</div></div></div>`;$("inventoryList").innerHTML=inventoryItems.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))}${x.category?" · "+esc(x.category):""}</div></div><span class="status ${stockClass(x.stock_status)}">${esc(x.stock_status).toUpperCase()}</span></div><div class="row" style="margin-top:15px"><div><div class="muted">EXISTENCIA</div><div class="stockNumber">${num(x.current_stock)} ${esc(x.unit)}</div></div><div style="text-align:right"><div class="muted">AVISO MÍNIMO</div><b>${num(x.minimum_stock)} ${esc(x.unit)}</b></div></div><div class="muted" style="margin-top:8px">Costo unitario: ${money(x.unit_cost)}</div><div class="actions"><button class="dark" onclick="editarInsumo('${x.id}')">Editar</button><button class="dark" onclick="quickMove('${x.id}','entrada')">＋ Entrada</button><button class="dark" onclick="quickMove('${x.id}','merma')">− Merma</button><button class="dark" onclick="toggleInventory('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"No disponible"}</button></div></div>`).join("")||'<div class="empty">Todavía no hay insumos registrados.</div>'}
 
-/* INVENTARIO */
-async function loadInventory(){
-const [a,b,c,d]=await Promise.all([
-db.from("inventory_status").select("*").order("business").order("name"),
-db.from("recipes").select("*"),
-db.from("inventory_movements").select("*").order("movement_date",{ascending:false}).limit(100),
-db.from("menu_items").select("*").order("name")
-]);
-inventoryItems=a.data||[];
-recipes=b.data||[];
-movements=c.data||[];
-items=d.data||[]
-}
+async function crearInsumo(){const name=$("invName").value.trim();const business=$("invBusiness").value;let category=$("invCategory").value.trim()||null;let unit=$("invUnit").value;let stock=Number($("invStock").value||0);let min=Number($("invMin").value||0);let cost=Number($("invCost").value||0);if(!name||stock<0||min<0||cost<0){alert("Revisa los datos.");return}let base_unit=unit,display_unit=unit,quantity_per_display_unit=1;if(unit==="botella"){const bottleMl=Number($("bottleMl").value||0),shotMl=Number($("shotMl").value||0);if(bottleMl<=0||shotMl<=0){alert("Indica contenido de botella y tamaño de shot.");return}unit="ml";base_unit="ml";display_unit="botella";quantity_per_display_unit=bottleMl;stock*=bottleMl;min*=bottleMl;cost=cost/bottleMl;if(!category)category=`Botella · shot ${shotMl} ml`}const {error}=await db.from("inventory_items").insert({business,name,category,unit,base_unit,display_unit,quantity_per_display_unit,current_stock:stock,minimum_stock:min,unit_cost:cost,active:true});if(error){alert(error.message);return}$("invName").value="";$("invCategory").value="";$("invStock").value="0";$("invMin").value="0";$("invCost").value="0";await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts()}
 
-async function dashboardStockAlert(){
-const {data}=await db.from("inventory_status").select("stock_status");
-const arr=data||[];
-const low=arr.filter(x=>x.stock_status==="Existencia baja").length;
-const out=arr.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;
-$("stockAlert").innerHTML=(low||out)?`<div class="notice">📦 Inventario: <b>${low}</b> con existencia baja · <b>${out}</b> agotados/no disponibles</div>`:""
-}
+async function editarInsumo(id){const x=inventoryItems.find(a=>a.id===id);const name=prompt("Nombre del insumo:",x.name);if(!name)return;const min=prompt("Avisar cuando queden:",x.minimum_stock);if(min===null||isNaN(+min)||+min<0)return;const cost=prompt("Costo por unidad:",x.unit_cost);if(cost===null||isNaN(+cost)||+cost<0)return;const {error}=await db.from("inventory_items").update({name:name.trim(),minimum_stock:+min,unit_cost:+cost,updated_at:new Date().toISOString()}).eq("id",id);if(error)alert(error.message);await loadInventory();renderInventory()}
+async function toggleInventory(id,v){await db.from("inventory_items").update({manual_unavailable:v,updated_at:new Date().toISOString()}).eq("id",id);await loadInventory();renderInventory()}
+function quickMove(id,type){invTab("move");$("moveItem").value=id;$("moveType").value=type;moveTypeUI();$("moveQty").focus()}
+function invTab(t){["stock","move","recipe","history"].forEach(x=>{$("inv"+x.charAt(0).toUpperCase()+x.slice(1)+"Panel").classList.toggle("hidden",x!==t);$("invTab"+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle("on",x===t)});if(t==="history")renderMovementHistory();if(t==="recipe")cargarReceta()}
+function fillMovementItems(){$("moveItem").innerHTML=inventoryItems.map(x=>`<option value="${x.id}">${esc(x.name)} · ${num(x.current_stock)} ${esc(x.unit)}</option>`).join("")}
+function moveTypeUI(){const t=$("moveType").value;$("mermaReasonBox").classList.toggle("hidden",t!=="merma");$("employeeBox").classList.toggle("hidden",t!=="empleado");$("moveDirectionBox").classList.toggle("hidden",t!=="ajuste");const x=inventoryItems.find(a=>a.id===$("moveItem").value);$("moveQtyLabel").textContent="Cantidad"+(x?" ("+x.unit+")":"")}
+async function registrarMovimiento(){const id=$("moveItem").value,t=$("moveType").value,q=Number($("moveQty").value);if(!id||!q||q<=0){$("moveMsg").textContent="Indica insumo y cantidad.";return}let direction=t==="entrada"?"entrada":"salida";if(t==="ajuste")direction=$("moveDirection").value;let reason=t==="merma"?$("mermaReason").value:t==="empleado"?"Consumo de empleado":t==="cortesia"?"Cortesía":t==="entrada"?"Entrada de mercancía":"Ajuste";const business=t==="empleado"?$("employeeBusiness").value:null;const area=t==="empleado"?$("employeeArea").value.trim()||null:null;const employee=t==="empleado"?$("employeeName").value.trim()||null:null;const notes=$("moveNotes").value.trim()||null;const {error}=await db.rpc("record_inventory_movement",{p_item:id,p_type:t,p_reason:reason,p_quantity:q,p_direction:direction,p_business:business,p_employee_area:area,p_employee_name:employee,p_notes:notes,p_order:null});if(error){$("moveMsg").textContent="Error: "+error.message;return}$("moveMsg").textContent="✓ Movimiento registrado.";$("moveQty").value="";$("moveNotes").value="";$("employeeArea").value="";$("employeeName").value="";await loadInventory();renderInventory();fillMovementItems();renderMovementHistory()}
+function movementLabel(x){const map={entrada:"Entrada",venta:"Venta",merma:"Merma",empleado:"Empleado",cortesia:"Cortesía",ajuste:"Ajuste"};return map[x]||x}
+function renderMovementHistory(){$("movementHistory").innerHTML=movements.map(m=>{const i=inventoryItems.find(x=>x.id===m.inventory_item_id);return `<div class="card"><div class="row"><div><b>${esc(i?.name||"Insumo")}</b><div class="muted">${stamp(m.movement_date)} · ${esc(movementLabel(m.movement_type))}</div></div><div class="${m.direction==="entrada"?"ok":"out"} status">${m.direction==="entrada"?"+":"−"} ${num(m.quantity)} ${esc(i?.unit||"")}</div></div>${m.reason?`<div class="muted" style="margin-top:8px">Motivo: ${esc(m.reason)}</div>`:""}${m.employee_name?`<div style="margin-top:6px">👤 ${esc(m.employee_name)}${m.employee_area?" · "+esc(m.employee_area):""}</div>`:""}${m.business?`<div class="muted">${esc(businessName(m.business))}</div>`:""}${m.notes?`<div class="muted">Nota: ${esc(m.notes)}</div>`:""}</div>`}).join("")||'<div class="empty">Todavía no hay movimientos.</div>'}
 
-async function inventario(){
-show("inventory");
-await loadInventory();
-renderInventory();
-fillMovementItems();
-fillRecipeProducts();
-renderMovementHistory();
-invTab("stock")
-}
-
-function stockClass(s){
-return s==="Disponible"?"ok":s==="Existencia baja"?"low":"out"
-}
-
-function renderInventory(){
-const low=inventoryItems.filter(x=>x.stock_status==="Existencia baja").length;
-const out=inventoryItems.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;
-$("inventorySummary").innerHTML=`
-<div class="summary">
-<div class="card"><div class="muted">INSUMOS</div><div class="big">${inventoryItems.length}</div></div>
-<div class="card"><div class="muted">EXISTENCIA BAJA</div><div class="big">${low}</div></div>
-<div class="card"><div class="muted">AGOTADOS</div><div class="big">${out}</div></div>
-</div>`;
-
-$("inventoryList").innerHTML=inventoryItems.map(x=>`
-<div class="card">
-<div class="row">
-<div>
-<b>${esc(x.name)}</b>
-<div class="muted">${esc(businessName(x.business))}${x.category?" · "+esc(x.category):""}</div>
-</div>
-<span class="status ${stockClass(x.stock_status)}">${esc(x.stock_status).toUpperCase()}</span>
-</div>
-<div class="row" style="margin-top:15px">
-<div>
-<div class="muted">EXISTENCIA</div>
-<div class="stockNumber">${num(x.current_stock)} ${esc(x.unit)}</div>
-</div>
-<div style="text-align:right">
-<div class="muted">AVISO MÍNIMO</div>
-<b>${num(x.minimum_stock)} ${esc(x.unit)}</b>
-</div>
-</div>
-<div class="muted" style="margin-top:8px">Costo unitario: ${money(x.unit_cost)}</div>
-<div class="actions">
-<button class="dark" onclick="editarInsumo('${x.id}')">Editar</button>
-<button class="dark" onclick="quickMove('${x.id}','entrada')">＋ Entrada</button>
-<button class="dark" onclick="quickMove('${x.id}','merma')">− Merma</button>
-<button class="dark" onclick="toggleInventory('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"No disponible"}</button>
-</div>
-</div>`).join("")||'<div class="empty">Todavía no hay insumos registrados.</div>'
-}
-
-async function crearInsumo(){
-const name=$("invName").value.trim();
-const business=$("invBusiness").value;
-const category=$("invCategory").value.trim()||null;
-const unit=$("invUnit").value;
-const stock=Number($("invStock").value||0);
-const min=Number($("invMin").value||0);
-const cost=Number($("invCost").value||0);
-if(!name||stock<0||min<0||cost<0){alert("Revisa los datos.");return}
-const {error}=await db.from("inventory_items").insert({
-business,name,category,unit,base_unit:unit,current_stock:stock,minimum_stock:min,unit_cost:cost,active:true
-});
-if(error){alert(error.message);return}
-$("invName").value="";$("invCategory").value="";$("invStock").value="0";$("invMin").value="0";$("invCost").value="0";
-await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts()
-}
-
-async function editarInsumo(id){
-const x=inventoryItems.find(a=>a.id===id);
-const name=prompt("Nombre del insumo:",x.name);if(!name)return;
-const min=prompt("Avisar cuando queden:",x.minimum_stock);if(min===null||isNaN(+min)||+min<0)return;
-const cost=prompt("Costo por unidad:",x.unit_cost);if(cost===null||isNaN(+cost)||+cost<0)return;
-const {error}=await db.from("inventory_items").update({name:name.trim(),minimum_stock:+min,unit_cost:+cost,updated_at:new Date().toISOString()}).eq("id",id);
-if(error)alert(error.message);
-await loadInventory();renderInventory()
-}
-
-async function toggleInventory(id,v){
-await db.from("inventory_items").update({manual_unavailable:v,updated_at:new Date().toISOString()}).eq("id",id);
-await loadInventory();renderInventory()
-}
-
-function quickMove(id,type){
-invTab("move");
-$("moveItem").value=id;
-$("moveType").value=type;
-moveTypeUI();
-$("moveQty").focus()
-}
-
-function invTab(t){
-["stock","move","recipe","history"].forEach(x=>{
-$("inv"+x.charAt(0).toUpperCase()+x.slice(1)+"Panel").classList.toggle("hidden",x!==t);
-$("invTab"+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle("on",x===t)
-});
-if(t==="history")renderMovementHistory();
-if(t==="recipe")cargarReceta()
-}
-
-function fillMovementItems(){
-$("moveItem").innerHTML=inventoryItems.map(x=>`<option value="${x.id}">${esc(x.name)} · ${num(x.current_stock)} ${esc(x.unit)}</option>`).join("")
-}
-
-function moveTypeUI(){
-const t=$("moveType").value;
-$("mermaReasonBox").classList.toggle("hidden",t!=="merma");
-$("employeeBox").classList.toggle("hidden",t!=="empleado");
-$("moveDirectionBox").classList.toggle("hidden",t!=="ajuste");
-const x=inventoryItems.find(a=>a.id===$("moveItem").value);
-$("moveQtyLabel").textContent="Cantidad"+(x?" ("+x.unit+")":"")
-}
-
-async function registrarMovimiento(){
-const id=$("moveItem").value,t=$("moveType").value,q=Number($("moveQty").value);
-if(!id||!q||q<=0){$("moveMsg").textContent="Indica insumo y cantidad.";return}
-let direction=t==="entrada"?"entrada":"salida";
-if(t==="ajuste")direction=$("moveDirection").value;
-let reason=t==="merma"?$("mermaReason").value:t==="empleado"?"Consumo de empleado":t==="cortesia"?"Cortesía":t==="entrada"?"Entrada de mercancía":"Ajuste";
-const business=t==="empleado"?$("employeeBusiness").value:null;
-const area=t==="empleado"?$("employeeArea").value.trim()||null:null;
-const employee=t==="empleado"?$("employeeName").value.trim()||null:null;
-const notes=$("moveNotes").value.trim()||null;
-
-const {error}=await db.rpc("record_inventory_movement",{
-p_item:id,p_type:t,p_reason:reason,p_quantity:q,p_direction:direction,
-p_business:business,p_employee_area:area,p_employee_name:employee,p_notes:notes,p_order:null
-});
-if(error){$("moveMsg").textContent="Error: "+error.message;return}
-$("moveMsg").textContent="✓ Movimiento registrado.";
-$("moveQty").value="";$("moveNotes").value="";$("employeeArea").value="";$("employeeName").value="";
-await loadInventory();renderInventory();fillMovementItems();renderMovementHistory()
-}
-
-function movementLabel(x){
-const map={entrada:"Entrada",venta:"Venta",merma:"Merma",empleado:"Empleado",cortesia:"Cortesía",ajuste:"Ajuste"};
-return map[x]||x
-}
-
-function renderMovementHistory(){
-$("movementHistory").innerHTML=movements.map(m=>{
-const i=inventoryItems.find(x=>x.id===m.inventory_item_id);
-return `<div class="card">
-<div class="row">
-<div><b>${esc(i?.name||"Insumo")}</b><div class="muted">${stamp(m.movement_date)} · ${esc(movementLabel(m.movement_type))}</div></div>
-<div class="${m.direction==="entrada"?"ok":"out"} status">${m.direction==="entrada"?"+":"−"} ${num(m.quantity)} ${esc(i?.unit||"")}</div>
-</div>
-${m.reason?`<div class="muted" style="margin-top:8px">Motivo: ${esc(m.reason)}</div>`:""}
-${m.employee_name?`<div style="margin-top:6px">👤 ${esc(m.employee_name)}${m.employee_area?" · "+esc(m.employee_area):""}</div>`:""}
-${m.business?`<div class="muted">${esc(businessName(m.business))}</div>`:""}
-${m.notes?`<div class="muted">Nota: ${esc(m.notes)}</div>`:""}
-</div>`
-}).join("")||'<div class="empty">Todavía no hay movimientos.</div>'
-}
-
-/* RECETAS */
-function fillRecipeProducts(){
-$("recipeProduct").innerHTML=items.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc(businessName(x.business))}</option>`).join("");
-$("recipeInventory").innerHTML=inventoryItems.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.unit)})</option>`).join("");
-recipeUnitHint()
-}
-
-function recipeUnitHint(){
-const x=inventoryItems.find(a=>a.id===$("recipeInventory").value);
-$("recipeQtyLabel").textContent="Cantidad utilizada por cada producto"+(x?" ("+x.unit+")":"")
-}
-
-async function cargarReceta(){
-if(!$("recipeProduct"))return;
-const pid=$("recipeProduct").value;
-const rows=recipes.filter(x=>x.menu_item_id===pid);
-$("recipeList").innerHTML=rows.map(r=>{
-const i=inventoryItems.find(x=>x.id===r.inventory_item_id);
-return `<div class="card">
-<div class="row">
-<div><b>${esc(i?.name||"Insumo")}</b><div class="muted">Por cada producto vendido</div></div>
-<div><b>${num(r.quantity_required)} ${esc(i?.unit||"")}</b></div>
-</div>
-<div class="actions"><button class="danger" onclick="quitarIngrediente('${r.id}')">Quitar de receta</button></div>
-</div>`
-}).join("")||'<div class="empty">Este producto todavía no tiene receta.</div>'
-}
-
-async function agregarIngrediente(){
-const pid=$("recipeProduct").value,iid=$("recipeInventory").value,q=Number($("recipeQty").value);
-if(!pid||!iid||!q||q<=0){alert("Selecciona producto, insumo y cantidad.");return}
-const {error}=await db.from("recipes").upsert({menu_item_id:pid,inventory_item_id:iid,quantity_required:q},{onConflict:"menu_item_id,inventory_item_id"});
-if(error){alert(error.message);return}
-$("recipeQty").value="";
-await loadInventory();fillRecipeProducts();$("recipeProduct").value=pid;await cargarReceta()
-}
-
-async function quitarIngrediente(id){
-if(!confirm("¿Quitar este ingrediente de la receta?"))return;
-await db.from("recipes").delete().eq("id",id);
-await loadInventory();fillRecipeProducts();await cargarReceta()
-}
+/* RECETAS CON CONVERSION AUTOMÁTICA */
+function fillRecipeProducts(){$("recipeProduct").innerHTML=items.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc(businessName(x.business))}</option>`).join("");$("recipeInventory").innerHTML=inventoryItems.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.unit)})</option>`).join("");recipeUnitHint()}
+function unitOptions(u){u=String(u||"").toLowerCase();if(["kg","g"].includes(u))return["g","kg"];if(["litro","l","lt","ml"].includes(u))return["ml","litro"];return[u]}
+function recipeUnitHint(){const x=inventoryItems.find(a=>a.id===$("recipeInventory").value);$("recipeQtyLabel").textContent="Cantidad utilizada por cada producto";if(!x)return;$("recipeUnit").innerHTML=unitOptions(x.unit).map(u=>`<option value="${u}">${u}</option>`).join("");$("recipeUnit").value=unitOptions(x.unit)[0];recipeConvertPreview()}
+async function recipeConvertPreview(){const x=inventoryItems.find(a=>a.id===$("recipeInventory").value),q=Number($("recipeQty")?.value||0),u=$("recipeUnit")?.value;if(!x||!q||q<=0||!u){if($("recipeConvertHint"))$("recipeConvertHint").textContent="";return}const r=await db.rpc("convert_inventory_quantity",{p_quantity:q,p_from:u,p_to:x.unit});$("recipeConvertHint").textContent=r.error?"No se puede convertir esa unidad.":`${num(q)} ${u} descontará ${num(r.data)} ${x.unit} del inventario.`}
+async function cargarReceta(){if(!$("recipeProduct"))return;const pid=$("recipeProduct").value;const rows=recipes.filter(x=>x.menu_item_id===pid);$("recipeList").innerHTML=rows.map(r=>{const i=inventoryItems.find(x=>x.id===r.inventory_item_id);const shown=r.input_quantity&&r.input_unit?`${num(r.input_quantity)} ${esc(r.input_unit)}`:`${num(r.quantity_required)} ${esc(i?.unit||"")}`;return `<div class="card"><div class="row"><div><b>${esc(i?.name||"Insumo")}</b><div class="muted">Por cada producto vendido</div></div><div><b>${shown}</b></div></div>${r.input_quantity&&r.input_unit&&r.input_unit!==i?.unit?`<div class="muted">Descuento normalizado: ${num(r.quantity_required)} ${esc(i?.unit||"")}</div>`:""}<div class="actions"><button class="danger" onclick="quitarIngrediente('${r.id}')">Quitar de receta</button></div></div>`}).join("")||'<div class="empty">Este producto todavía no tiene receta.</div>'}
+async function agregarIngrediente(){const pid=$("recipeProduct").value,iid=$("recipeInventory").value,q=Number($("recipeQty").value),u=$("recipeUnit").value;const inv=inventoryItems.find(x=>x.id===iid);if(!pid||!iid||!q||q<=0||!u||!inv){alert("Selecciona producto, insumo, cantidad y unidad.");return}const conv=await db.rpc("convert_inventory_quantity",{p_quantity:q,p_from:u,p_to:inv.unit});if(conv.error){alert(conv.error.message);return}const {error}=await db.from("recipes").upsert({menu_item_id:pid,inventory_item_id:iid,quantity_required:Number(conv.data),input_quantity:q,input_unit:u},{onConflict:"menu_item_id,inventory_item_id"});if(error){alert(error.message);return}$("recipeQty").value="";await loadInventory();fillRecipeProducts();$("recipeProduct").value=pid;await cargarReceta()}
+async function quitarIngrediente(id){if(!confirm("¿Quitar este ingrediente de la receta?"))return;await db.from("recipes").delete().eq("id",id);await loadInventory();fillRecipeProducts();await cargarReceta()}
 
 /* POS */
-async function nuevoPedido(isCash){
-cashMode=isCash;basket=[];show("pos");
-$("posTitle").textContent=isCash?"Nueva venta de Caja":"Abrir nueva cuenta";
-$("orderType").value="table";$("tableNumber").value="";$("notes").value="";$("orderMsg").textContent="";
-tipoUI();await loadMenu();
-cats=cats.filter(x=>x.active);subs=subs.filter(x=>x.active);items=items.filter(x=>x.active&&!x.manual_unavailable);
-activeCat=cats[0]?.id||null;drawPOS()
-}
-
-function tipoUI(){
-$("tableBox").style.display=$("orderType").value==="table"?"block":"none";
-$("deliveryBox").style.display=$("orderType").value==="delivery"?"block":"none"
-}
-
-async function drawPOS(){
-$("tabs").innerHTML=cats.map(x=>`<button class="tab ${x.id===activeCat?"on":""}" onclick="selectCat('${x.id}')">${esc(x.name)}</button>`).join("");
-const ss=subs.filter(x=>x.category_id===activeCat).map(x=>x.id);
-const list=items.filter(x=>ss.includes(x.subcategory_id));
-let html="";
-for(const x of list){
-const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});
-const can=!!r.data;
-html+=`<div class="product" ${can?`onclick="addItem('${x.id}')"`:""}>
-<b>${esc(x.name)}</b>
-<div class="muted">${esc(businessName(x.business))}</div>
-<div class="price">${money(x.price)}</div>
-<div style="margin-top:7px"><span class="status ${can?"ok":"out"}">${can?"DISPONIBLE":"AGOTADO"}</span></div>
-</div>`
-}
-$("products").innerHTML=html||'<div class="empty">Sin productos</div>';
-drawCart()
-}
-
+async function nuevoPedido(isCash){cashMode=isCash;basket=[];show("pos");$("posTitle").textContent=isCash?"Nueva venta de Caja":"Abrir nueva cuenta";$("orderType").value="table";$("tableNumber").value="";$("notes").value="";$("orderMsg").textContent="";tipoUI();await loadMenu();cats=cats.filter(x=>x.active);subs=subs.filter(x=>x.active);items=items.filter(x=>x.active&&!x.manual_unavailable);activeCat=cats[0]?.id||null;drawPOS()}
+function tipoUI(){$("tableBox").style.display=$("orderType").value==="table"?"block":"none";$("deliveryBox").style.display=$("orderType").value==="delivery"?"block":"none"}
+async function drawPOS(){$("tabs").innerHTML=cats.map(x=>`<button class="tab ${x.id===activeCat?"on":""}" onclick="selectCat('${x.id}')">${esc(x.name)}</button>`).join("");const ss=subs.filter(x=>x.category_id===activeCat).map(x=>x.id);const list=items.filter(x=>ss.includes(x.subcategory_id));let html="";for(const x of list){const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});const can=!!r.data;html+=`<div class="product" ${can?`onclick="addItem('${x.id}')"`:""}><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))}</div><div class="price">${money(x.price)}</div><div style="margin-top:7px"><span class="status ${can?"ok":"out"}">${can?"DISPONIBLE":"AGOTADO"}</span></div></div>`}$("products").innerHTML=html||'<div class="empty">Sin productos</div>';drawCart()}
 function selectCat(id){activeCat=id;drawPOS()}
-
-async function addItem(id){
-const x=items.find(a=>a.id===id);
-const check=await db.rpc("menu_item_can_sell",{p_menu_item:id});
-if(!check.data){alert("Este producto no está disponible en este momento.");await drawPOS();return}
-if(!x.business){alert("El administrador debe asignar el negocio.");return}
-const b=basket.find(a=>a.id===id);
-b?b.q++:basket.push({id:x.id,name:x.name,price:+x.price,cost:+(x.unit_cost||0),business:x.business,q:1});
-drawCart()
-}
-
-function changeQty(id,d){
-const x=basket.find(a=>a.id===id);x.q+=d;
-if(x.q<1)basket=basket.filter(a=>a.id!==id);
-drawCart()
-}
-
-function drawCart(){
-$("cart").innerHTML=basket.length?basket.map(x=>`
-<div class="cartline">
-<div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))} · ${money(x.price)}</div></div>
-<div class="qty"><button onclick="changeQty('${x.id}',-1)">−</button> ${x.q} <button onclick="changeQty('${x.id}',1)">+</button></div>
-<b>${money(x.price*x.q)}</b>
-</div>`).join(""):'<div class="empty">Selecciona productos</div>';
-$("cartTotal").textContent=money(basket.reduce((s,x)=>s+x.price*x.q,0))
-}
-
-async function guardarPedido(){
-const type=$("orderType").value,numTable=$("tableNumber").value.trim();
-const platform=type==="delivery"?$("deliveryPlatform").value:null;
-if(type==="table"&&(!numTable||+numTable<1)){$("orderMsg").textContent="Ingresa únicamente el número de mesa.";return}
-if(!basket.length){$("orderMsg").textContent="Selecciona productos.";return}
-
-for(const x of basket){
-const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});
-if(!r.data){$("orderMsg").textContent=x.name+" ya no está disponible. Retíralo del pedido.";return}
-}
-
-const table=type==="table"?numTable:type==="takeaway"?"Para llevar":"Delivery";
-const total=basket.reduce((s,x)=>s+x.price*x.q,0);
-const {data:o,error}=await db.from("orders").insert({
-business_date:new Date().toISOString().slice(0,10),table_number:table,order_type:type,
-delivery_platform:platform,status:"open",notes:$("notes").value.trim()||null,total,created_by:me.id,assigned_to:me.id
-}).select().single();
-if(error){$("orderMsg").textContent="Error: "+error.message;return}
-
-const rows=basket.map(x=>({order_id:o.id,menu_item_id:x.id,item_name:x.name,unit_price:x.price,quantity:x.q,line_total:x.price*x.q,business:x.business}));
-const r=await db.from("order_items").insert(rows);
-if(r.error){$("orderMsg").textContent="Error: "+r.error.message;return}
-await db.rpc("recalc_order_total",{p_order:o.id});
-$("orderMsg").textContent="✓ Cuenta guardada.";basket=[];
-setTimeout(volverRol,500)
-}
+async function addItem(id){const x=items.find(a=>a.id===id);const check=await db.rpc("menu_item_can_sell",{p_menu_item:id});if(!check.data){alert("Este producto no está disponible en este momento.");await drawPOS();return}if(!x.business){alert("El administrador debe asignar el negocio.");return}const b=basket.find(a=>a.id===id);b?b.q++:basket.push({id:x.id,name:x.name,price:+x.price,cost:+(x.unit_cost||0),business:x.business,q:1});drawCart()}
+function changeQty(id,d){const x=basket.find(a=>a.id===id);x.q+=d;if(x.q<1)basket=basket.filter(a=>a.id!==id);drawCart()}
+function drawCart(){$("cart").innerHTML=basket.length?basket.map(x=>`<div class="cartline"><div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))} · ${money(x.price)}</div></div><div class="qty"><button onclick="changeQty('${x.id}',-1)">−</button> ${x.q} <button onclick="changeQty('${x.id}',1)">+</button></div><b>${money(x.price*x.q)}</b></div>`).join(""):'<div class="empty">Selecciona productos</div>';$("cartTotal").textContent=money(basket.reduce((s,x)=>s+x.price*x.q,0))}
+async function guardarPedido(){const type=$("orderType").value,numTable=$("tableNumber").value.trim();const platform=type==="delivery"?$("deliveryPlatform").value:null;if(type==="table"&&(!numTable||+numTable<1)){$("orderMsg").textContent="Ingresa únicamente el número de mesa.";return}if(!basket.length){$("orderMsg").textContent="Selecciona productos.";return}for(const x of basket){const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});if(!r.data){$("orderMsg").textContent=x.name+" ya no está disponible. Retíralo del pedido.";return}}const table=type==="table"?numTable:type==="takeaway"?"Para llevar":"Delivery";const total=basket.reduce((s,x)=>s+x.price*x.q,0);const {data:o,error}=await db.from("orders").insert({business_date:new Date().toISOString().slice(0,10),table_number:table,order_type:type,delivery_platform:platform,status:"open",notes:$("notes").value.trim()||null,total,created_by:me.id,assigned_to:me.id}).select().single();if(error){$("orderMsg").textContent="Error: "+error.message;return}const rows=basket.map(x=>({order_id:o.id,menu_item_id:x.id,item_name:x.name,unit_price:x.price,quantity:x.q,line_total:x.price*x.q,business:x.business}));const r=await db.from("order_items").insert(rows);if(r.error){$("orderMsg").textContent="Error: "+r.error.message;return}await db.rpc("recalc_order_total",{p_order:o.id});$("orderMsg").textContent="✓ Cuenta guardada.";basket=[];setTimeout(volverRol,500)}
 
 /* MESERO */
-async function staff(){
-show("staff");
-const {data}=await db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false});
-$("staffOrders").innerHTML=(data||[]).map(o=>`
-<div class="order">
-<div class="row">
-<div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div>
-<div><span class="badge open">ABIERTA</span><div class="amount">${money(o.total)}</div></div>
-</div>
-<div class="actions"><button class="dark" onclick="verOrden('${o.id}')">Ver cuenta</button></div>
-</div>`).join("")||'<div class="empty">No tienes cuentas abiertas.</div>'
-}
+async function staff(){show("staff");const {data}=await db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false});$("staffOrders").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge open">ABIERTA</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${o.id}')">Ver cuenta</button></div></div>`).join("")||'<div class="empty">No tienes cuentas abiertas.</div>'}
 
-/* MODAL CUENTA */
+/* MODAL */
 function closeAccountModal(){$("accountModal").classList.remove("on")}
-
-async function verOrden(id){
-const [{data:o,error:oe},{data:i,error:ie}]=await Promise.all([
-db.from("orders").select("*").eq("id",id).single(),
-db.from("order_items").select("*").eq("order_id",id).order("created_at")
-]);
-if(oe||ie||!o){alert("No fue posible cargar la cuenta.");return}
-$("accountModalTitle").textContent=orderName(o);
-const lines=(i||[]).map(x=>`
-<div class="modalLine">
-<div><b>${x.quantity} × ${esc(x.item_name)}</b><div class="muted">${money(x.unit_price)} c/u</div></div>
-<b>${money(x.line_total)}</b>
-</div>`).join("");
-$("accountModalBody").innerHTML=(lines||'<div class="empty">Sin productos</div>')+
-(o.notes?`<div class="modalNotes"><div class="muted">NOTAS</div><div style="margin-top:5px">${esc(o.notes)}</div></div>`:"")+
-`<div class="modalTotal">TOTAL: ${money(o.total)}</div>`;
-$("accountModal").classList.add("on")
-}
+async function verOrden(id){const [{data:o,error:oe},{data:i,error:ie}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id).order("created_at")]);if(oe||ie||!o){alert("No fue posible cargar la cuenta.");return}$("accountModalTitle").textContent=orderName(o);const lines=(i||[]).map(x=>`<div class="modalLine"><div><b>${x.quantity} × ${esc(x.item_name)}</b><div class="muted">${money(x.unit_price)} c/u</div></div><b>${money(x.line_total)}</b></div>`).join("");$("accountModalBody").innerHTML=(lines||'<div class="empty">Sin productos</div>')+(o.notes?`<div class="modalNotes"><div class="muted">NOTAS</div><div style="margin-top:5px">${esc(o.notes)}</div></div>`:"")+`<div class="modalTotal">TOTAL: ${money(o.total)}</div>`;$("accountModal").classList.add("on")}
 
 /* CAJA */
-async function caja(){
-show("cashier");
-const [{data:o},{data:p}]=await Promise.all([
-db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false}),
-db.from("profiles").select("id,full_name")
-]);
-$("cashOrders").innerHTML=(o||[]).map(x=>{
-const u=(p||[]).find(y=>y.id===x.assigned_to);
-return `<div class="order">
-<div class="row">
-<div><b>${orderName(x)}</b><div class="muted">${stamp(x.opened_at)} · ${esc(u?.full_name||"Personal")}</div></div>
-<div><span class="badge cash">POR COBRAR</span><div class="amount">${money(x.total)}</div></div>
-</div>
-<div class="actions">
-<button class="dark" onclick="verOrden('${x.id}')">Ver</button>
-<button class="yellow" style="width:auto;margin:0" onclick="cobrar('${x.id}')">Cobrar</button>
-</div></div>`
-}).join("")||'<div class="empty">No hay cuentas por cobrar.</div>'
-}
-
-async function cobrar(id){
-const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");
-if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;
-
-const inv=await db.rpc("process_order_inventory",{p_order:id});
-if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}
-
-const {error}=await db.from("orders").update({
-status:"closed",payment_method:pay,closed_at:new Date().toISOString(),updated_by:me.id
-}).eq("id",id);
-if(error){alert(error.message);return}
-await caja()
-}
+async function caja(){show("cashier");const [{data:o},{data:p}]=await Promise.all([db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false}),db.from("profiles").select("id,full_name")]);$("cashOrders").innerHTML=(o||[]).map(x=>{const u=(p||[]).find(y=>y.id===x.assigned_to);return `<div class="order"><div class="row"><div><b>${orderName(x)}</b><div class="muted">${stamp(x.opened_at)} · ${esc(u?.full_name||"Personal")}</div></div><div><span class="badge cash">POR COBRAR</span><div class="amount">${money(x.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${x.id}')">Ver</button><button class="yellow" style="width:auto;margin:0" onclick="cobrar('${x.id}')">Cobrar</button></div></div>`}).join("")||'<div class="empty">No hay cuentas por cobrar.</div>'}
+async function cobrar(id){const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;const inv=await db.rpc("process_order_inventory",{p_order:id});if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}const {error}=await db.from("orders").update({status:"closed",payment_method:pay,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id);if(error){alert(error.message);return}await caja()}
 
 /* ADMIN COMANDAS */
-async function comandas(){
-show("orders");
-const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);
-const card=o=>`<div class="order">
-<div class="row">
-<div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div>
-<div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div>
-</div>
-<div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div>
-</div>`;
-$("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';
-$("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'
-}
-
-async function detalle(id){
-show("detail");
-const [{data:o},{data:i},{data:p}]=await Promise.all([
-db.from("orders").select("*").eq("id",id).single(),
-db.from("order_items").select("*").eq("order_id",id),
-db.from("profiles").select("id,full_name").eq("active",true)
-]);
-current={o,i:i||[],p:p||[]};
-const cv=current.i.filter(x=>x.business==="Cuervos Pizza").reduce((s,x)=>s+ +x.line_total,0);
-const cl=current.i.filter(x=>x.business==="EL CLúB").reduce((s,x)=>s+ +x.line_total,0);
-
-$("detailBody").innerHTML=`
-<div class="card">
-<div class="row">
-<div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><h3>${orderName(o)}</h3></div>
-<div class="amount">${money(o.total)}</div>
-</div>
-<div class="summary">
-<div class="card"><div class="muted">Cuervo’s Pizza</div><div class="big">${money(cv)}</div></div>
-<div class="card"><div class="muted">EL CLúB</div><div class="big">${money(cl)}</div></div>
-</div>
-${o.order_type==="table"?`<label>Mesa</label><input id="dTable" type="number" min="1" value="${esc(String(o.table_number).replace(/^mesa\s*/i,""))}">`:""}
-<label>Personal asignado</label>
-<select id="dStaff">${(p||[]).map(x=>`<option value="${x.id}" ${x.id===o.assigned_to?"selected":""}>${esc(x.full_name||"Personal")}</option>`).join("")}</select>
-<button class="yellow" onclick="saveOrder()">Guardar cambios</button>
-</div>
-
-<h3 class="section">Productos</h3>
-${current.i.map(x=>`<div class="card">
-<div class="row">
-<div><b>${esc(x.item_name)}</b><div class="muted">${x.quantity} × ${money(x.unit_price)} · ${esc(businessName(x.business))}</div></div>
-<b>${money(x.line_total)}</b>
-</div>
-<div class="actions">
-<button class="dark" onclick="qtyAdmin('${x.id}',${x.quantity})">Cantidad</button>
-<button class="danger" onclick="removeItem('${x.id}')">Quitar</button>
-</div></div>`).join("")}
-
-<div class="card">
-<label>Método de pago</label>
-<select id="dPay"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Otro</option></select>
-${o.status==="open"?`<button class="yellow" onclick="closeAdmin()">Cerrar cuenta</button>`:`<button class="yellow" onclick="reopen()">Reabrir cuenta</button>`}
-<button class="danger" style="width:100%;margin-top:12px" onclick="deleteOrder()">Eliminar permanentemente</button>
-</div>`
-}
-
-async function saveOrder(){
-const u={assigned_to:$("dStaff").value,updated_by:me.id};
-if(current.o.order_type==="table"){if(!$("dTable").value)return;u.table_number=$("dTable").value}
-const {error}=await db.from("orders").update(u).eq("id",current.o.id);
-if(error)alert(error.message);else await detalle(current.o.id)
-}
-
-async function qtyAdmin(id,q){
-const n=+prompt("Nueva cantidad:",q);if(!Number.isInteger(n)||n<1)return;
-const x=current.i.find(a=>a.id===id);
-await db.from("order_items").update({quantity:n,line_total:+x.unit_price*n}).eq("id",id);
-await db.rpc("recalc_order_total",{p_order:current.o.id});
-await detalle(current.o.id)
-}
-
-async function removeItem(id){
-if(!confirm("¿Quitar artículo?"))return;
-await db.from("order_items").delete().eq("id",id);
-await db.rpc("recalc_order_total",{p_order:current.o.id});
-await detalle(current.o.id)
-}
-
-async function closeAdmin(){
-if(!confirm("¿Confirmar pago y cerrar cuenta?"))return;
-const inv=await db.rpc("process_order_inventory",{p_order:current.o.id});
-if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}
-const {error}=await db.from("orders").update({
-status:"closed",payment_method:$("dPay").value,closed_at:new Date().toISOString(),updated_by:me.id
-}).eq("id",current.o.id);
-if(error){alert(error.message);return}
-await comandas()
-}
-
-async function reopen(){
-if(!confirm("¿Reabrir cuenta?"))return;
-await db.from("orders").update({status:"open",closed_at:null,updated_by:me.id}).eq("id",current.o.id);
-await detalle(current.o.id)
-}
-
-async function deleteOrder(){
-if(!confirm("¿Eliminar esta cuenta?"))return;
-if(!confirm("ELIMINACIÓN PERMANENTE. ¿Continuar?"))return;
-const {error}=await db.from("orders").delete().eq("id",current.o.id);
-if(error)alert(error.message);else await comandas()
-}
+async function comandas(){show("orders");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);const card=o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div></div>`;$("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';$("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'}
+async function detalle(id){show("detail");const [{data:o},{data:i},{data:p}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id),db.from("profiles").select("id,full_name").eq("active",true)]);current={o,i:i||[],p:p||[]};const cv=current.i.filter(x=>x.business==="Cuervos Pizza").reduce((s,x)=>s+ +x.line_total,0);const cl=current.i.filter(x=>x.business==="EL CLúB").reduce((s,x)=>s+ +x.line_total,0);$("detailBody").innerHTML=`<div class="card"><div class="row"><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><h3>${orderName(o)}</h3></div><div class="amount">${money(o.total)}</div></div><div class="summary"><div class="card"><div class="muted">Cuervo’s Pizza</div><div class="big">${money(cv)}</div></div><div class="card"><div class="muted">EL CLúB</div><div class="big">${money(cl)}</div></div></div>${o.order_type==="table"?`<label>Mesa</label><input id="dTable" type="number" min="1" value="${esc(String(o.table_number).replace(/^mesa\s*/i,""))}">`:""}<label>Personal asignado</label><select id="dStaff">${(p||[]).map(x=>`<option value="${x.id}" ${x.id===o.assigned_to?"selected":""}>${esc(x.full_name||"Personal")}</option>`).join("")}</select><button class="yellow" onclick="saveOrder()">Guardar cambios</button></div><h3 class="section">Productos</h3>${current.i.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.item_name)}</b><div class="muted">${x.quantity} × ${money(x.unit_price)} · ${esc(businessName(x.business))}</div></div><b>${money(x.line_total)}</b></div><div class="actions"><button class="dark" onclick="qtyAdmin('${x.id}',${x.quantity})">Cantidad</button><button class="danger" onclick="removeItem('${x.id}')">Quitar</button></div></div>`).join("")}<div class="card"><label>Método de pago</label><select id="dPay"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Otro</option></select>${o.status==="open"?`<button class="yellow" onclick="closeAdmin()">Cerrar cuenta</button>`:`<button class="yellow" onclick="reopen()">Reabrir cuenta</button>`}<button class="danger" style="width:100%;margin-top:12px" onclick="deleteOrder()">Eliminar permanentemente</button></div>`}
+async function saveOrder(){const u={assigned_to:$("dStaff").value,updated_by:me.id};if(current.o.order_type==="table"){if(!$("dTable").value)return;u.table_number=$("dTable").value}const {error}=await db.from("orders").update(u).eq("id",current.o.id);if(error)alert(error.message);else await detalle(current.o.id)}
+async function qtyAdmin(id,q){const n=+prompt("Nueva cantidad:",q);if(!Number.isInteger(n)||n<1)return;const x=current.i.find(a=>a.id===id);await db.from("order_items").update({quantity:n,line_total:+x.unit_price*n}).eq("id",id);await db.rpc("recalc_order_total",{p_order:current.o.id});await detalle(current.o.id)}
+async function removeItem(id){if(!confirm("¿Quitar artículo?"))return;await db.from("order_items").delete().eq("id",id);await db.rpc("recalc_order_total",{p_order:current.o.id});await detalle(current.o.id)}
+async function closeAdmin(){if(!confirm("¿Confirmar pago y cerrar cuenta?"))return;const inv=await db.rpc("process_order_inventory",{p_order:current.o.id});if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}const {error}=await db.from("orders").update({status:"closed",payment_method:$("dPay").value,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",current.o.id);if(error){alert(error.message);return}await comandas()}
+async function reopen(){if(!confirm("¿Reabrir cuenta?"))return;await db.from("orders").update({status:"open",closed_at:null,updated_by:me.id}).eq("id",current.o.id);await detalle(current.o.id)}
+async function deleteOrder(){if(!confirm("¿Eliminar esta cuenta?"))return;if(!confirm("ELIMINACIÓN PERMANENTE. ¿Continuar?"))return;const {error}=await db.from("orders").delete().eq("id",current.o.id);if(error)alert(error.message);else await comandas()}
 
 /* HISTORIAL */
-async function historial(){
-show("history");
-const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);
-$("historyList").innerHTML=(data||[]).map(o=>`
-<div class="order">
-<div class="row">
-<div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div>
-<div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div>
-</div>
-<div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div>
-</div>`).join("")||'<div class="empty">Sin movimientos</div>'
-}
+async function historial(){show("history");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);$("historyList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div></div>`).join("")||'<div class="empty">Sin movimientos</div>'}
 
-(async()=>{
-try{
-const {data,error}=await db.auth.getSession();
-if(error)throw error;
-if(data.session)await route(data.session.user)
-}catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}
-})();
+(async()=>{try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await route(data.session.user)}catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}})();
 </script>
 </body>
 </html>
