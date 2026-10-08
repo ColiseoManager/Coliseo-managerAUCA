@@ -108,7 +108,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Eventos y apartados</span></div>
 </div>
-<div class="msg">Coliseo Manager 1.8</div>
+<div class="msg">Coliseo Manager 1.9 · Botellas</div>
 </section>
 
 <section id="staff" class="screen">
@@ -180,9 +180,9 @@ button{cursor:pointer}
 <option value="litro">Litros</option><option value="ml">Mililitros (ml)</option><option value="botella">Botellas</option>
 <option value="lata">Latas</option><option value="paquete">Paquetes</option><option value="caja">Cajas</option><option value="masa">Masas</option>
 </select>
-<div class="two"><div><label>Existencia inicial</label><input id="invStock" type="number" min="0" step=".001" value="0"></div>
-<div><label>Avisar cuando queden</label><input id="invMin" type="number" min="0" step=".001" value="0"></div></div>
-<label>Costo por unidad</label><input id="invCost" type="number" min="0" step=".01" value="0">
+<div class="two"><div><label id="invStockLabel">Existencia inicial</label><input id="invStock" type="number" min="0" step=".001" value="0"></div>
+<div><label id="invMinLabel">Aviso de existencia baja</label><input id="invMin" type="number" min="0" step=".001" value="0"></div></div>
+<label id="invCostLabel">Costo por unidad</label><input id="invCost" type="number" min="0" step=".01" value="0">
 
 <div id="bottleBox" class="hidden">
 <div class="notice"><b>Control por botella</b><br>Indica cuántos ml contiene y el tamaño de cada shot. Coliseo Manager convertirá la botella a mililitros para controlar el inventario.</div>
@@ -197,7 +197,7 @@ button{cursor:pointer}
 
 <div id="invMovePanel" class="hidden">
 <div class="card"><h3>Registrar movimiento</h3>
-<label>Insumo</label><select id="moveItem"></select>
+<label>Insumo</label><select id="moveItem" onchange="moveTypeUI()"></select>
 <label>Tipo</label><select id="moveType" onchange="moveTypeUI()"><option value="entrada">Entrada de mercancía</option><option value="merma">Merma</option><option value="empleado">Consumo de empleado</option><option value="cortesia">Cortesía</option><option value="ajuste">Ajuste de inventario</option></select>
 <div id="moveDirectionBox" class="hidden"><label>Tipo de ajuste</label><select id="moveDirection"><option value="entrada">Aumentar existencia</option><option value="salida">Disminuir existencia</option></select></div>
 <div id="mermaReasonBox" class="hidden"><label>Motivo de merma</label><select id="mermaReason"><option value="Mal estado">Mal estado</option><option value="Vencido / caducado">Vencido / caducado</option><option value="Derrame / accidente">Derrame / accidente</option><option value="Error de preparación">Error de preparación</option><option value="Otro">Otro</option></select></div>
@@ -263,26 +263,114 @@ async function manualItem(id,v){await db.from("menu_items").update({manual_unava
 async function deleteMenuItem(id){if(!confirm("¿Eliminar este artículo del menú?"))return;if(!confirm("Esta acción elimina el artículo. ¿Continuar?"))return;const {error}=await db.from("menu_items").delete().eq("id",id);if(error){alert("No se puede eliminar porque tiene información relacionada. Puedes marcarlo como no disponible.");return}await menuAdmin()}
 async function editItem(id){const x=items.find(a=>a.id===id);const n=prompt("Artículo:",x.name);if(!n)return;const p=prompt("Precio de venta:",x.price);if(p===null||isNaN(+p))return;const c=prompt("Costo estimado:",x.unit_cost||0);if(c===null||isNaN(+c))return;const b=prompt("Negocio: Cuervos Pizza o EL CLúB",x.business||"Cuervos Pizza");if(!["Cuervos Pizza","EL CLúB"].includes(b)){alert("Negocio no válido.");return}const {error}=await db.from("menu_items").update({name:n.trim(),price:+p,unit_cost:+c,business:b}).eq("id",id);if(error)alert(error.message);await menuAdmin()}
 
-/* INVENTARIO 1.8 */
-async function loadInventory(){const [a,b,c,d]=await Promise.all([db.from("inventory_status").select("*").order("business").order("name"),db.from("recipes").select("*"),db.from("inventory_movements").select("*").order("movement_date",{ascending:false}).limit(100),db.from("menu_items").select("*").order("name")]);inventoryItems=a.data||[];recipes=b.data||[];movements=c.data||[];items=d.data||[]}
+/* INVENTARIO 1.9 · BOTELLAS ABIERTAS Y CERRADAS */
+async function loadInventory(){
+ const [a,b,c,d,e]=await Promise.all([
+  db.from("inventory_status").select("*").order("business").order("name"),
+  db.from("recipes").select("*"),
+  db.from("inventory_movements").select("*").order("movement_date",{ascending:false}).limit(100),
+  db.from("menu_items").select("*").order("name"),
+  db.from("inventory_items").select("id,display_unit,quantity_per_display_unit,serving_size,serving_unit,open_bottle_ml,open_bottle_count,unit_cost,minimum_stock,current_stock")
+ ]);
+ if(a.error)throw a.error;
+ if(e.error)throw e.error;
+ const details=new Map((e.data||[]).map(x=>[x.id,x]));
+ inventoryItems=(a.data||[]).map(x=>({...x,...(details.get(x.id)||{})}));
+ recipes=b.data||[];movements=c.data||[];items=d.data||[];
+}
 async function dashboardStockAlert(){const {data}=await db.from("inventory_status").select("stock_status");const arr=data||[];const low=arr.filter(x=>x.stock_status==="Existencia baja").length;const out=arr.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;$("stockAlert").innerHTML=(low||out)?`<div class="notice">📦 Inventario: <b>${low}</b> con existencia baja · <b>${out}</b> agotados/no disponibles</div>`:""}
 async function inventario(){show("inventory");await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts();renderMovementHistory();inventoryUnitUI();invTab("stock")}
 function stockClass(s){return s==="Disponible"?"ok":s==="Existencia baja"?"low":"out"}
 
-function inventoryUnitUI(){const bottle=$("invUnit").value==="botella";$("bottleBox").classList.toggle("hidden",!bottle);updateShotPreview()}
-function updateShotPreview(){if(!$("shotPreview"))return;const ml=Number($("bottleMl").value||0),shot=Number($("shotMl").value||0);if(ml>0&&shot>0){const complete=Math.floor(ml/shot),rem=ml-(complete*shot);$("shotPreview").innerHTML=`🍸 Una botella rinde aproximadamente <b>${complete} shots de ${num(shot)} ml</b>${rem>0?` + ${num(rem)} ml restantes`:""}.`}else $("shotPreview").innerHTML=""}
-document.addEventListener("input",e=>{if(["bottleMl","shotMl"].includes(e.target.id))updateShotPreview();if(e.target.id==="recipeQty")recipeConvertPreview()});
-
-function renderInventory(){const low=inventoryItems.filter(x=>x.stock_status==="Existencia baja").length;const out=inventoryItems.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;$("inventorySummary").innerHTML=`<div class="summary"><div class="card"><div class="muted">INSUMOS</div><div class="big">${inventoryItems.length}</div></div><div class="card"><div class="muted">EXISTENCIA BAJA</div><div class="big">${low}</div></div><div class="card"><div class="muted">AGOTADOS</div><div class="big">${out}</div></div></div>`;$("inventoryList").innerHTML=inventoryItems.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))}${x.category?" · "+esc(x.category):""}</div></div><span class="status ${stockClass(x.stock_status)}">${esc(x.stock_status).toUpperCase()}</span></div><div class="row" style="margin-top:15px"><div><div class="muted">EXISTENCIA</div><div class="stockNumber">${num(x.current_stock)} ${esc(x.unit)}</div></div><div style="text-align:right"><div class="muted">AVISO MÍNIMO</div><b>${num(x.minimum_stock)} ${esc(x.unit)}</b></div></div><div class="muted" style="margin-top:8px">Costo unitario: ${money(x.unit_cost)}</div><div class="actions"><button class="dark" onclick="editarInsumo('${x.id}')">Editar</button><button class="dark" onclick="quickMove('${x.id}','entrada')">＋ Entrada</button><button class="dark" onclick="quickMove('${x.id}','merma')">− Merma</button><button class="dark" onclick="toggleInventory('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"No disponible"}</button></div></div>`).join("")||'<div class="empty">Todavía no hay insumos registrados.</div>'}
-
-async function crearInsumo(){const name=$("invName").value.trim();const business=$("invBusiness").value;let category=$("invCategory").value.trim()||null;let unit=$("invUnit").value;let stock=Number($("invStock").value||0);let min=Number($("invMin").value||0);let cost=Number($("invCost").value||0);if(!name||stock<0||min<0||cost<0){alert("Revisa los datos.");return}let base_unit=unit,display_unit=unit,quantity_per_display_unit=1;if(unit==="botella"){const bottleMl=Number($("bottleMl").value||0),shotMl=Number($("shotMl").value||0);if(bottleMl<=0||shotMl<=0){alert("Indica contenido de botella y tamaño de shot.");return}unit="ml";base_unit="ml";display_unit="botella";quantity_per_display_unit=bottleMl;stock*=bottleMl;min*=bottleMl;cost=cost/bottleMl;if(!category)category=`Botella · shot ${shotMl} ml`}const {error}=await db.from("inventory_items").insert({business,name,category,unit,base_unit,display_unit,quantity_per_display_unit,current_stock:stock,minimum_stock:min,unit_cost:cost,active:true});if(error){alert(error.message);return}$("invName").value="";$("invCategory").value="";$("invStock").value="0";$("invMin").value="0";$("invCost").value="0";await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts()}
-
-async function editarInsumo(id){const x=inventoryItems.find(a=>a.id===id);const name=prompt("Nombre del insumo:",x.name);if(!name)return;const min=prompt("Avisar cuando queden:",x.minimum_stock);if(min===null||isNaN(+min)||+min<0)return;const cost=prompt("Costo por unidad:",x.unit_cost);if(cost===null||isNaN(+cost)||+cost<0)return;const {error}=await db.from("inventory_items").update({name:name.trim(),minimum_stock:+min,unit_cost:+cost,updated_at:new Date().toISOString()}).eq("id",id);if(error)alert(error.message);await loadInventory();renderInventory()}
+function inventoryUnitUI(){
+ const bottle=$("invUnit").value==="botella";
+ $("bottleBox").classList.toggle("hidden",!bottle);
+ $("invStockLabel").textContent=bottle?"Botellas cerradas disponibles":"Existencia inicial";
+ $("invMinLabel").textContent=bottle?"Avisarme cuando me queden estas botellas":"Aviso de existencia baja";
+ $("invCostLabel").textContent=bottle?"Costo por botella":"Costo por unidad";
+ updateShotPreview();
+}
+function updateShotPreview(){
+ const ml=Number($("bottleMl").value),shot=Number($("shotMl").value),bottles=Number($("invStock").value||0);
+ if(ml>0&&shot>0){
+  const complete=Math.floor(ml/shot),rem=+(ml-complete*shot).toFixed(4),total=ml*bottles;
+  $("shotPreview").innerHTML=`🍸 Una botella rinde <b>${complete} shots de ${num(shot)} ml</b>${rem>0?` + ${num(rem)} ml`:""}.<div style="margin-top:7px">📦 ${num(bottles)} botellas = ${num(total)} ml · ${Math.floor(total/shot)} shots completos</div>`;
+ }else $("shotPreview").textContent="Indica los ml por botella y por shot.";
+}
+document.addEventListener("input",e=>{if(["bottleMl","shotMl","invStock"].includes(e.target.id))updateShotPreview();if(e.target.id==="recipeQty")recipeConvertPreview()});
+function renderInventory(){
+ const low=inventoryItems.filter(x=>x.stock_status==="Existencia baja").length;
+ const out=inventoryItems.filter(x=>["Agotado","No disponible"].includes(x.stock_status)).length;
+ $("inventorySummary").innerHTML=`<div class="summary"><div class="card"><div class="muted">INSUMOS</div><div class="big">${inventoryItems.length}</div></div><div class="card"><div class="muted">EXISTENCIA BAJA</div><div class="big">${low}</div></div><div class="card"><div class="muted">AGOTADOS</div><div class="big">${out}</div></div></div>`;
+ $("inventoryList").innerHTML=inventoryItems.map(x=>{
+  const bottle=x.display_unit==="botella",size=Number(x.quantity_per_display_unit||750),total=Number(x.current_stock||0),open=Number(x.open_bottle_ml||0),shot=Number(x.serving_size||45);
+  const closed=Math.max(0,Math.floor((total-open)/size+0.000001)),opened=Number(x.open_bottle_count||0),shots=Math.floor(open/shot),rem=+(open-shots*shot).toFixed(4);
+  const stock=bottle?`<div class="two" style="margin-top:15px"><div><div class="muted">TE QUEDAN</div><div class="stockNumber">${closed} botellas</div><div class="muted">Cerradas</div></div><div><div class="muted">BOTELLAS ABIERTAS</div><div class="stockNumber">${opened}</div><div class="muted">${num(open)} ml disponibles</div></div></div><div class="success">🍸 <b>${shots} shots de ${num(shot)} ml</b>${rem>0?` + ${num(rem)} ml`:""}<div class="muted">Rendimiento de botellas abiertas</div></div><div class="muted">Total: ${num(total)} ml · Aviso al quedar ${num(Number(x.minimum_stock||0)/size)} botellas · Costo por botella: ${money(Number(x.unit_cost||0)*size)}</div>`:`<div class="row" style="margin-top:15px"><div><div class="muted">EXISTENCIA</div><div class="stockNumber">${num(x.current_stock)} ${esc(x.unit)}</div></div><div style="text-align:right"><div class="muted">AVISO MÍNIMO</div><b>${num(x.minimum_stock)} ${esc(x.unit)}</b></div></div><div class="muted" style="margin-top:8px">Costo unitario: ${money(x.unit_cost)}</div>`;
+  return `<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))}${x.category?" · "+esc(x.category):""}</div></div><span class="status ${stockClass(x.stock_status)}">${esc(x.stock_status).toUpperCase()}</span></div>${stock}<div class="actions">${bottle?`<button class="yellow" style="width:auto;margin:0" onclick="abrirBotella('${x.id}')">🍾 Abrir botella</button>`:""}<button class="dark" onclick="editarInsumo('${x.id}')">Editar</button><button class="dark" onclick="quickMove('${x.id}','entrada')">＋ Entrada</button><button class="dark" onclick="quickMove('${x.id}','merma')">− Merma</button><button class="dark" onclick="toggleInventory('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"No disponible"}</button></div></div>`;
+ }).join("")||'<div class="empty">Todavía no hay insumos registrados.</div>';
+}
+async function abrirBotella(id){
+ const x=inventoryItems.find(z=>z.id===id);if(!x)return;
+ const size=Number(x.quantity_per_display_unit);
+ const remaining=prompt(`¿Cuántos ml contiene la botella de ${x.name} que vas a abrir?`,String(size));
+ if(remaining===null)return;
+ const ml=Number(remaining);
+ if(!Number.isFinite(ml)||ml<=0||ml>size){alert(`Indica una cantidad entre 1 y ${size} ml.`);return}
+ if(!confirm(`¿Abrir una botella de ${x.name} con ${num(ml)} ml?`))return;
+ try{
+  const {error}=await db.rpc("open_inventory_bottle",{p_item:id,p_remaining_ml:ml});
+  if(error)throw error;
+  await loadInventory();renderInventory();fillMovementItems();
+ }catch(e){alert("No se pudo completar la operación: "+e.message+". Comprueba el inventario antes de intentar nuevamente.")}
+}
+async function crearInsumo(){
+ const name=$("invName").value.trim(),business=$("invBusiness").value;
+ let category=$("invCategory").value.trim()||null,unit=$("invUnit").value;
+ let stock=Number($("invStock").value),min=Number($("invMin").value),cost=Number($("invCost").value);
+ if(!name||![stock,min,cost].every(Number.isFinite)||stock<0||min<0||cost<0){alert("Revisa nombre, existencias y costo.");return}
+ let base_unit=unit,display_unit=unit,quantity_per_display_unit=1,serving_size=null,serving_unit=null;
+ if(unit==="botella"){
+  const bottleMl=Number($("bottleMl").value),shotMl=Number($("shotMl").value);
+  if(!Number.isInteger(stock)||!Number.isInteger(min)||![bottleMl,shotMl].every(v=>Number.isFinite(v)&&v>0)||shotMl>bottleMl){alert("Indica botellas enteras y ml válidos para botella y shot.");return}
+  unit="ml";base_unit="ml";display_unit="botella";quantity_per_display_unit=bottleMl;
+  serving_size=shotMl;serving_unit="ml";stock*=bottleMl;min*=bottleMl;cost/=bottleMl;
+  if(!category)category="Botella";
+ }
+ const btn=document.querySelector('#invStockPanel button[onclick="crearInsumo()"]');
+ if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Guardando…";
+ try{
+  const {error}=await db.from("inventory_items").insert({business,name,category,unit,base_unit,display_unit,quantity_per_display_unit,serving_size,serving_unit,current_stock:stock,minimum_stock:min,unit_cost:cost,active:true});
+  if(error)throw error;
+  $("invName").value="";$("invCategory").value="";$("invStock").value="0";$("invMin").value="0";$("invCost").value="0";
+  try{await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts()}catch(e){alert("El insumo se guardó, pero no se pudo actualizar la lista. Recarga la página. No vuelvas a registrarlo.")}
+ }catch(e){alert("No se pudo confirmar el registro: "+e.message+". Revisa existencias antes de volver a intentarlo.")}
+ finally{btn.disabled=false;btn.textContent="Guardar insumo"}
+}
+async function editarInsumo(id){
+ const x=inventoryItems.find(a=>a.id===id);if(!x)return;
+ const bottle=x.display_unit==="botella",factor=bottle?Number(x.quantity_per_display_unit):1;
+ const name=prompt("Nombre del insumo:",x.name);if(!name||!name.trim())return;
+ const min=prompt(bottle?"Avisarme cuando me queden estas botellas:":"Aviso de existencia baja:",String(Number(x.minimum_stock)/factor));
+ if(min===null||!Number.isFinite(Number(min))||Number(min)<0)return;
+ const cost=prompt(bottle?"Costo por botella:":"Costo por unidad:",String(+(Number(x.unit_cost)*factor).toFixed(2)));
+ if(cost===null||!Number.isFinite(Number(cost))||Number(cost)<0)return;
+ const payload={name:name.trim(),minimum_stock:Number(min)*factor,unit_cost:Number(cost)/factor,updated_at:new Date().toISOString()};
+ if(bottle){
+  const shot=prompt("Mililitros por shot:",String(x.serving_size||45));
+  if(shot===null)return;
+  if(!Number.isFinite(Number(shot))||Number(shot)<=0||Number(shot)>factor){alert("Tamaño de shot inválido.");return}
+  payload.serving_size=Number(shot);payload.serving_unit="ml";
+ }
+ const {error}=await db.from("inventory_items").update(payload).eq("id",id);
+ if(error){alert(error.message);return}
+ try{await loadInventory();renderInventory()}catch(e){alert("Cambios guardados. Recarga la página para verlos.")}
+}
 async function toggleInventory(id,v){await db.from("inventory_items").update({manual_unavailable:v,updated_at:new Date().toISOString()}).eq("id",id);await loadInventory();renderInventory()}
 function quickMove(id,type){invTab("move");$("moveItem").value=id;$("moveType").value=type;moveTypeUI();$("moveQty").focus()}
 function invTab(t){["stock","move","recipe","history"].forEach(x=>{$("inv"+x.charAt(0).toUpperCase()+x.slice(1)+"Panel").classList.toggle("hidden",x!==t);$("invTab"+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle("on",x===t)});if(t==="history")renderMovementHistory();if(t==="recipe")cargarReceta()}
-function fillMovementItems(){$("moveItem").innerHTML=inventoryItems.map(x=>`<option value="${x.id}">${esc(x.name)} · ${num(x.current_stock)} ${esc(x.unit)}</option>`).join("")}
-function moveTypeUI(){const t=$("moveType").value;$("mermaReasonBox").classList.toggle("hidden",t!=="merma");$("employeeBox").classList.toggle("hidden",t!=="empleado");$("moveDirectionBox").classList.toggle("hidden",t!=="ajuste");const x=inventoryItems.find(a=>a.id===$("moveItem").value);$("moveQtyLabel").textContent="Cantidad"+(x?" ("+x.unit+")":"")}
+function fillMovementItems(){$("moveItem").innerHTML=inventoryItems.map(x=>`<option value="${x.id}">${esc(x.name)} · ${num(x.current_stock)} ${esc(x.unit)}</option>`).join("");moveTypeUI()}
+function moveTypeUI(){const t=$("moveType").value;$("mermaReasonBox").classList.toggle("hidden",t!=="merma");$("employeeBox").classList.toggle("hidden",t!=="empleado");$("moveDirectionBox").classList.toggle("hidden",t!=="ajuste");const x=inventoryItems.find(a=>a.id===$("moveItem").value);$("moveQtyLabel").textContent="Cantidad"+(x?" ("+x.unit+(x.display_unit==="botella"?"; 750 ml = 1 botella aproximadamente" : "")+")":"")}
 async function registrarMovimiento(){const id=$("moveItem").value,t=$("moveType").value,q=Number($("moveQty").value);if(!id||!q||q<=0){$("moveMsg").textContent="Indica insumo y cantidad.";return}let direction=t==="entrada"?"entrada":"salida";if(t==="ajuste")direction=$("moveDirection").value;let reason=t==="merma"?$("mermaReason").value:t==="empleado"?"Consumo de empleado":t==="cortesia"?"Cortesía":t==="entrada"?"Entrada de mercancía":"Ajuste";const business=t==="empleado"?$("employeeBusiness").value:null;const area=t==="empleado"?$("employeeArea").value.trim()||null:null;const employee=t==="empleado"?$("employeeName").value.trim()||null:null;const notes=$("moveNotes").value.trim()||null;const {error}=await db.rpc("record_inventory_movement",{p_item:id,p_type:t,p_reason:reason,p_quantity:q,p_direction:direction,p_business:business,p_employee_area:area,p_employee_name:employee,p_notes:notes,p_order:null});if(error){$("moveMsg").textContent="Error: "+error.message;return}$("moveMsg").textContent="✓ Movimiento registrado.";$("moveQty").value="";$("moveNotes").value="";$("employeeArea").value="";$("employeeName").value="";await loadInventory();renderInventory();fillMovementItems();renderMovementHistory()}
 function movementLabel(x){const map={entrada:"Entrada",venta:"Venta",merma:"Merma",empleado:"Empleado",cortesia:"Cortesía",ajuste:"Ajuste"};return map[x]||x}
 function renderMovementHistory(){$("movementHistory").innerHTML=movements.map(m=>{const i=inventoryItems.find(x=>x.id===m.inventory_item_id);return `<div class="card"><div class="row"><div><b>${esc(i?.name||"Insumo")}</b><div class="muted">${stamp(m.movement_date)} · ${esc(movementLabel(m.movement_type))}</div></div><div class="${m.direction==="entrada"?"ok":"out"} status">${m.direction==="entrada"?"+":"−"} ${num(m.quantity)} ${esc(i?.unit||"")}</div></div>${m.reason?`<div class="muted" style="margin-top:8px">Motivo: ${esc(m.reason)}</div>`:""}${m.employee_name?`<div style="margin-top:6px">👤 ${esc(m.employee_name)}${m.employee_area?" · "+esc(m.employee_area):""}</div>`:""}${m.business?`<div class="muted">${esc(businessName(m.business))}</div>`:""}${m.notes?`<div class="muted">Nota: ${esc(m.notes)}</div>`:""}</div>`}).join("")||'<div class="empty">Todavía no hay movimientos.</div>'}
