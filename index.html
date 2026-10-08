@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coliseo Manager</title>
+<title>Coliseo Manager 2.0</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
@@ -419,7 +419,7 @@ async function deleteOrder(){if(!confirm("¿Eliminar esta cuenta?"))return;if(!c
 async function historial(){show("history");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);$("historyList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div></div>`).join("")||'<div class="empty">Sin movimientos</div>'}
 
 (async()=>{try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await route(data.session.user)}catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}})();
-/* COLISEO MANAGER 2.0 - ACTUALIZACION DE PEDIDOS </script> EN index.html
+/* COLISEO MANAGER 2.0 - ACTUALIZACION COMPLETA
    Requiere ejecutar primero Coliseo_Manager_2_0_SUPABASE.sql.
    Mantiene todas las pantallas de la versión 1.9. */
 
