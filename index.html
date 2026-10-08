@@ -419,6 +419,98 @@ async function deleteOrder(){if(!confirm("¿Eliminar esta cuenta?"))return;if(!c
 async function historial(){show("history");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);$("historyList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div></div>`).join("")||'<div class="empty">Sin movimientos</div>'}
 
 (async()=>{try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await route(data.session.user)}catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}})();
+/* COLISEO MANAGER 2.0 - PEGAR JUSTO ANTES DE </script> EN index.html
+   Requiere ejecutar primero Coliseo_Manager_2_0_SUPABASE.sql.
+   Mantiene todas las pantallas de la versión 1.9. */
+
+guardarPedido = async function(){
+ const type=$("orderType").value, table=$("tableNumber").value.trim();
+ if(type==="table"&&(!/^\d+$/.test(table)||Number(table)<1)){$("orderMsg").textContent="Ingresa un número de mesa válido.";return}
+ if(!basket.length){$("orderMsg").textContent="Selecciona productos.";return}
+ const btn=document.querySelector('button[onclick="guardarPedido()"]');
+ if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Confirmando pedido…";
+ try{
+  const {data,error}=await db.rpc("create_order_v2",{
+   p_type:type,p_table:table,p_platform:type==="delivery"?$("deliveryPlatform").value:null,
+   p_notes:$("notes").value.trim(),p_lines:basket.map(x=>({id:x.id,q:x.q}))
+  });
+  if(error)throw error;
+  basket=[];
+  const bottles=(data?.opened_bottles||[]).map(x=>`🍾 ${x.count} ${x.count===1?"botella abierta":"botellas abiertas"} de ${x.name} (${x.ml} ml)`);
+  alert("✓ Pedido confirmado. Inventario actualizado."+(bottles.length?"\n"+bottles.join("\n"):""));
+  await volverRol();
+ }catch(e){$("orderMsg").textContent="No se pudo confirmar: "+e.message+". Comprueba las cuentas antes de reintentar."}
+ finally{btn.disabled=false;btn.textContent="Guardar cuenta"}
+};
+
+cobrar = async function(id){
+ const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");
+ if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;
+ const {error}=await db.rpc("close_order_v2",{p_order:id,p_payment:pay});
+ if(error){alert("No se pudo cerrar: "+error.message);return}
+ await caja();
+};
+
+closeAdmin = async function(){
+ if(!confirm("¿Confirmar pago y cerrar cuenta?"))return;
+ const {error}=await db.rpc("close_order_v2",{p_order:current.o.id,p_payment:$("dPay").value});
+ if(error){alert("No se pudo cerrar: "+error.message);return}
+ await comandas();
+};
+
+const detalleOriginalV19=detalle;
+detalle = async function(id){
+ await detalleOriginalV19(id);
+ if(!current?.o||me?.role!=="admin")return;
+ const host=$("detailBody");
+ if(current.o.status!=="open")return;
+ const div=document.createElement("div");div.className="card";
+ div.innerHTML='<h3>🎁 Cortesías y descuentos</h3><div class="muted">Solo administrador. Se registra el motivo y el importe.</div><div class="actions"><button class="dark" onclick="autorizarAjusteV2(\'discount\')">Descuento 1–30%</button><button class="dark" onclick="autorizarAjusteV2(\'complimentary\')">Cortesía</button></div>';
+ host.prepend(div);
+ const {data}=await db.from("order_adjustments").select("kind,percent,reason,amount,created_at").eq("order_id",id);
+ if(data?.length){const a=document.createElement("div");a.className="notice";a.textContent=data.map(x=>`${x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía"}: ${money(x.amount)} · ${x.reason}`).join(" | ");div.append(a)}
+};
+
+async function autorizarAjusteV2(kind){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ const options=current.i.map((x,i)=>`${i+1}. ${x.item_name} × ${x.quantity}`);
+ const selected=prompt("¿A qué aplicar?\n0. Cuenta completa\n"+options.join("\n"),"0");
+ if(selected===null)return;
+ if(!/^\d+$/.test(selected)||Number(selected)>current.i.length){alert("Opción inválida");return}
+ const n=Number(selected);
+ let percent=null;
+ if(kind==="discount"){
+  const answer=prompt("Porcentaje de descuento (1–30):","10");if(answer===null)return;
+  percent=Number(answer);
+  if(!Number.isFinite(percent)||percent<1||percent>30){alert("Porcentaje inválido");return}
+ }
+ const reason=prompt("Motivo obligatorio:");if(!reason?.trim())return;
+ if(!confirm("¿Autorizar "+(kind==="discount"?"descuento":"cortesía")+"?"))return;
+ const {data,error}=await db.rpc("apply_order_adjustment_v2",{
+  p_order:current.o.id,p_kind:kind,p_reason:reason.trim(),p_percent:percent,
+  p_order_item:n===0?null:current.i[n-1].id
+ });
+ if(error){alert("No autorizado: "+error.message);return}
+ alert("✓ Autorizado: "+money(data));await detalle(current.o.id);
+}
+
+// Bloquear edición de cantidades después de descontar inventario: requiere devolución controlada.
+qtyAdmin = async function(){alert("El inventario ya fue descontado. Para modificar un pedido confirmado se requiere un procedimiento de devolución y nuevo consumo.")};
+removeItem = async function(){alert("El inventario ya fue descontado. No elimines artículos confirmados; registra la incidencia con administración.")};
+deleteOrder = async function(){alert("Por seguridad, no se eliminan cuentas con movimientos de inventario.")};
+reopen = async function(){alert("La cuenta cerrada conserva sus movimientos. No se puede reabrir desde esta versión.")};
+
+// Evitar que la versión 1.9 recalcule y borre ajustes autorizados al guardar asignación.
+saveOrder = async function(){
+ const u={assigned_to:$("dStaff").value,updated_by:me.id};
+ if(current.o.order_type==="table"){
+  if(!/^\d+$/.test($("dTable").value)||Number($("dTable").value)<1){alert("Mesa inválida");return}
+  u.table_number=$("dTable").value;
+ }
+ const {error}=await db.from("orders").update(u).eq("id",current.o.id);
+ if(error)alert(error.message);else await detalle(current.o.id);
+};
 </script>
 </body>
 </html>
