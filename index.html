@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coliseo Manager 2.0</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+<title>Coliseo Manager 2.7</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
 /* COLISEO MANAGER 2.5: CORTESIAS LIBRES DEL MENU */
 let freeCourtesyProductsV25=[];
 async function abrirCortesiaLibreV25(){
@@ -55,7 +56,7 @@ async function cargarCortesiasLibresV25(){
  host.textContent="Cargando…";
  const {data,error}=await db.from("free_courtesies_v25").select("item_name,business,quantity,unit_price,reason,created_at").order("created_at",{ascending:false}).limit(100);
  if(error){host.textContent="Historial no disponible: "+error.message;return}
- host.innerHTML=(data||[]).map(x=>'<div class="card"><b>'+esc(x.quantity+' × '+x.item_name)+'</b><div class="muted">'+esc(businessName(x.business))+' · '+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Autorizado por administrador01 · Valor: '+money(x.quantity*x.unit_price)+'</div></div>').join("")||'<div class="empty">Todavía no hay cortesías libres.</div>';
+ host.innerHTML=(data||[]).map(x=>'<div class="card"><b>'+esc(x.quantity+' × '+x.item_name)+'<div class="muted">'+esc(businessName(x.business))+'</div>'+'</b><div class="muted">'+esc(businessName(x.business))+' · '+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Autorizado por administrador01 · Valor: '+money(x.quantity*x.unit_price)+'</div></div>').join("")||'<div class="empty">Todavía no hay cortesías libres.</div>';
 }
 
 </script>
@@ -168,7 +169,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 2.5 · Notificaciones integradas</div>
+<div class="msg">Coliseo Manager 2.8 · Cancelaciones claras y registro</div>
 </section>
 
 <section id="staff" class="screen">
@@ -293,8 +294,8 @@ button{cursor:pointer}
 <div class="brand">ADMINISTRACIÓN · SOLO ADMINISTRADOR</div>
 <h2>🎁 Cortesías y descuentos</h2>
 <div class="notice">Para autorizar, selecciona una cuenta abierta. Los descuentos son del 1 al 30%. Las cortesías y los descuentos requieren motivo y quedan registrados.</div>
-<div class="card"><h3>🎁 Cortesía libre del menú</h3><div class="muted">No requiere una cuenta de cliente. Selecciona cualquier producto disponible de Cuervo’s Pizza o EL CLúB.</div><button class="yellow" onclick="abrirCortesiaLibreV25()">＋ Elegir producto del menú</button></div><h3 class="section">Cortesías libres registradas</h3><div id="freeCourtesyHistoryV25"></div><h3 class="section">Cortesías y descuentos de cuentas</h3><div id="authorizationOrders"></div>
-<h3 class="section">Autorizaciones registradas</h3><div id="authorizationHistory"></div>
+<div class="card"><h3>🎁 Cortesía libre del menú</h3><div class="muted">No requiere una cuenta de cliente. Selecciona cualquier producto disponible de Cuervo’s Pizza o EL CLúB.</div><button class="yellow" onclick="abrirCortesiaLibreV25()">＋ Elegir producto del menú</button></div><h3 class="section">Cortesías libres registradas</h3><div id="freeCourtesyHistoryV25"></div><h3 class="section">Cortesías y descuentos de cuentas</h3><button class="dark" onclick="comandas()">🧾 Ver todas las comandas</button><div id="authorizationOrders"></div>
+<h3 class="section">Autorizaciones registradas</h3><button class="dark" onclick="autorizacionesV21()">↻ Actualizar registros</button><div id="authorizationHistory"></div>
 </section>
 <section id="salesSummary" class="screen">
 <button class="back" onclick="goAdmin()">← Volver</button>
@@ -747,6 +748,108 @@ verOrden=async function(id){
 };
 
 
+
+/* COLISEO MANAGER 2.6 - CORTESÍAS DEL MENÚ POR CUENTA Y CANCELACIONES AUDITABLES */
+let cancellationV26=null;
+const abrirCortesiaLibreOriginalV26=abrirCortesiaLibreV25;
+abrirCortesiaLibreV25=async function(orderId=null){
+ await abrirCortesiaLibreOriginalV26();
+ if(!$('freeCourtesyModalV25').classList.contains('on'))return;
+ const sel=$('courtesyOrderV26');
+ sel.innerHTML='<option value="">Sin cuenta · Cortesía libre</option>';
+ const {data,error}=await db.from('orders').select('id,table_number,order_type,delivery_platform,opened_at').eq('status','open').order('opened_at',{ascending:false}).limit(100);
+ if(error){$('freeCourtesyErrorV25').textContent='No se pudieron cargar las cuentas: '+error.message;return}
+ for(const o of data||[]){const opt=document.createElement('option');opt.value=o.id;opt.textContent=orderName(o)+' · '+stamp(o.opened_at);sel.appendChild(opt)}
+ if(orderId)sel.value=orderId;
+};
+guardarCortesiaLibreV25=async function(){
+ if(me?.role!=='admin')return;
+ const id=$('freeCourtesyProductV25').value,qty=Number($('freeCourtesyQtyV25').value),orderId=$('courtesyOrderV26').value;
+ const reason=$('freeCourtesyReasonV25').value.trim(),extra=$('freeCourtesyNotesV25').value.trim();
+ const msg=$('freeCourtesyErrorV25');msg.textContent='';
+ if(!id||!Number.isInteger(qty)||qty<1||qty>100||!reason){msg.textContent='Selecciona producto, cantidad válida y motivo.';return}
+ const btn=$('freeCourtesyConfirmV25');if(btn.disabled)return;btn.disabled=true;btn.textContent='Registrando cortesía…';
+ try{
+  const rpc=orderId?'issue_account_courtesy_v26':'issue_free_courtesy_v25';
+  const args=orderId?{p_order:orderId,p_menu_item:id,p_quantity:qty,p_reason:reason+(extra?' — '+extra:'')}:{p_menu_item:id,p_quantity:qty,p_reason:reason+(extra?' — '+extra:'')};
+  const {data,error}=await db.rpc(rpc,args);if(error)throw error;
+  cerrarCortesiaLibreV25();notificacionV24('Cortesía registrada',qty+' × '+data.item_name+(orderId?' · Agregada a la cuenta sin cargo':' · Sin cuenta')+' · Inventario actualizado.');
+  if(orderId){if($('authorizations').classList.contains('on'))await autorizacionesV21();else await detalle(orderId)}
+  else await cargarCortesiasLibresV25();
+ }catch(e){msg.textContent='No se pudo registrar: '+e.message}
+ finally{btn.disabled=false;btn.textContent='Confirmar cortesía'}
+};
+function abrirCancelacionV26(id){
+ if(me?.role!=='admin'||current?.o?.status!=='open')return;
+ const x=current.i.find(y=>y.id===id);if(!x)return;
+ cancellationV26={orderId:current.o.id,itemId:id,max:x.quantity};
+ $('cancelItemNameV26').textContent=x.item_name+' · '+businessName(x.business)+' · '+x.quantity+' × '+money(x.unit_price);
+ $('cancelItemQtyV26').value='1';$('cancelItemQtyV26').max=x.quantity;
+ document.querySelectorAll('input[name=cancelDispositionV28]').forEach(x=>x.checked=false);actualizarDestinoCancelacionV28();
+ $('cancelItemExtraV26').value='';$('cancelItemErrorV26').textContent='';
+ $('cancelItemReasonV26').innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option>'+esc(x)+'</option>').join('');
+ $('cancelItemModalV26').classList.add('on');
+}
+function cerrarCancelacionV26(){$('cancelItemModalV26').classList.remove('on');cancellationV26=null}
+function agregarMotivoCancelacionV26(){
+ const x=prompt('Nuevo motivo fijo:');if(!x?.trim())return;
+ const v=x.trim().slice(0,120),all=motivosV22();
+ if(!all.includes(v)){try{localStorage.setItem('motivosColiseoV22',JSON.stringify([...all.filter(y=>!MOTIVOS_V22.includes(y)),v]))}catch(e){}}
+ $('cancelItemReasonV26').innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(y=>'<option>'+esc(y)+'</option>').join('');
+ $('cancelItemReasonV26').value=v;
+}
+async function confirmarCancelacionV26(){
+ if(me?.role!=='admin'||!cancellationV26)return;
+ const q=Number($('cancelItemQtyV26').value),reason=$('cancelItemReasonV26').value.trim(),extra=$('cancelItemExtraV26').value.trim();
+ const msg=$('cancelItemErrorV26');msg.textContent='';
+ if(!Number.isInteger(q)||q<1||q>cancellationV26.max||!reason){msg.textContent='Indica cantidad válida y motivo.';return}
+ const disposition=document.querySelector('input[name=cancelDispositionV28]:checked')?.value;
+ if(!disposition){msg.textContent='Selecciona qué pasará con el producto.';return}
+ const returnStock=disposition==='inventario';
+ if(returnStock&&!$('cancelReturnConfirmedV27').checked){msg.textContent='Confirma que el producto está apto para venta.';return}
+ const btn=$('cancelItemSubmitV26');if(btn.disabled)return;btn.disabled=true;
+ const orderId=cancellationV26.orderId;
+ try{
+  const {data,error}=await db.rpc('cancel_order_item_v27',{p_order:orderId,p_order_item:cancellationV26.itemId,p_quantity:q,p_reason:reason+(extra?' — '+extra:''),p_return_stock:returnStock});
+  if(error)throw error;
+  cerrarCancelacionV26();notificacionV24('Producto cancelado',q+' × '+data.item_name+' · Total: '+money(data.total)+(returnStock?' · Devuelto a inventario.':' · Registrado como merma (sin descontar dos veces).'));
+  await detalle(orderId);
+ }catch(e){msg.textContent='No se pudo cancelar: '+e.message}
+ finally{btn.disabled=false}
+}
+function actualizarDestinoCancelacionV28(){
+ const value=document.querySelector('input[name=cancelDispositionV28]:checked')?.value;
+ $('cancelReturnBoxV28').classList.toggle('hidden',value!=='inventario');
+ $('cancelMermaInfoV28').classList.toggle('hidden',value!=='merma');
+ if(value!=='inventario')$('cancelReturnConfirmedV27').checked=false;
+}
+const detalleOriginalV26=detalle;
+detalle=async function(id){
+ await detalleOriginalV26(id);
+ if(me?.role!=='admin'||current?.o?.status!=='open')return;
+ const host=$('detailBody');
+ const courtesy=document.createElement('div');courtesy.className='card';
+ courtesy.innerHTML='<h3>🎁 Cortesía del menú</h3><div class="muted">Agrega cualquier producto sin cargo a esta cuenta.</div>';
+ const b=document.createElement('button');b.className='yellow';b.textContent='＋ Elegir producto de cortesía';b.onclick=()=>abrirCortesiaLibreV25(id);courtesy.appendChild(b);host.prepend(courtesy);
+ const {data:grants}=await db.from('account_courtesies_v26').select('item_name,quantity,reason,created_at').eq('order_id',id).order('created_at',{ascending:false});
+ if(grants?.length){const box=document.createElement('div');box.className='card';box.innerHTML='<h3>Cortesías de esta cuenta</h3>'+grants.map(x=>'<div class="modalLine"><div><b>'+esc(x.quantity+' × '+x.item_name)+'<div class="muted">'+esc(businessName(x.business))+'</div>'+'</b><div class="muted">'+esc(x.reason)+' · Autorizado por administrador01</div></div><b>$0.00</b></div>').join('');host.appendChild(box)}
+ for(const item of current.i){
+  const buttons=[...host.querySelectorAll('button[onclick^="qtyAdmin("]')];
+  const button=buttons.find(x=>x.getAttribute('onclick').includes(item.id));
+  if(button){const cancel=document.createElement('button');cancel.className='danger';cancel.textContent='✕ Cancelar producto';cancel.onclick=()=>abrirCancelacionV26(item.id);button.parentElement.appendChild(cancel)}
+ }
+ const {data:cancelled}=await db.from('order_cancellations_v26').select('item_name,business,quantity,unit_price,amount,reason,created_at,returned_to_inventory,disposition,authorized_by').eq('order_id',id).order('created_at',{ascending:false});
+ if(cancelled?.length){const box=document.createElement('div');box.className='card';box.innerHTML='<h3>Cancelaciones registradas</h3>'+cancelled.map(x=>'<div class="modalLine"><div><b>'+esc(x.quantity+' × '+x.item_name)+'<div class="muted">'+esc(businessName(x.business))+'</div>'+'</b><div class="muted">'+esc(x.reason)+' · '+(x.returned_to_inventory?'Devuelto a inventario':'Merma · no apto para venta')+' · Autorizado por administrador01</div></div><b>−'+money(x.amount)+'</b></div>').join('');host.appendChild(box)}
+};
+const autorizacionesOriginalV26=autorizacionesV21;
+autorizacionesV21=async function(){
+ await autorizacionesOriginalV26();
+ const card=$('freeCourtesyHistoryV25')?.previousElementSibling;
+ // Selector de cuenta disponible también desde el módulo de cortesías.
+ const button=document.querySelector('#authorizations button[onclick="abrirCortesiaLibreV25()"]');
+ if(button)button.textContent='＋ Elegir producto · libre o para una cuenta';
+};
+
 </script>
 <div class="modalWrap" id="adjustmentModalV22" role="dialog" aria-modal="true">
 <div class="modalCard">
@@ -762,14 +865,30 @@ verOrden=async function(id){
 <button id="ajusteConfirmarV22" class="yellow" onclick="confirmarAjusteV22()">Confirmar autorización</button>
 </div></div>
 <div id="coliseoToastV24" class="coliseoToast" role="status" aria-live="polite"><button onclick="document.getElementById('coliseoToastV24').classList.remove('on')">Cerrar</button><strong id="toastTitleV24"></strong><span id="toastMessageV24"></span></div>
+<div class="modalWrap" id="cancelItemModalV26" role="dialog" aria-modal="true"><div class="modalCard">
+<div class="top"><h2>✕ Cancelar producto</h2><button class="dark" onclick="cerrarCancelacionV26()">✕</button></div>
+<div class="notice">La cancelación quita el producto del cobro. Indica qué ocurrió con el producto para registrar correctamente el inventario y la merma.</div>
+<div id="cancelItemNameV26" class="card"></div>
+<label>Cantidad a cancelar</label><input id="cancelItemQtyV26" type="number" min="1" step="1">
+<div class="card"><h3>¿Qué pasó con el producto?</h3>
+<label style="display:flex;gap:12px;align-items:flex-start"><input type="radio" name="cancelDispositionV28" value="inventario" onchange="actualizarDestinoCancelacionV28()" style="width:auto;margin-top:2px"><span><b>↩ Devolver a inventario</b><div class="muted">Sí está apto para venderse: producto sin preparar o botella/lata cerrada e íntegra.</div></span></label>
+<label style="display:flex;gap:12px;align-items:flex-start"><input type="radio" name="cancelDispositionV28" value="merma" onchange="actualizarDestinoCancelacionV28()" style="width:auto;margin-top:2px"><span><b>🗑 Registrar como merma</b><div class="muted">No se puede vender: comida o bebida ya preparada, botella abierta, producto dañado o contaminado.</div></span></label>
+<div id="cancelReturnBoxV28" class="hidden"><label style="display:flex;gap:8px"><input id="cancelReturnConfirmedV27" type="checkbox" style="width:auto"> Confirmo que el producto está íntegro y apto para venta.</label></div>
+<div id="cancelMermaInfoV28" class="notice hidden">Se registra como merma y NO se descuenta otra vez: el inventario ya se descontó al confirmar el pedido.</div>
+<div class="muted">Las botellas controladas por mililitros requieren verificar también el control de botellas abiertas.</div></div><label>Motivo</label><div class="row"><select id="cancelItemReasonV26" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoCancelacionV26()">＋</button></div>
+<label>Detalle adicional (opcional)</label><textarea id="cancelItemExtraV26" placeholder="Especifica el motivo"></textarea>
+<div class="notice">Autorizado por administrador01</div><div id="cancelItemErrorV26" class="msg"></div>
+<button id="cancelItemSubmitV26" class="yellow" onclick="confirmarCancelacionV26()">Confirmar cancelación</button>
+</div></div>
 <div class="modalWrap" id="freeCourtesyModalV25" role="dialog" aria-modal="true"><div class="modalCard">
-<div class="top"><h2>🎁 Cortesía libre</h2><button class="dark" onclick="cerrarCortesiaLibreV25()">✕</button></div>
+<div class="top"><h2>🎁 Cortesía del menú</h2><button class="dark" onclick="cerrarCortesiaLibreV25()">✕</button></div>
+<label>Asignar cortesía a</label><select id="courtesyOrderV26"><option value="">Sin cuenta · Cortesía libre</option></select>
 <label>Buscar en el menú</label><input id="freeCourtesySearchV25" placeholder="Pizza, shot, bebida, hamburguesa…" oninput="filtrarCortesiasV25()">
 <label>Producto</label><select id="freeCourtesyProductV25"></select>
 <label>Cantidad</label><input id="freeCourtesyQtyV25" type="number" min="1" max="100" step="1" value="1">
 <label>Motivo</label><div class="row"><select id="freeCourtesyReasonV25" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoLibreV25()">＋</button></div>
 <label>Detalle adicional (opcional)</label><textarea id="freeCourtesyNotesV25" placeholder="Especifica la razón si hace falta"></textarea>
-<div class="notice">Autorizado por administrador01 · Sin cargo a ninguna cuenta</div>
+<div class="notice">Autorizado por administrador01 · Producto sin cargo</div>
 <div id="freeCourtesyErrorV25" class="msg"></div>
 <button id="freeCourtesyConfirmV25" class="yellow" onclick="guardarCortesiaLibreV25()">Confirmar cortesía</button>
 </div></div>
