@@ -69,6 +69,10 @@ button{cursor:pointer}
 .modalNotes{background:#101010;border-radius:12px;padding:12px;margin-top:14px}
 .modalTotal{font-size:28px;color:#f6c62e;font-weight:800;text-align:right;margin:20px 0 8px}
 @media(max-width:420px){.grid,.products,.summary,.three{grid-template-columns:1fr}}
+
+/* Notificaciones propias de Coliseo Manager */
+.coliseoToast{position:fixed;left:16px;right:16px;bottom:24px;max-width:540px;margin:auto;z-index:10001;background:#1b1b1b;border:1px solid #6c5b1a;border-left:5px solid #f6c62e;border-radius:15px;padding:16px;box-shadow:0 12px 38px #000a;display:none}
+.coliseoToast.on{display:block}.coliseoToast strong{color:#f6c62e;display:block;margin-bottom:7px}.coliseoToast button{float:right;margin-left:10px;background:#f6c62e;border:0;border-radius:9px;padding:8px 12px;font-weight:bold;color:#111}
 </style>
 </head>
 <body>
@@ -110,7 +114,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 2.3 · Caja y consumos adicionales</div>
+<div class="msg">Coliseo Manager 2.4 · Notificaciones integradas</div>
 </section>
 
 <section id="staff" class="screen">
@@ -576,6 +580,12 @@ saveOrder = async function(){
  const {error}=await db.from("orders").update(u).eq("id",current.o.id);
  if(error)alert(error.message);else await detalle(current.o.id);
 };
+function notificacionV24(titulo,mensaje){
+ const toast=document.getElementById("coliseoToastV24");
+ document.getElementById("toastTitleV24").textContent="✓ "+titulo;
+ document.getElementById("toastMessageV24").textContent=mensaje;
+ toast.classList.add("on");
+}
 /* COLISEO MANAGER 2.3 - CAJA Y CONSUMOS ADICIONALES */
 let addToOrderV23=null;
 function abrirCajaV23(){if(me?.role!=="admin"&&me?.role!=="cashier"){alert("Sin acceso a caja");return}caja()}
@@ -623,7 +633,7 @@ guardarPedido=async function(){
   const {data,error}=await db.rpc("add_order_items_v23",{p_order:orderId,p_lines:basket.map(x=>({id:x.id,q:x.q}))});
   if(error)throw error;
   basket=[];addToOrderV23=null;
-  alert("✓ Productos agregados. Nuevo total: "+money(data?.total)+". Inventario actualizado.");
+  notificacionV24("Productos agregados correctamente", "Nuevo total: "+money(data?.total)+" · Inventario actualizado.");
   if(me.role==="cashier")await caja();
   else if(me.role==="staff")await staff();
   else await detalle(orderId);
@@ -696,5 +706,6 @@ verOrden=async function(id){
 <div id="ajusteErrorV22" class="msg"></div>
 <button id="ajusteConfirmarV22" class="yellow" onclick="confirmarAjusteV22()">Confirmar autorización</button>
 </div></div>
+<div id="coliseoToastV24" class="coliseoToast" role="status" aria-live="polite"><button onclick="document.getElementById('coliseoToastV24').classList.remove('on')">Cerrar</button><strong id="toastTitleV24"></strong><span id="toastMessageV24"></span></div>
 </body>
 </html>
