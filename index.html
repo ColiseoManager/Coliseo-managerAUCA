@@ -99,16 +99,17 @@ button{cursor:pointer}
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
+<div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
 <div class="module" onclick="historial()"><b>📚 Historial</b><span>Ventas registradas</span></div>
-<div class="module"><b>📊 Rentabilidad</b><span>Margen, rotación y productos</span></div>
-<div class="module"><b>💰 Finanzas globales</b><span>Ingresos y egresos totales</span></div>
-<div class="module"><b>🏢 Servicios y pagos</b><span>Renta, agua, luz, publicidad y permisos</span></div>
-<div class="module"><b>🔧 Mantenimiento</b><span>Pintura, remodelación, sonido y mejoras</span></div>
+<div class="module" onclick="resumenVentasV21()"><b>📊 Resumen de ventas</b><span>Ventas cobradas y cuentas abiertas</span></div>
+<div class="module"><b>💰 Finanzas globales</b><span>Próximamente · pendiente de implementación</span></div>
+<div class="module"><b>🏢 Servicios y pagos</b><span>Próximamente · pendiente de implementación</span></div>
+<div class="module"><b>🔧 Mantenimiento</b><span>Próximamente · pendiente de implementación</span></div>
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
-<div class="module"><b>📅 Reservaciones</b><span>Eventos y apartados</span></div>
+<div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 1.9 · Botellas</div>
+<div class="msg">Coliseo Manager 2.1 · Autorizaciones</div>
 </section>
 
 <section id="staff" class="screen">
@@ -226,6 +227,20 @@ button{cursor:pointer}
 
 <section id="orders" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>🧾 Comandas</h2><h3 class="section">Abiertas</h3><div id="openOrders"></div><h3 class="section">Cerradas</h3><div id="closedOrders"></div></section>
 <section id="detail" class="screen"><button class="back" onclick="comandas()">← Comandas</button><div class="brand">ADMINISTRACIÓN</div><h2>Cuenta</h2><div id="detailBody"></div></section>
+<section id="authorizations" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN · SOLO ADMINISTRADOR</div>
+<h2>🎁 Cortesías y descuentos</h2>
+<div class="notice">Para autorizar, selecciona una cuenta abierta. Los descuentos son del 1 al 30%. Las cortesías y los descuentos requieren motivo y quedan registrados.</div>
+<h3 class="section">Cuentas abiertas</h3><div id="authorizationOrders"></div>
+<h3 class="section">Autorizaciones registradas</h3><div id="authorizationHistory"></div>
+</section>
+<section id="salesSummary" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div><h2>📊 Resumen de ventas</h2>
+<div class="notice">Los importes corresponden a cuentas registradas; no representan utilidades ni flujo de efectivo conciliado.</div>
+<div id="salesSummaryContent"></div>
+</section>
 <section id="history" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>📚 Historial</h2><div id="historyList"></div></section>
 </main>
 
@@ -493,6 +508,38 @@ async function autorizarAjusteV2(kind){
  });
  if(error){alert("No autorizado: "+error.message);return}
  alert("✓ Autorizado: "+money(data));await detalle(current.o.id);
+}
+
+async function autorizacionesV21(){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ show("authorizations");
+ $("authorizationOrders").innerHTML='<div class="muted">Cargando cuentas…</div>';
+ $("authorizationHistory").innerHTML='<div class="muted">Cargando autorizaciones…</div>';
+ const [ordersResult, adjustmentsResult]=await Promise.all([
+  db.from("orders").select("id,table_number,order_type,opened_at,total,status").eq("status","open").order("opened_at",{ascending:false}).limit(100),
+  db.from("order_adjustments").select("order_id,kind,percent,reason,amount,created_at,authorized_by").order("created_at",{ascending:false}).limit(100)
+ ]);
+ if(ordersResult.error){$("authorizationOrders").textContent="Error al cargar cuentas: "+ordersResult.error.message}
+ else{
+  const a=ordersResult.data||[];
+  $("authorizationOrders").innerHTML=a.map(o=>'<div class="order"><div class="row"><div><b>'+esc(orderName(o))+'</b><div class="muted">'+stamp(o.opened_at)+'</div></div><div class="amount">'+money(o.total)+'</div></div><button class="yellow" onclick="detalle(\''+o.id+'\')">Abrir y autorizar</button></div>').join("")||'<div class="empty">No hay cuentas abiertas.</div>';
+ }
+ if(adjustmentsResult.error){$("authorizationHistory").textContent="Error al cargar historial: "+adjustmentsResult.error.message}
+ else{
+  const a=adjustmentsResult.data||[];
+  $("authorizationHistory").innerHTML=a.map(x=>'<div class="card"><b>'+(x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía")+'</b><div class="amount">'+money(x.amount)+'</div><div class="muted">'+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Cuenta: '+esc(x.order_id)+'</div><button class="dark smallbtn" onclick="detalle(\''+x.order_id+'\')">Ver cuenta</button></div>').join("")||'<div class="empty">Aún no hay autorizaciones registradas.</div>';
+ }
+}
+async function resumenVentasV21(){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ show("salesSummary");
+ const host=$("salesSummaryContent");
+ host.textContent="Cargando…";
+ const {data,error}=await db.from("orders").select("id,total,status,opened_at").order("opened_at",{ascending:false}).limit(1000);
+ if(error){host.textContent="No se pudo consultar: "+error.message;return}
+ const a=data||[],closed=a.filter(x=>x.status==="closed"),opened=a.filter(x=>x.status==="open");
+ const sum=arr=>arr.reduce((v,x)=>v+Number(x.total||0),0);
+ host.innerHTML='<div class="summary"><div class="card"><div class="muted">Cuentas cobradas</div><div class="big">'+closed.length+'</div><div class="amount">'+money(sum(closed))+'</div></div><div class="card"><div class="muted">Cuentas abiertas</div><div class="big">'+opened.length+'</div><div class="amount">'+money(sum(opened))+'</div></div></div><div class="muted">Últimas '+a.length+' cuentas registradas (máximo 1,000).</div>';
 }
 
 // Bloquear edición de cantidades después de descontar inventario: requiere devolución controlada.
