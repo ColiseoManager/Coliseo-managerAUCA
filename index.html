@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coliseo Manager 2.7</title>
+<title>Coliseo Manager 2.9</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* COLISEO MANAGER 2.5: CORTESIAS LIBRES DEL MENU */
@@ -169,7 +169,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 2.8 · Cancelaciones claras y registro</div>
+<div class="msg">Coliseo Manager 2.9 · Cancelaciones claras y registro</div>
 </section>
 
 <section id="staff" class="screen">
@@ -779,16 +779,61 @@ guardarCortesiaLibreV25=async function(){
  }catch(e){msg.textContent='No se pudo registrar: '+e.message}
  finally{btn.disabled=false;btn.textContent='Confirmar cortesía'}
 };
+let cancelAdjustmentV29=null;
+async function cargarDescuentoCancelV29(){
+ cancelAdjustmentV29=null;
+ const box=$('cancelDiscountBoxV29');box.classList.add('hidden');
+ $('cancelTotalPreviewV29').textContent='Calculando nuevo total…';
+ document.querySelectorAll('input[name=cancelDiscountScopeV29]').forEach(x=>x.checked=false);
+ const {data,error}=await db.from('order_adjustments').select('id,kind,percent,amount,order_item_id').eq('order_id',cancellationV26.orderId);
+ if(!cancellationV26)return;
+ if(error){$('cancelItemErrorV26').textContent='No se pudo consultar el descuento: '+error.message;return}
+ if((data||[]).length>1){$('cancelItemErrorV26').textContent='Hay varios ajustes en esta cuenta; requiere revisión manual.';return}
+ cancelAdjustmentV29=data?.[0]||null;
+ if(cancelAdjustmentV29){
+  box.classList.remove('hidden');
+  $('cancelDiscountCurrentV29').textContent=(cancelAdjustmentV29.kind==='discount'?'Descuento '+cancelAdjustmentV29.percent+'%':'Cortesía monetaria')+' · Importe actual: '+money(cancelAdjustmentV29.amount);
+  $('cancelDiscountItemV29').innerHTML=current.i.map(x=>'<option value="'+x.id+'">'+esc(x.item_name)+' · '+esc(businessName(x.business))+'</option>').join('');
+  if(cancelAdjustmentV29.order_item_id)$('cancelDiscountItemV29').value=cancelAdjustmentV29.order_item_id;
+ }
+ actualizarPreviewCancelV29();
+}
+function actualizarPreviewCancelV29(){
+ if(!cancellationV26)return;
+ const q=Number($('cancelItemQtyV26').value);
+ const item=current.i.find(x=>x.id===cancellationV26.itemId);
+ const scope=document.querySelector('input[name=cancelDiscountScopeV29]:checked')?.value;
+ $('cancelDiscountItemBoxV29').classList.toggle('hidden',scope!=='parcial');
+ const remaining=current.i.map(x=>({...x,qty:x.quantity-(x.id===cancellationV26.itemId?q:0)})).filter(x=>x.qty>0);
+ const sel=$('cancelDiscountItemV29');
+ if(cancelAdjustmentV29){
+  const old=sel.value;
+  sel.innerHTML=remaining.map(x=>'<option value="'+x.id+'">'+esc(x.item_name)+' · '+esc(businessName(x.business))+'</option>').join('');
+  if(remaining.some(x=>x.id===old))sel.value=old;
+ }
+ const gross=remaining.reduce((a,x)=>a+Number(x.unit_price)*x.qty,0);
+ let amount=0;
+ if(cancelAdjustmentV29&&scope){
+  const base=scope==='completa'?gross:(remaining.find(x=>x.id===sel.value)?Number(remaining.find(x=>x.id===sel.value).unit_price)*remaining.find(x=>x.id===sel.value).qty:0);
+  amount=cancelAdjustmentV29.kind==='discount'?Math.round(base*Number(cancelAdjustmentV29.percent))/100:base;
+ }
+ $('cancelTotalPreviewV29').textContent=(!Number.isInteger(q)||q<1||q>cancellationV26.max)?'Selecciona una cantidad válida':
+  (cancelAdjustmentV29&&!scope?'Selecciona cómo conservar el descuento para ver el total.':
+  'Nuevo subtotal: '+money(gross)+' · Descuento: '+money(amount)+' · Total estimado: '+money(Math.max(0,gross-amount)));
+}
 function abrirCancelacionV26(id){
  if(me?.role!=='admin'||current?.o?.status!=='open')return;
  const x=current.i.find(y=>y.id===id);if(!x)return;
  cancellationV26={orderId:current.o.id,itemId:id,max:x.quantity};
+ cancelAdjustmentV29=null;
  $('cancelItemNameV26').textContent=x.item_name+' · '+businessName(x.business)+' · '+x.quantity+' × '+money(x.unit_price);
  $('cancelItemQtyV26').value='1';$('cancelItemQtyV26').max=x.quantity;
+ $('cancelItemQtyV26').oninput=actualizarPreviewCancelV29;
  document.querySelectorAll('input[name=cancelDispositionV28]').forEach(x=>x.checked=false);actualizarDestinoCancelacionV28();
  $('cancelItemExtraV26').value='';$('cancelItemErrorV26').textContent='';
  $('cancelItemReasonV26').innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option>'+esc(x)+'</option>').join('');
  $('cancelItemModalV26').classList.add('on');
+ cargarDescuentoCancelV29();
 }
 function cerrarCancelacionV26(){$('cancelItemModalV26').classList.remove('on');cancellationV26=null}
 function agregarMotivoCancelacionV26(){
@@ -807,10 +852,14 @@ async function confirmarCancelacionV26(){
  if(!disposition){msg.textContent='Selecciona qué pasará con el producto.';return}
  const returnStock=disposition==='inventario';
  if(returnStock&&!$('cancelReturnConfirmedV27').checked){msg.textContent='Confirma que el producto está apto para venta.';return}
+ const scope=document.querySelector('input[name=cancelDiscountScopeV29]:checked')?.value||null;
+ const target=scope==='parcial'?$('cancelDiscountItemV29').value:null;
+ if(cancelAdjustmentV29&&!scope){msg.textContent='Elige cómo conservar el descuento.';return}
+ if(scope==='parcial'&&!target){msg.textContent='Elige un producto para el descuento parcial.';return}
  const btn=$('cancelItemSubmitV26');if(btn.disabled)return;btn.disabled=true;
  const orderId=cancellationV26.orderId;
  try{
-  const {data,error}=await db.rpc('cancel_order_item_v27',{p_order:orderId,p_order_item:cancellationV26.itemId,p_quantity:q,p_reason:reason+(extra?' — '+extra:''),p_return_stock:returnStock});
+  const {data,error}=await db.rpc('cancel_order_item_v29',{p_order:orderId,p_order_item:cancellationV26.itemId,p_quantity:q,p_reason:reason+(extra?' — '+extra:''),p_return_stock:returnStock,p_discount_scope:scope,p_discount_item:target});
   if(error)throw error;
   cerrarCancelacionV26();notificacionV24('Producto cancelado',q+' × '+data.item_name+' · Total: '+money(data.total)+(returnStock?' · Devuelto a inventario.':' · Registrado como merma (sin descontar dos veces).'));
   await detalle(orderId);
@@ -877,6 +926,15 @@ autorizacionesV21=async function(){
 <div id="cancelMermaInfoV28" class="notice hidden">Se registra como merma y NO se descuenta otra vez: el inventario ya se descontó al confirmar el pedido.</div>
 <div class="muted">Las botellas controladas por mililitros requieren verificar también el control de botellas abiertas.</div></div><label>Motivo</label><div class="row"><select id="cancelItemReasonV26" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoCancelacionV26()">＋</button></div>
 <label>Detalle adicional (opcional)</label><textarea id="cancelItemExtraV26" placeholder="Especifica el motivo"></textarea>
+<div id="cancelDiscountBoxV29" class="card hidden">
+<h3>💰 ¿Cómo conservar el descuento?</h3>
+<div id="cancelDiscountCurrentV29" class="muted"></div>
+<label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="cancelDiscountScopeV29" value="completa" style="width:auto" onchange="actualizarPreviewCancelV29()"><span><b>Cuenta completa</b><div class="muted">Mantener el descuento autorizado sobre el nuevo total.</div></span></label>
+<label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="cancelDiscountScopeV29" value="parcial" style="width:auto" onchange="actualizarPreviewCancelV29()"><span><b>Parcial · producto específico</b><div class="muted">Aplicarlo solamente al producto que elijas.</div></span></label>
+<div id="cancelDiscountItemBoxV29" class="hidden"><label>Producto que conserva el descuento</label><select id="cancelDiscountItemV29" onchange="actualizarPreviewCancelV29()"></select></div>
+</div>
+<div class="notice" id="cancelTotalPreviewV29">Total estimado después de cancelar: —</div>
+
 <div class="notice">Autorizado por administrador01</div><div id="cancelItemErrorV26" class="msg"></div>
 <button id="cancelItemSubmitV26" class="yellow" onclick="confirmarCancelacionV26()">Confirmar cancelación</button>
 </div></div>
