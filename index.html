@@ -99,6 +99,7 @@ button{cursor:pointer}
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
+<div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
 <div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
 <div class="module" onclick="historial()"><b>📚 Historial</b><span>Ventas registradas</span></div>
@@ -109,7 +110,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 2.2 · Motivos de autorización</div>
+<div class="msg">Coliseo Manager 2.3 · Caja y consumos adicionales</div>
 </section>
 
 <section id="staff" class="screen">
@@ -121,6 +122,7 @@ button{cursor:pointer}
 </section>
 
 <section id="cashier" class="screen">
+<button class="back" id="cashAdminBackV23" style="display:none" onclick="goAdmin()">← Administración</button>
 <div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>💳 Caja</h2>
 <div id="cashierUser" class="muted"></div><span class="role">CAJA</span></div>
 <button class="dark" onclick="logout()">Salir</button></div>
@@ -129,20 +131,21 @@ button{cursor:pointer}
 </section>
 
 <section id="pos" class="screen">
-<button class="back" onclick="volverRol()">← Volver</button>
+<button class="back" onclick="volverRolV23()">← Volver</button>
 <div class="brand">COLISEO MANAGER</div><h2 id="posTitle">Nueva cuenta</h2>
-<label>Tipo de pedido</label>
+<div id="addToOrderNoticeV23" class="success hidden"></div>
+<div id="newOrderFieldsV23"><label>Tipo de pedido</label>
 <select id="orderType" onchange="tipoUI()">
 <option value="table">🍽️ Consumo en mesa</option>
 <option value="takeaway">🥡 Para llevar</option>
 <option value="delivery">🛵 Delivery</option>
 </select>
 <div id="tableBox"><label>Número de mesa</label><input id="tableNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12"></div>
-<div id="deliveryBox" style="display:none"><label>Plataforma</label><select id="deliveryPlatform"><option>Uber Eats</option><option>DiDi Food</option><option>Otra</option></select></div>
+<div id="deliveryBox" style="display:none"><label>Plataforma</label><select id="deliveryPlatform"><option>Uber Eats</option><option>DiDi Food</option><option>Otra</option></select></div></div>
 <div id="tabs" class="tabs"></div><div id="products" class="products"></div>
 <div class="card"><h3>Pedido</h3><div id="cart"></div><div id="cartTotal" class="total">$0.00</div></div>
-<label>Notas</label><textarea id="notes"></textarea>
-<button class="yellow" onclick="guardarPedido()">Guardar cuenta</button><div id="orderMsg" class="msg"></div>
+<div id="newOrderNotesV23"><label>Notas</label><textarea id="notes"></textarea></div>
+<button id="savePosV23" class="yellow" onclick="guardarPedido()">Guardar cuenta</button><div id="orderMsg" class="msg"></div>
 </section>
 
 <section id="menu" class="screen">
@@ -434,6 +437,7 @@ async function deleteOrder(){if(!confirm("¿Eliminar esta cuenta?"))return;if(!c
 async function historial(){show("history");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);$("historyList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div></div>`).join("")||'<div class="empty">Sin movimientos</div>'}
 
 (async()=>{try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await route(data.session.user)}catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}})();
+
 /* COLISEO MANAGER 2.0 - ACTUALIZACION COMPLETA
    Requiere ejecutar primero Coliseo_Manager_2_0_SUPABASE.sql.
    Mantiene todas las pantallas de la versión 1.9. */
@@ -572,6 +576,112 @@ saveOrder = async function(){
  const {error}=await db.from("orders").update(u).eq("id",current.o.id);
  if(error)alert(error.message);else await detalle(current.o.id);
 };
+/* COLISEO MANAGER 2.3 - CAJA Y CONSUMOS ADICIONALES */
+let addToOrderV23=null;
+function abrirCajaV23(){if(me?.role!=="admin"&&me?.role!=="cashier"){alert("Sin acceso a caja");return}caja()}
+async function volverRolV23(){
+ if(addToOrderV23){const role=me?.role;addToOrderV23=null;if(role==="admin")return comandas();if(role==="cashier")return caja();return staff()}
+ if(me?.role==="admin")return abrirCajaV23();
+ return volverRol();
+}
+const nuevoPedidoOriginalV23=nuevoPedido;
+nuevoPedido=async function(isCash){
+ addToOrderV23=null;
+ $("newOrderFieldsV23").classList.remove("hidden");
+ $("newOrderNotesV23").classList.remove("hidden");
+ $("addToOrderNoticeV23").classList.add("hidden");
+ $("savePosV23").textContent="Guardar cuenta";
+ await nuevoPedidoOriginalV23(isCash);
+};
+async function agregarAOrdenV23(id){
+ if(!["admin","staff","cashier"].includes(me?.role)){alert("Sin permiso");return}
+ const {data:o,error}=await db.from("orders").select("id,status,table_number,order_type,delivery_platform").eq("id",id).single();
+ if(error||!o||o.status!=="open"){alert("La cuenta ya no está abierta.");return}
+ closeAccountModal();
+ addToOrderV23={id:o.id,name:orderName(o)};
+ basket=[];show("pos");
+ $("posTitle").textContent="＋ Agregar a "+orderName(o);
+ $("newOrderFieldsV23").classList.add("hidden");
+ $("newOrderNotesV23").classList.add("hidden");
+ $("addToOrderNoticeV23").classList.remove("hidden");
+ $("addToOrderNoticeV23").textContent="Los nuevos productos se sumarán a la cuenta existente. Se descontará del inventario únicamente lo que agregues.";
+ $("savePosV23").textContent="Confirmar productos adicionales";
+ $("orderMsg").textContent="";
+ await loadMenu();
+ cats=cats.filter(x=>x.active);subs=subs.filter(x=>x.active);items=items.filter(x=>x.active&&!x.manual_unavailable);
+ activeCat=cats[0]?.id||null;
+ await drawPOS();
+}
+const guardarPedidoV2OriginalV23=guardarPedido;
+guardarPedido=async function(){
+ if(!addToOrderV23)return guardarPedidoV2OriginalV23();
+ if(!basket.length){$("orderMsg").textContent="Selecciona al menos un producto.";return}
+ const btn=$("savePosV23");if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Agregando productos…";
+ const orderId=addToOrderV23.id;
+ try{
+  const {data,error}=await db.rpc("add_order_items_v23",{p_order:orderId,p_lines:basket.map(x=>({id:x.id,q:x.q}))});
+  if(error)throw error;
+  basket=[];addToOrderV23=null;
+  alert("✓ Productos agregados. Nuevo total: "+money(data?.total)+". Inventario actualizado.");
+  if(me.role==="cashier")await caja();
+  else if(me.role==="staff")await staff();
+  else await detalle(orderId);
+ }catch(e){$("orderMsg").textContent="No se pudo agregar: "+e.message+". Revisa la cuenta antes de reintentar."}
+ finally{btn.disabled=false;btn.textContent=addToOrderV23?"Confirmar productos adicionales":"Guardar cuenta"}
+};
+const cajaOriginalV23=caja;
+caja=async function(){
+ $("cashAdminBackV23").style.display=me?.role==="admin"?"block":"none";
+ $("cashierUser").textContent=me?.full_name||"";
+ await cajaOriginalV23();
+ document.querySelectorAll("#cashOrders .order").forEach(card=>{
+  const cobrar=card.querySelector('button[onclick^="cobrar("]');
+  if(!cobrar)return;
+  const match=cobrar.getAttribute("onclick").match(/'([^']+)'/);
+  if(!match)return;
+  const b=document.createElement("button");
+  b.className="dark";b.textContent="＋ Agregar productos";
+  b.onclick=()=>agregarAOrdenV23(match[1]);
+  cobrar.parentElement.insertBefore(b,cobrar);
+ });
+};
+const staffOriginalV23=staff;
+staff=async function(){
+ await staffOriginalV23();
+ document.querySelectorAll("#staffOrders .order").forEach(card=>{
+  const ver=card.querySelector('button[onclick^="verOrden("]');
+  if(!ver)return;
+  const match=ver.getAttribute("onclick").match(/'([^']+)'/);
+  if(!match)return;
+  const b=document.createElement("button");
+  b.className="yellow";b.style.width="auto";b.style.margin="0";
+  b.textContent="＋ Agregar productos";b.onclick=()=>agregarAOrdenV23(match[1]);
+  ver.parentElement.appendChild(b);
+ });
+};
+const detalleV22OriginalV23=detalle;
+detalle=async function(id){
+ await detalleV22OriginalV23(id);
+ if(me?.role!=="admin"||current?.o?.status!=="open")return;
+ const host=$("detailBody");
+ const b=document.createElement("button");
+ b.className="yellow";b.textContent="＋ Agregar productos a esta cuenta";
+ b.onclick=()=>agregarAOrdenV23(id);
+ host.prepend(b);
+};
+const verOrdenOriginalV23=verOrden;
+verOrden=async function(id){
+ await verOrdenOriginalV23(id);
+ if(!["staff","cashier","admin"].includes(me?.role))return;
+ const {data:o}=await db.from("orders").select("status").eq("id",id).single();
+ if(o?.status!=="open")return;
+ const b=document.createElement("button");b.className="yellow";b.textContent="＋ Agregar productos";
+ b.onclick=()=>agregarAOrdenV23(id);
+ $("accountModalBody").appendChild(b);
+};
+
+
 </script>
 <div class="modalWrap" id="adjustmentModalV22" role="dialog" aria-modal="true">
 <div class="modalCard">
