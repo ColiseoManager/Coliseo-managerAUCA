@@ -109,7 +109,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 2.1 · Autorizaciones</div>
+<div class="msg">Coliseo Manager 2.2 · Motivos de autorización</div>
 </section>
 
 <section id="staff" class="screen">
@@ -484,32 +484,46 @@ detalle = async function(id){
  div.innerHTML='<h3>🎁 Cortesías y descuentos</h3><div class="muted">Solo administrador. Se registra el motivo y el importe.</div><div class="actions"><button class="dark" onclick="autorizarAjusteV2(\'discount\')">Descuento 1–30%</button><button class="dark" onclick="autorizarAjusteV2(\'complimentary\')">Cortesía</button></div>';
  host.prepend(div);
  const {data}=await db.from("order_adjustments").select("kind,percent,reason,amount,created_at").eq("order_id",id);
- if(data?.length){const a=document.createElement("div");a.className="notice";a.textContent=data.map(x=>`${x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía"}: ${money(x.amount)} · ${x.reason}`).join(" | ");div.append(a)}
+ if(data?.length){const a=document.createElement("div");a.className="notice";a.textContent=data.map(x=>`${x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía"}: ${money(x.amount)} · ${x.reason}`).join(" | ")+" · Autorizado por administrador01";div.append(a)}
 };
 
-async function autorizarAjusteV2(kind){
- if(me?.role!=="admin"){alert("Solo administrador");return}
- const options=current.i.map((x,i)=>`${i+1}. ${x.item_name} × ${x.quantity}`);
- const selected=prompt("¿A qué aplicar?\n0. Cuenta completa\n"+options.join("\n"),"0");
- if(selected===null)return;
- if(!/^\d+$/.test(selected)||Number(selected)>current.i.length){alert("Opción inválida");return}
- const n=Number(selected);
- let percent=null;
- if(kind==="discount"){
-  const answer=prompt("Porcentaje de descuento (1–30):","10");if(answer===null)return;
-  percent=Number(answer);
-  if(!Number.isFinite(percent)||percent<1||percent>30){alert("Porcentaje inválido");return}
- }
- const reason=prompt("Motivo obligatorio:");if(!reason?.trim())return;
- if(!confirm("¿Autorizar "+(kind==="discount"?"descuento":"cortesía")+"?"))return;
- const {data,error}=await db.rpc("apply_order_adjustment_v2",{
-  p_order:current.o.id,p_kind:kind,p_reason:reason.trim(),p_percent:percent,
-  p_order_item:n===0?null:current.i[n-1].id
- });
- if(error){alert("No autorizado: "+error.message);return}
- alert("✓ Autorizado: "+money(data));await detalle(current.o.id);
+const MOTIVOS_V22=["Atención al cliente","Error en pedido","Producto de cortesía","Promoción especial","Cliente frecuente","Compensación por demora"];
+function motivosV22(){try{return [...new Set([...MOTIVOS_V22,...JSON.parse(localStorage.getItem("motivosColiseoV22")||"[]")])]}catch(e){return [...MOTIVOS_V22]}}
+function cargarMotivosV22(){
+ const sel=$("ajusteMotivoV22");sel.innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option>'+esc(x)+'</option>').join("");
 }
-
+function agregarMotivoV22(){
+ const x=prompt("Nuevo motivo fijo:");if(!x?.trim())return;
+ const reason=x.trim().slice(0,120), all=motivosV22();
+ if(!all.includes(reason)){try{localStorage.setItem("motivosColiseoV22",JSON.stringify([...all.filter(y=>!MOTIVOS_V22.includes(y)),reason]))}catch(e){alert("No se pudo guardar el motivo en este dispositivo.")}}
+ cargarMotivosV22();$("ajusteMotivoV22").value=reason;
+}
+function abrirAjusteV22(kind){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ $("ajusteTipoValueV22").value=kind;
+ $("ajusteTipoV22").textContent=kind==="discount"?"Autorizar descuento":"Autorizar cortesía";
+ $("ajustePorcentajeWrapV22").style.display=kind==="discount"?"block":"none";
+ $("ajustePorcentajeV22").value="10";$("ajusteMotivoExtraV22").value="";$("ajusteErrorV22").textContent="";
+ $("ajusteCuentaV22").innerHTML='<option value="">Cuenta completa</option>'+current.i.map((x,i)=>'<option value="'+i+'">'+esc(x.item_name)+' × '+x.quantity+'</option>').join("");
+ cargarMotivosV22();$("adjustmentModalV22").classList.add("on");
+}
+function cerrarAjusteV22(){$("adjustmentModalV22").classList.remove("on")}
+async function confirmarAjusteV22(){
+ if(me?.role!=="admin")return;
+ const kind=$("ajusteTipoValueV22").value, pct=kind==="discount"?Number($("ajustePorcentajeV22").value):null;
+ const reason=$("ajusteMotivoV22").value.trim(),extra=$("ajusteMotivoExtraV22").value.trim();
+ if(!reason){$("ajusteErrorV22").textContent="Selecciona un motivo.";return}
+ if(kind==="discount"&&(!Number.isFinite(pct)||pct<1||pct>30)){$("ajusteErrorV22").textContent="Descuento permitido: 1 a 30%.";return}
+ const index=$("ajusteCuentaV22").value, item=index===""?null:current.i[Number(index)]?.id;
+ if(index!==""&&!item)return;
+ const btn=$("ajusteConfirmarV22");btn.disabled=true;
+ try{
+  const {data,error}=await db.rpc("apply_order_adjustment_v2",{p_order:current.o.id,p_kind:kind,p_reason:reason+(extra?" — "+extra:""),p_percent:pct,p_order_item:item});
+  if(error)throw error;
+  cerrarAjusteV22();alert("✓ "+money(data)+" · Autorizado por administrador01");await detalle(current.o.id);
+ }catch(e){$("ajusteErrorV22").textContent=e.message}finally{btn.disabled=false}
+}
+async function autorizarAjusteV2(kind){abrirAjusteV22(kind)}
 async function autorizacionesV21(){
  if(me?.role!=="admin"){alert("Solo administrador");return}
  show("authorizations");
@@ -527,7 +541,7 @@ async function autorizacionesV21(){
  if(adjustmentsResult.error){$("authorizationHistory").textContent="Error al cargar historial: "+adjustmentsResult.error.message}
  else{
   const a=adjustmentsResult.data||[];
-  $("authorizationHistory").innerHTML=a.map(x=>'<div class="card"><b>'+(x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía")+'</b><div class="amount">'+money(x.amount)+'</div><div class="muted">'+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Cuenta: '+esc(x.order_id)+'</div><button class="dark smallbtn" onclick="detalle(\''+x.order_id+'\')">Ver cuenta</button></div>').join("")||'<div class="empty">Aún no hay autorizaciones registradas.</div>';
+  $("authorizationHistory").innerHTML=a.map(x=>'<div class="card"><b>'+(x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía")+'</b><div class="amount">'+money(x.amount)+'</div><div class="muted">'+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Cuenta: '+esc(x.order_id)+'</div><div class="muted">Autorizado por administrador01</div><button class="dark smallbtn" onclick="detalle(\''+x.order_id+'\')">Ver cuenta</button></div>').join("")||'<div class="empty">Aún no hay autorizaciones registradas.</div>';
  }
 }
 async function resumenVentasV21(){
@@ -559,5 +573,18 @@ saveOrder = async function(){
  if(error)alert(error.message);else await detalle(current.o.id);
 };
 </script>
+<div class="modalWrap" id="adjustmentModalV22" role="dialog" aria-modal="true">
+<div class="modalCard">
+<div class="top"><h2 id="ajusteTipoV22">Autorizar ajuste</h2><button class="dark" onclick="cerrarAjusteV22()">✕</button></div>
+<input id="ajusteTipoValueV22" type="hidden">
+<label>Aplicar a</label><select id="ajusteCuentaV22"></select>
+<div id="ajustePorcentajeWrapV22"><label>Descuento (%) · máximo 30%</label><input id="ajustePorcentajeV22" type="number" min="1" max="30" value="10"></div>
+<label>Motivo de autorización</label>
+<div class="row"><select id="ajusteMotivoV22" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoV22()" title="Agregar motivo fijo">＋</button></div>
+<label>Detalle adicional (opcional)</label><textarea id="ajusteMotivoExtraV22" placeholder="Información adicional"></textarea>
+<div class="notice">Autorizado por administrador01</div>
+<div id="ajusteErrorV22" class="msg"></div>
+<button id="ajusteConfirmarV22" class="yellow" onclick="confirmarAjusteV22()">Confirmar autorización</button>
+</div></div>
 </body>
 </html>
