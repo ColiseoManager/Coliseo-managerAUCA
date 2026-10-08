@@ -4,7 +4,61 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Coliseo Manager 2.0</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+/* COLISEO MANAGER 2.5: CORTESIAS LIBRES DEL MENU */
+let freeCourtesyProductsV25=[];
+async function abrirCortesiaLibreV25(){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ $("freeCourtesySearchV25").value="";$("freeCourtesyQtyV25").value="1";
+ $("freeCourtesyNotesV25").value="";$("freeCourtesyErrorV25").textContent="";
+ const sel=$("freeCourtesyReasonV25");
+ sel.innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");
+ const {data,error}=await db.from("menu_items").select("id,name,price,business,active,manual_unavailable").eq("active",true).eq("manual_unavailable",false).order("name");
+ if(error){alert("No se pudo consultar el menú: "+error.message);return}
+ freeCourtesyProductsV25=data||[];
+ filtrarCortesiasV25();$("freeCourtesyModalV25").classList.add("on");
+}
+function filtrarCortesiasV25(){
+ const term=$("freeCourtesySearchV25").value.trim().toLowerCase();
+ const filtered=freeCourtesyProductsV25.filter(x=>(x.name+" "+x.business).toLowerCase().includes(term));
+ $("freeCourtesyProductV25").innerHTML=filtered.map(x=>'<option value="'+x.id+'">'+esc(businessName(x.business))+' · '+esc(x.name)+' · '+money(x.price)+'</option>').join("")||'<option value="">Sin coincidencias</option>';
+}
+function agregarMotivoLibreV25(){
+ agregarMotivoV22();
+ const sel=$("freeCourtesyReasonV25"),motivos=motivosV22();
+ sel.innerHTML='<option value="">Selecciona un motivo</option>'+motivos.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");
+ const last=motivos[motivos.length-1];if(last)sel.value=last;
+}
+function cerrarCortesiaLibreV25(){$("freeCourtesyModalV25").classList.remove("on")}
+async function guardarCortesiaLibreV25(){
+ if(me?.role!=="admin")return;
+ const id=$("freeCourtesyProductV25").value,qty=Number($("freeCourtesyQtyV25").value);
+ const reason=$("freeCourtesyReasonV25").value.trim(),note=$("freeCourtesyNotesV25").value.trim();
+ const errorBox=$("freeCourtesyErrorV25");errorBox.textContent="";
+ if(!id){errorBox.textContent="Selecciona un producto.";return}
+ if(!Number.isInteger(qty)||qty<1||qty>100){errorBox.textContent="Cantidad permitida: 1 a 100.";return}
+ if(!reason){errorBox.textContent="Selecciona un motivo.";return}
+ const btn=$("freeCourtesyConfirmV25");if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Registrando cortesía…";
+ try{
+  const {data,error}=await db.rpc("issue_free_courtesy_v25",{p_menu_item:id,p_quantity:qty,p_reason:reason+(note?" — "+note:"")});
+  if(error)throw error;
+  cerrarCortesiaLibreV25();
+  if(typeof mostrarToastV24==="function")mostrarToastV24("Cortesía registrada",qty+" × "+data.item_name+" · Inventario actualizado");
+  else {const toast=$("coliseoToastV24");$("toastTitleV24").textContent="Cortesía registrada";$("toastMessageV24").textContent=qty+" × "+data.item_name;toast.classList.add("on")}
+  await cargarCortesiasLibresV25();
+ }catch(e){errorBox.textContent="No se pudo registrar: "+e.message}
+ finally{btn.disabled=false;btn.textContent="Confirmar cortesía"}
+}
+async function cargarCortesiasLibresV25(){
+ const host=$("freeCourtesyHistoryV25");if(!host)return;
+ host.textContent="Cargando…";
+ const {data,error}=await db.from("free_courtesies_v25").select("item_name,business,quantity,unit_price,reason,created_at").order("created_at",{ascending:false}).limit(100);
+ if(error){host.textContent="Historial no disponible: "+error.message;return}
+ host.innerHTML=(data||[]).map(x=>'<div class="card"><b>'+esc(x.quantity+' × '+x.item_name)+'</b><div class="muted">'+esc(businessName(x.business))+' · '+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Autorizado por administrador01 · Valor: '+money(x.quantity*x.unit_price)+'</div></div>').join("")||'<div class="empty">Todavía no hay cortesías libres.</div>';
+}
+
+</script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial,sans-serif}
@@ -114,7 +168,7 @@ button{cursor:pointer}
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
 <div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
 </div>
-<div class="msg">Coliseo Manager 2.4 · Notificaciones integradas</div>
+<div class="msg">Coliseo Manager 2.5 · Notificaciones integradas</div>
 </section>
 
 <section id="staff" class="screen">
@@ -239,7 +293,7 @@ button{cursor:pointer}
 <div class="brand">ADMINISTRACIÓN · SOLO ADMINISTRADOR</div>
 <h2>🎁 Cortesías y descuentos</h2>
 <div class="notice">Para autorizar, selecciona una cuenta abierta. Los descuentos son del 1 al 30%. Las cortesías y los descuentos requieren motivo y quedan registrados.</div>
-<h3 class="section">Cuentas abiertas</h3><div id="authorizationOrders"></div>
+<div class="card"><h3>🎁 Cortesía libre del menú</h3><div class="muted">No requiere una cuenta de cliente. Selecciona cualquier producto disponible de Cuervo’s Pizza o EL CLúB.</div><button class="yellow" onclick="abrirCortesiaLibreV25()">＋ Elegir producto del menú</button></div><h3 class="section">Cortesías libres registradas</h3><div id="freeCourtesyHistoryV25"></div><h3 class="section">Cortesías y descuentos de cuentas</h3><div id="authorizationOrders"></div>
 <h3 class="section">Autorizaciones registradas</h3><div id="authorizationHistory"></div>
 </section>
 <section id="salesSummary" class="screen">
@@ -535,6 +589,7 @@ async function autorizarAjusteV2(kind){abrirAjusteV22(kind)}
 async function autorizacionesV21(){
  if(me?.role!=="admin"){alert("Solo administrador");return}
  show("authorizations");
+ cargarCortesiasLibresV25();
  $("authorizationOrders").innerHTML='<div class="muted">Cargando cuentas…</div>';
  $("authorizationHistory").innerHTML='<div class="muted">Cargando autorizaciones…</div>';
  const [ordersResult, adjustmentsResult]=await Promise.all([
@@ -707,5 +762,16 @@ verOrden=async function(id){
 <button id="ajusteConfirmarV22" class="yellow" onclick="confirmarAjusteV22()">Confirmar autorización</button>
 </div></div>
 <div id="coliseoToastV24" class="coliseoToast" role="status" aria-live="polite"><button onclick="document.getElementById('coliseoToastV24').classList.remove('on')">Cerrar</button><strong id="toastTitleV24"></strong><span id="toastMessageV24"></span></div>
+<div class="modalWrap" id="freeCourtesyModalV25" role="dialog" aria-modal="true"><div class="modalCard">
+<div class="top"><h2>🎁 Cortesía libre</h2><button class="dark" onclick="cerrarCortesiaLibreV25()">✕</button></div>
+<label>Buscar en el menú</label><input id="freeCourtesySearchV25" placeholder="Pizza, shot, bebida, hamburguesa…" oninput="filtrarCortesiasV25()">
+<label>Producto</label><select id="freeCourtesyProductV25"></select>
+<label>Cantidad</label><input id="freeCourtesyQtyV25" type="number" min="1" max="100" step="1" value="1">
+<label>Motivo</label><div class="row"><select id="freeCourtesyReasonV25" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoLibreV25()">＋</button></div>
+<label>Detalle adicional (opcional)</label><textarea id="freeCourtesyNotesV25" placeholder="Especifica la razón si hace falta"></textarea>
+<div class="notice">Autorizado por administrador01 · Sin cargo a ninguna cuenta</div>
+<div id="freeCourtesyErrorV25" class="msg"></div>
+<button id="freeCourtesyConfirmV25" class="yellow" onclick="guardarCortesiaLibreV25()">Confirmar cortesía</button>
+</div></div>
 </body>
 </html>
