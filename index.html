@@ -950,5 +950,387 @@ autorizacionesV21=async function(){
 <div id="freeCourtesyErrorV25" class="msg"></div>
 <button id="freeCourtesyConfirmV25" class="yellow" onclick="guardarCortesiaLibreV25()">Confirmar cortesía</button>
 </div></div>
+ 
+<!-- COLISEO MANAGER 3.0 - VENTAS SEPARADAS POR NEGOCIO -->
+<script>
+(function () {
+  "use strict";
+
+  function fechaTijuana() {
+    const partes = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Tijuana",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(new Date());
+
+    const p = {};
+    partes.forEach(x => p[x.type] = x.value);
+
+    return p.year + "-" + p.month + "-" + p.day;
+  }
+
+  function crearModuloCortes() {
+    const moduloVentas = document.querySelector(
+      '.module[onclick="resumenVentasV21()"]'
+    );
+
+    if (!moduloVentas || document.getElementById("moduloCortesV30")) {
+      return;
+    }
+
+    const modulo = document.createElement("div");
+    modulo.id = "moduloCortesV30";
+    modulo.className = "module";
+    modulo.onclick = abrirCortesV30;
+
+    modulo.innerHTML =
+      "<b>🏦 Ventas por negocio</b>" +
+      "<span>Cuervo’s Pizza, EL CLúB y total Coliseo</span>";
+
+    moduloVentas.insertAdjacentElement("afterend", modulo);
+  }
+
+  function crearPantallaCortes() {
+    if (document.getElementById("cortesV30")) return;
+
+    const pantalla = document.createElement("section");
+    pantalla.id = "cortesV30";
+    pantalla.className = "screen";
+
+    pantalla.innerHTML = `
+      <button class="back" onclick="goAdmin()">
+        ← Volver a administración
+      </button>
+
+      <div class="brand">COLISEO FOOD PARK</div>
+      <h2>🏦 Ventas por negocio</h2>
+
+      <div class="notice">
+        Este reporte muestra las ventas cobradas de cada negocio.
+        No representa utilidades ni sustituye el conteo físico
+        de efectivo para realizar un corte definitivo de caja.
+      </div>
+
+      <label>Selecciona la fecha</label>
+      <input id="fechaCortesV30" type="date">
+
+      <button class="yellow" onclick="consultarCortesV30()">
+        Consultar ventas
+      </button>
+
+      <div id="resultadoCortesV30" style="margin-top:18px"></div>
+    `;
+
+    document.querySelector("main.app").appendChild(pantalla);
+  }
+
+  function normalizarNegocio(nombre) {
+    const valor = String(nombre || "").trim();
+
+    if (valor === "Cuervos Pizza" || valor === "Cuervo’s Pizza") {
+      return "Cuervos Pizza";
+    }
+
+    if (valor === "EL CLúB" || valor === "EL CLUB") {
+      return "EL CLúB";
+    }
+
+    return valor;
+  }
+
+  function nombreNegocio(nombre) {
+    return nombre === "Cuervos Pizza"
+      ? "Cuervo’s Pizza"
+      : nombre;
+  }
+
+  function nombrePago(valor) {
+    const texto = String(valor || "").trim().toLowerCase();
+
+    if (texto === "efectivo") return "Efectivo";
+    if (texto === "tarjeta") return "Tarjeta";
+    if (texto === "transferencia") return "Transferencia";
+
+    return "Otro / sin especificar";
+  }
+
+  async function consultarPaginas(tabla, columnas, fecha) {
+    const registros = [];
+    const limite = 10000;
+    const pagina = 500;
+
+    for (let inicio = 0; inicio < limite; inicio += pagina) {
+      const { data, error } = await db
+        .from(tabla)
+        .select(columnas)
+        .eq("business_date", fecha)
+        .range(inicio, inicio + pagina - 1);
+
+      if (error) throw error;
+
+      registros.push(...(data || []));
+
+      if ((data || []).length < pagina) {
+        return registros;
+      }
+    }
+
+    throw new Error(
+      "Se alcanzó el límite de registros. " +
+      "Es necesario ampliar la consulta antes de usar este reporte."
+    );
+  }
+
+  window.abrirCortesV30 = async function () {
+    if (me?.role !== "admin") {
+      alert("Solo administración puede consultar este reporte.");
+      return;
+    }
+
+    document.getElementById("fechaCortesV30").value = fechaTijuana();
+
+    show("cortesV30");
+    await consultarCortesV30();
+  };
+
+  window.consultarCortesV30 = async function () {
+    if (me?.role !== "admin") return;
+
+    const fecha = document.getElementById("fechaCortesV30").value;
+    const resultado = document.getElementById("resultadoCortesV30");
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      resultado.textContent = "Selecciona una fecha válida.";
+      return;
+    }
+
+    resultado.textContent = "Consultando ventas cobradas…";
+
+    try {
+      const [ordenes, desglose] = await Promise.all([
+        consultarPaginas(
+          "orders",
+          "id,total,status,payment_method,business_date",
+          fecha
+        ),
+        consultarPaginas(
+          "v_order_business_split",
+          "order_id,business,status,payment_method," +
+          "net_business,gross_business,business_date",
+          fecha
+        )
+      ]);
+
+      const cobradas = ordenes.filter(x => x.status === "closed");
+      const abiertas = ordenes.filter(x => x.status === "open");
+
+      const mapaOrdenes = new Map(
+        cobradas.map(x => [x.id, x])
+      );
+
+      const negocios = {
+        "Cuervos Pizza": {
+          total: 0,
+          cuentas: new Set(),
+          pagos: {}
+        },
+        "EL CLúB": {
+          total: 0,
+          cuentas: new Set(),
+          pagos: {}
+        }
+      };
+
+      const totalesPorCuenta = new Map();
+      const combinaciones = new Set();
+
+      for (const fila of desglose) {
+        if (fila.status !== "closed") continue;
+
+        const orden = mapaOrdenes.get(fila.order_id);
+        if (!orden) continue;
+
+        const negocio = normalizarNegocio(fila.business);
+
+        if (!negocios[negocio]) {
+          throw new Error(
+            "Se encontró un producto con negocio no reconocido: " +
+            (fila.business || "sin asignar") +
+            ". Revisa su clasificación."
+          );
+        }
+
+        const clave = fila.order_id + "|" + negocio;
+
+        if (combinaciones.has(clave)) {
+          throw new Error(
+            "Hay registros duplicados en el desglose de una cuenta."
+          );
+        }
+
+        combinaciones.add(clave);
+
+        const importe = Number(fila.net_business);
+
+        if (!Number.isFinite(importe)) {
+          throw new Error("Se encontró un importe inválido.");
+        }
+
+        const metodo = nombrePago(orden.payment_method);
+        const registro = negocios[negocio];
+
+        registro.total += importe;
+        registro.cuentas.add(fila.order_id);
+
+        registro.pagos[metodo] =
+          (registro.pagos[metodo] || 0) + importe;
+
+        totalesPorCuenta.set(
+          fila.order_id,
+          (totalesPorCuenta.get(fila.order_id) || 0) + importe
+        );
+      }
+
+      const diferencias = cobradas.filter(orden => {
+        const importeCuenta = Number(orden.total || 0);
+        const importeNegocios = totalesPorCuenta.get(orden.id) || 0;
+
+        return Math.abs(importeCuenta - importeNegocios) > 0.011;
+      });
+
+      if (diferencias.length) {
+        throw new Error(
+          "Hay " + diferencias.length +
+          " cuenta(s) cuyos importes no coinciden con el desglose. " +
+          "Revisa los datos antes de realizar el corte."
+        );
+      }
+
+      const totalCuervos = negocios["Cuervos Pizza"].total;
+      const totalClub = negocios["EL CLúB"].total;
+      const totalGeneral = totalCuervos + totalClub;
+
+      const totalCobrado = cobradas.reduce(
+        (suma, orden) => suma + Number(orden.total || 0),
+        0
+      );
+
+      const metodos = [
+        "Efectivo",
+        "Tarjeta",
+        "Transferencia",
+        "Otro / sin especificar"
+      ];
+
+      function formatoPagos(pagos) {
+        return metodos.map(metodo => `
+          <div class="row" style="padding:9px 0">
+            <span>${metodo}</span>
+            <b>${money(pagos[metodo] || 0)}</b>
+          </div>
+        `).join("");
+      }
+
+      function tarjetaNegocio(clave) {
+        const negocio = negocios[clave];
+
+        return `
+          <div class="card">
+            <h3>${nombreNegocio(clave)}</h3>
+
+            <div class="amount">${money(negocio.total)}</div>
+
+            <div class="muted" style="margin-top:7px">
+              Cuentas con productos de este negocio:
+              ${negocio.cuentas.size}
+            </div>
+
+            <div class="divider"></div>
+
+            ${formatoPagos(negocio.pagos)}
+          </div>
+        `;
+      }
+
+      const pagosGenerales = {};
+
+      metodos.forEach(metodo => {
+        pagosGenerales[metodo] =
+          (negocios["Cuervos Pizza"].pagos[metodo] || 0) +
+          (negocios["EL CLúB"].pagos[metodo] || 0);
+      });
+
+      resultado.innerHTML = `
+        <div class="success">
+          ✓ Importes conciliados con las cuentas cobradas.
+        </div>
+
+        <div class="summary">
+          <div class="card">
+            <div class="muted">CUENTAS COBRADAS</div>
+            <div class="big">${cobradas.length}</div>
+          </div>
+
+          <div class="card">
+            <div class="muted">CUENTAS ABIERTAS</div>
+            <div class="big">${abiertas.length}</div>
+          </div>
+        </div>
+
+        ${tarjetaNegocio("Cuervos Pizza")}
+
+        ${tarjetaNegocio("EL CLúB")}
+
+        <div class="card">
+          <h3>🏛️ TOTAL COLISEO FOOD PARK</h3>
+
+          <div class="amount">${money(totalGeneral)}</div>
+
+          <div class="divider"></div>
+
+          ${formatoPagos(pagosGenerales)}
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <span>Total registrado en cuentas</span>
+            <b>${money(totalCobrado)}</b>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <span>Diferencia</span>
+            <b>${money(totalGeneral - totalCobrado)}</b>
+          </div>
+        </div>
+
+        <div class="notice">
+          <b>Importante:</b> cuando una cuenta incluye productos
+          de ambos negocios, el sistema distribuye el importe
+          conforme al desglose registrado en Supabase.
+
+          <div style="margin-top:10px">
+            El método de pago corresponde a la cuenta completa.
+            Esta versión no permite registrar dos métodos de pago
+            distintos dentro de una misma cuenta.
+          </div>
+        </div>
+      `;
+
+    } catch (error) {
+      resultado.innerHTML = `
+        <div class="notice">
+          ⚠️ No se puede generar un reporte confiable:
+          ${esc(error.message || String(error))}
+        </div>
+      `;
+    }
+  };
+
+  crearModuloCortes();
+  crearPantallaCortes();
+})();
+</script>
+
 </body>
 </html>
