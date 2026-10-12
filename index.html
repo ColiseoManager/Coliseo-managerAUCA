@@ -1,539 +1,1803 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coliseo Manager 2.9</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* COLISEO MANAGER 2.5: CORTESIAS LIBRES DEL MENU */
+let freeCourtesyProductsV25=[];
+async function abrirCortesiaLibreV25(){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ $("freeCourtesySearchV25").value="";$("freeCourtesyQtyV25").value="1";
+ $("freeCourtesyNotesV25").value="";$("freeCourtesyErrorV25").textContent="";
+ const sel=$("freeCourtesyReasonV25");
+ sel.innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");
+ const {data,error}=await db.from("menu_items").select("id,name,price,business,active,manual_unavailable").eq("active",true).eq("manual_unavailable",false).order("name");
+ if(error){alert("No se pudo consultar el menú: "+error.message);return}
+ freeCourtesyProductsV25=data||[];
+ filtrarCortesiasV25();$("freeCourtesyModalV25").classList.add("on");
+}
+function filtrarCortesiasV25(){
+ const term=$("freeCourtesySearchV25").value.trim().toLowerCase();
+ const filtered=freeCourtesyProductsV25.filter(x=>(x.name+" "+x.business).toLowerCase().includes(term));
+ $("freeCourtesyProductV25").innerHTML=filtered.map(x=>'<option value="'+x.id+'">'+esc(businessName(x.business))+' · '+esc(x.name)+' · '+money(x.price)+'</option>').join("")||'<option value="">Sin coincidencias</option>';
+}
+function agregarMotivoLibreV25(){
+ agregarMotivoV22();
+ const sel=$("freeCourtesyReasonV25"),motivos=motivosV22();
+ sel.innerHTML='<option value="">Selecciona un motivo</option>'+motivos.map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join("");
+ const last=motivos[motivos.length-1];if(last)sel.value=last;
+}
+function cerrarCortesiaLibreV25(){$("freeCourtesyModalV25").classList.remove("on")}
+async function guardarCortesiaLibreV25(){
+ if(me?.role!=="admin")return;
+ const id=$("freeCourtesyProductV25").value,qty=Number($("freeCourtesyQtyV25").value);
+ const reason=$("freeCourtesyReasonV25").value.trim(),note=$("freeCourtesyNotesV25").value.trim();
+ const errorBox=$("freeCourtesyErrorV25");errorBox.textContent="";
+ if(!id){errorBox.textContent="Selecciona un producto.";return}
+ if(!Number.isInteger(qty)||qty<1||qty>100){errorBox.textContent="Cantidad permitida: 1 a 100.";return}
+ if(!reason){errorBox.textContent="Selecciona un motivo.";return}
+ const btn=$("freeCourtesyConfirmV25");if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Registrando cortesía…";
+ try{
+  const {data,error}=await db.rpc("issue_free_courtesy_v25",{p_menu_item:id,p_quantity:qty,p_reason:reason+(note?" — "+note:"")});
+  if(error)throw error;
+  cerrarCortesiaLibreV25();
+  if(typeof mostrarToastV24==="function")mostrarToastV24("Cortesía registrada",qty+" × "+data.item_name+" · Inventario actualizado");
+  else {const toast=$("coliseoToastV24");$("toastTitleV24").textContent="Cortesía registrada";$("toastMessageV24").textContent=qty+" × "+data.item_name;toast.classList.add("on")}
+  await cargarCortesiasLibresV25();
+ }catch(e){errorBox.textContent="No se pudo registrar: "+e.message}
+ finally{btn.disabled=false;btn.textContent="Confirmar cortesía"}
+}
+async function cargarCortesiasLibresV25(){
+ const host=$("freeCourtesyHistoryV25");if(!host)return;
+ host.textContent="Cargando…";
+ const {data,error}=await db.from("free_courtesies_v25").select("item_name,business,quantity,unit_price,reason,created_at").order("created_at",{ascending:false}).limit(100);
+ if(error){host.textContent="Historial no disponible: "+error.message;return}
+ host.innerHTML=(data||[]).map(x=>'<div class="card"><b>'+esc(x.quantity+' × '+x.item_name)+'<div class="muted">'+esc(businessName(x.business))+'</div>'+'</b><div class="muted">'+esc(businessName(x.business))+' · '+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Autorizado por administrador01 · Valor: '+money(x.quantity*x.unit_price)+'</div></div>').join("")||'<div class="empty">Todavía no hay cortesías libres.</div>';
+}
 
-<!-- COLISEO MANAGER 3.2 - PERMISOS DE CAJA -->
+</script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0b;color:#fff;font-family:Arial,sans-serif}
+.app{max-width:620px;margin:auto;padding:24px 18px 80px}
+.screen{display:none}.screen.on{display:block}
+.brand{color:#f6c62e;font-size:13px;font-weight:800;letter-spacing:2px}
+h1{font-size:31px;margin:7px 0}h2{margin:7px 0 20px}
+h3{margin:12px 0}
+.muted{color:#8c8c8c;font-size:12px}
+.card,.module,.order,.product{background:#171717;border:1px solid #292929;border-radius:17px;padding:16px;margin:10px 0}
+.grid,.products,.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.module{min-height:105px;cursor:pointer}
+.module b{display:block;margin-bottom:7px}
+.module span{color:#888;font-size:12px}
+.top,.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.top{align-items:flex-start}
+.role,.badge,.status{display:inline-block;border-radius:20px;padding:6px 9px;font-size:11px;font-weight:700}
+.role{background:#30280b;color:#f6c62e}
+.open,.ok{background:#14371f;color:#7deb9e}
+.low{background:#3d330c;color:#ffd75c}
+.out,.bad{background:#401717;color:#ff9292}
+.closed{background:#292929;color:#aaa}
+.cash{background:#332b0c;color:#f6c62e}
+label{display:block;color:#aaa;font-size:13px;margin:13px 0 6px}
+input,select,textarea{width:100%;background:#101010;border:1px solid #333;color:#fff;border-radius:12px;padding:13px;font-size:16px}
+textarea{min-height:70px}
+button{cursor:pointer}
+.yellow,.dark,.danger,.back{border-radius:11px;padding:12px;border:0;font-weight:700}
+.yellow{background:#f6c62e;color:#111;width:100%;margin-top:14px}
+.dark{background:#222;color:#ddd;border:1px solid #383838}
+.danger{background:#351414;color:#ff9292;border:1px solid #642929}
+.back{background:none;color:#f6c62e;padding-left:0}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.price,.amount,.total{color:#f6c62e;font-weight:800}
+.amount{font-size:21px}.total{text-align:right;font-size:26px;margin-top:12px}
+.tabs{display:flex;gap:7px;overflow:auto;margin:12px 0}
+.tab{white-space:nowrap;background:#1a1a1a;color:#ddd;border:1px solid #333;border-radius:20px;padding:9px 13px}
+.tab.on{background:#f6c62e;color:#111}
+.product{cursor:pointer;margin:0}
+.cartline{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border-bottom:1px solid #292929;padding:10px 0}
+.qty button{border-radius:50%;width:29px;height:29px;background:#222;color:#fff;border:1px solid #444}
+.empty{text-align:center;color:#777;padding:22px}
+.section{margin-top:25px;border-bottom:1px solid #292929;padding-bottom:8px}
+.login{min-height:88vh;display:flex;flex-direction:column;justify-content:center}
+.loginbox{background:#171717;border:1px solid #292929;border-radius:22px;padding:24px}
+.msg{text-align:center;color:#aaa;font-size:12px;margin-top:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.big{font-size:20px;color:#f6c62e;font-weight:bold}
+.stockNumber{font-size:24px;font-weight:800;color:#f6c62e}
+.notice{padding:12px;border-radius:12px;background:#231f0e;border:1px solid #514516;color:#f6d866;margin:10px 0}
+.success{padding:12px;border-radius:12px;background:#112c19;border:1px solid #245e35;color:#8ce5a4;margin:10px 0}
+.divider{height:1px;background:#292929;margin:18px 0}
+.smallbtn{padding:8px 10px;font-size:12px}
+.hidden{display:none!important}
+.modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999}
+.modalWrap.on{display:flex}
+.modalCard{width:min(100%,480px);max-height:85vh;overflow:auto;background:#171717;border:1px solid #333;border-radius:22px;padding:22px;box-shadow:0 18px 60px rgba(0,0,0,.65)}
+.modalHead{text-align:center;border-bottom:1px solid #292929;padding-bottom:15px;margin-bottom:8px}
+.modalHead h2{margin:8px 0 3px}
+.modalLine{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #292929}
+.modalNotes{background:#101010;border-radius:12px;padding:12px;margin-top:14px}
+.modalTotal{font-size:28px;color:#f6c62e;font-weight:800;text-align:right;margin:20px 0 8px}
+@media(max-width:420px){.grid,.products,.summary,.three{grid-template-columns:1fr}}
+
+/* Notificaciones propias de Coliseo Manager */
+.coliseoToast{position:fixed;left:16px;right:16px;bottom:24px;max-width:540px;margin:auto;z-index:10001;background:#1b1b1b;border:1px solid #6c5b1a;border-left:5px solid #f6c62e;border-radius:15px;padding:16px;box-shadow:0 12px 38px #000a;display:none}
+.coliseoToast.on{display:block}.coliseoToast strong{color:#f6c62e;display:block;margin-bottom:7px}.coliseoToast button{float:right;margin-left:10px;background:#f6c62e;border:0;border-radius:9px;padding:8px 12px;font-weight:bold;color:#111}
+</style>
+</head>
+<body>
+<main class="app">
+
+<section id="login" class="screen on">
+<div class="login">
+<div class="brand">COLISEO FOOD PARK</div>
+<h1>Coliseo Manager</h1>
+<div class="muted">Control y administración</div>
+<div class="loginbox">
+<label>Correo electrónico</label>
+<input id="email" type="email" autocomplete="username">
+<label>Contraseña</label>
+<input id="password" type="password" autocomplete="current-password">
+<button id="loginBtn" class="yellow" onclick="login()">Iniciar sesión</button>
+<div id="loginMsg" class="msg"></div>
+</div></div>
+</section>
+
+<section id="admin" class="screen">
+<div class="top"><div>
+<div class="brand">COLISEO FOOD PARK</div>
+<h1>Coliseo Manager</h1>
+<div id="adminUser" class="muted"></div>
+<span class="role">ADMINISTRADOR</span>
+</div><button class="dark" onclick="logout()">Salir</button></div>
+<div id="stockAlert"></div>
+<div class="grid" style="margin-top:22px">
+<div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
+<div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
+<div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
+<div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
+<div class="module" onclick="historial()"><b>📚 Historial</b><span>Ventas registradas</span></div>
+<div class="module" onclick="resumenVentasV21()"><b>📊 Resumen de ventas</b><span>Ventas cobradas y cuentas abiertas</span></div>
+<div class="module"><b>💰 Finanzas globales</b><span>Próximamente · pendiente de implementación</span></div>
+<div class="module"><b>🏢 Servicios y pagos</b><span>Próximamente · pendiente de implementación</span></div>
+<div class="module"><b>🔧 Mantenimiento</b><span>Próximamente · pendiente de implementación</span></div>
+<div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
+<div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
+</div>
+<div class="msg">Coliseo Manager 2.9 · Cancelaciones claras y registro</div>
+</section>
+
+<section id="staff" class="screen">
+<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>🧾 Comandas</h2>
+<div id="staffUser" class="muted"></div><span class="role">PERSONAL</span></div>
+<button class="dark" onclick="logout()">Salir</button></div>
+<button class="yellow" onclick="nuevoPedido(false)">＋ Abrir nueva cuenta</button>
+<h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
+</section>
+
+<section id="cashier" class="screen">
+<button class="back" id="cashAdminBackV23" style="display:none" onclick="goAdmin()">← Administración</button>
+<div class="top"><div><div class="brand">COLISEO FOOD PARK</div><h2>💳 Caja</h2>
+<div id="cashierUser" class="muted"></div><span class="role">CAJA</span></div>
+<button class="dark" onclick="logout()">Salir</button></div>
+<button class="yellow" onclick="nuevoPedido(true)">＋ Nueva venta</button>
+<h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
+</section>
+
+<section id="pos" class="screen">
+<button class="back" onclick="volverRolV23()">← Volver</button>
+<div class="brand">COLISEO MANAGER</div><h2 id="posTitle">Nueva cuenta</h2>
+<div id="addToOrderNoticeV23" class="success hidden"></div>
+<div id="newOrderFieldsV23"><label>Tipo de pedido</label>
+<select id="orderType" onchange="tipoUI()">
+<option value="table">🍽️ Consumo en mesa</option>
+<option value="takeaway">🥡 Para llevar</option>
+<option value="delivery">🛵 Delivery</option>
+</select>
+<div id="tableBox"><label>Número de mesa</label><input id="tableNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12"></div>
+<div id="deliveryBox" style="display:none"><label>Plataforma</label><select id="deliveryPlatform"><option>Uber Eats</option><option>DiDi Food</option><option>Otra</option></select></div></div>
+<div id="tabs" class="tabs"></div><div id="products" class="products"></div>
+<div class="card"><h3>Pedido</h3><div id="cart"></div><div id="cartTotal" class="total">$0.00</div></div>
+<div id="newOrderNotesV23"><label>Notas</label><textarea id="notes"></textarea></div>
+<button id="savePosV23" class="yellow" onclick="guardarPedido()">Guardar cuenta</button><div id="orderMsg" class="msg"></div>
+</section>
+
+<section id="menu" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div><h2>🍽️ Menú</h2>
+<div class="card"><h3>Nueva categoría</h3><input id="newCat" placeholder="Ej. Pizzas"><button class="yellow" onclick="crearCat()">Crear categoría</button></div>
+<div class="card"><h3>Nuevo artículo</h3>
+<label>Categoría</label><select id="itemCat"></select>
+<label>Negocio</label><select id="itemBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option></select>
+<label>Artículo</label><input id="itemName">
+<div class="two"><div><label>Costo estimado</label><input id="itemCost" type="number" min="0" step=".01"></div><div><label>Precio de venta</label><input id="itemPrice" type="number" min="0" step=".01"></div></div>
+<button class="yellow" onclick="crearItem()">Crear artículo</button></div>
+<h3 class="section">Categorías</h3><div id="catList"></div>
+<h3 class="section">Artículos</h3><div id="itemList"></div>
+</section>
+
+<section id="inventory" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div><h2>📦 Inventario</h2>
+<div id="inventorySummary"></div>
+<div class="tabs">
+<button class="tab on" id="invTabStock" onclick="invTab('stock')">Existencias</button>
+<button class="tab" id="invTabMove" onclick="invTab('move')">Salidas / Entradas</button>
+<button class="tab" id="invTabRecipe" onclick="invTab('recipe')">Recetas</button>
+<button class="tab" id="invTabHistory" onclick="invTab('history')">Historial</button>
+</div>
+
+<div id="invStockPanel">
+<div class="card"><h3>＋ Nuevo insumo</h3>
+<label>Nombre</label><input id="invName" placeholder="Ej. Harina">
+<div class="two"><div><label>Negocio</label><select id="invBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option><option value="Coliseo General">Coliseo General</option></select></div>
+<div><label>Categoría</label><input id="invCategory" placeholder="Ej. Ingredientes"></div></div>
+<label>Unidad de control</label>
+<select id="invUnit" onchange="inventoryUnitUI()">
+<option value="pieza">Piezas</option><option value="kg">Kilogramos (kg)</option><option value="g">Gramos (g)</option>
+<option value="litro">Litros</option><option value="ml">Mililitros (ml)</option><option value="botella">Botellas</option>
+<option value="lata">Latas</option><option value="paquete">Paquetes</option><option value="caja">Cajas</option><option value="masa">Masas</option>
+</select>
+<div class="two"><div><label id="invStockLabel">Existencia inicial</label><input id="invStock" type="number" min="0" step=".001" value="0"></div>
+<div><label id="invMinLabel">Aviso de existencia baja</label><input id="invMin" type="number" min="0" step=".001" value="0"></div></div>
+<label id="invCostLabel">Costo por unidad</label><input id="invCost" type="number" min="0" step=".01" value="0">
+
+<div id="bottleBox" class="hidden">
+<div class="notice"><b>Control por botella</b><br>Indica cuántos ml contiene y el tamaño de cada shot. Coliseo Manager convertirá la botella a mililitros para controlar el inventario.</div>
+<div class="two"><div><label>Contenido de botella (ml)</label><input id="bottleMl" type="number" min="1" step="1" value="750"></div>
+<div><label>Tamaño de shot (ml)</label><input id="shotMl" type="number" min="1" step="1" value="45"></div></div>
+<div id="shotPreview" class="success"></div>
+</div>
+
+<button class="yellow" onclick="crearInsumo()">Guardar insumo</button></div>
+<h3 class="section">Existencias actuales</h3><div id="inventoryList"></div>
+</div>
+
+<div id="invMovePanel" class="hidden">
+<div class="card"><h3>Registrar movimiento</h3>
+<label>Insumo</label><select id="moveItem" onchange="moveTypeUI()"></select>
+<label>Tipo</label><select id="moveType" onchange="moveTypeUI()"><option value="entrada">Entrada de mercancía</option><option value="merma">Merma</option><option value="empleado">Consumo de empleado</option><option value="cortesia">Cortesía</option><option value="ajuste">Ajuste de inventario</option></select>
+<div id="moveDirectionBox" class="hidden"><label>Tipo de ajuste</label><select id="moveDirection"><option value="entrada">Aumentar existencia</option><option value="salida">Disminuir existencia</option></select></div>
+<div id="mermaReasonBox" class="hidden"><label>Motivo de merma</label><select id="mermaReason"><option value="Mal estado">Mal estado</option><option value="Vencido / caducado">Vencido / caducado</option><option value="Derrame / accidente">Derrame / accidente</option><option value="Error de preparación">Error de preparación</option><option value="Otro">Otro</option></select></div>
+<div id="employeeBox" class="hidden"><label>Negocio del empleado</label><select id="employeeBusiness"><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option><option value="Coliseo General">Coliseo General</option></select><label>Área</label><input id="employeeArea" placeholder="Ej. Cocina, barra, meseros"><label>Nombre de quien consumió</label><input id="employeeName" placeholder="Nombre"></div>
+<label id="moveQtyLabel">Cantidad</label><input id="moveQty" type="number" min=".001" step=".001">
+<label>Observaciones</label><textarea id="moveNotes" placeholder="Opcional"></textarea>
+<button class="yellow" onclick="registrarMovimiento()">Registrar movimiento</button><div id="moveMsg" class="msg"></div>
+</div></div>
+
+<div id="invRecipePanel" class="hidden">
+<div class="card"><h3>🍕 Crear receta</h3><div class="muted">Relaciona un producto del menú con los insumos que utiliza.</div>
+<label>Producto del menú</label><select id="recipeProduct" onchange="cargarReceta()"></select>
+<div class="divider"></div>
+<label>Agregar ingrediente / insumo</label><select id="recipeInventory" onchange="recipeUnitHint()"></select>
+<label id="recipeQtyLabel">Cantidad utilizada por cada producto</label>
+<div class="two"><div><input id="recipeQty" type="number" min=".0001" step=".0001"></div><div><select id="recipeUnit" onchange="recipeConvertPreview()"></select></div></div>
+<div id="recipeConvertHint" class="muted" style="margin-top:8px"></div>
+<button class="yellow" onclick="agregarIngrediente()">Agregar a receta</button>
+</div>
+<h3 class="section">Receta actual</h3><div id="recipeList"></div>
+<div class="notice">Puedes capturar la receta en la unidad que realmente utilizas. Ejemplo: si Harina está en kg, puedes escribir <b>250 g</b> y Coliseo Manager realizará la conversión automáticamente.</div>
+</div>
+
+<div id="invHistoryPanel" class="hidden"><h3 class="section">Movimientos recientes</h3><div id="movementHistory"></div></div>
+</section>
+
+<section id="orders" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>🧾 Comandas</h2><h3 class="section">Abiertas</h3><div id="openOrders"></div><h3 class="section">Cerradas</h3><div id="closedOrders"></div></section>
+<section id="detail" class="screen"><button class="back" onclick="comandas()">← Comandas</button><div class="brand">ADMINISTRACIÓN</div><h2>Cuenta</h2><div id="detailBody"></div></section>
+<section id="authorizations" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN · SOLO ADMINISTRADOR</div>
+<h2>🎁 Cortesías y descuentos</h2>
+<div class="notice">Para autorizar, selecciona una cuenta abierta. Los descuentos son del 1 al 30%. Las cortesías y los descuentos requieren motivo y quedan registrados.</div>
+<div class="card"><h3>🎁 Cortesía libre del menú</h3><div class="muted">No requiere una cuenta de cliente. Selecciona cualquier producto disponible de Cuervo’s Pizza o EL CLúB.</div><button class="yellow" onclick="abrirCortesiaLibreV25()">＋ Elegir producto del menú</button></div><h3 class="section">Cortesías libres registradas</h3><div id="freeCourtesyHistoryV25"></div><h3 class="section">Cortesías y descuentos de cuentas</h3><button class="dark" onclick="comandas()">🧾 Ver todas las comandas</button><div id="authorizationOrders"></div>
+<h3 class="section">Autorizaciones registradas</h3><button class="dark" onclick="autorizacionesV21()">↻ Actualizar registros</button><div id="authorizationHistory"></div>
+</section>
+<section id="salesSummary" class="screen">
+<button class="back" onclick="goAdmin()">← Volver</button>
+<div class="brand">ADMINISTRACIÓN</div><h2>📊 Resumen de ventas</h2>
+<div class="notice">Los importes corresponden a cuentas registradas; no representan utilidades ni flujo de efectivo conciliado.</div>
+<div id="salesSummaryContent"></div>
+</section>
+<section id="history" class="screen"><button class="back" onclick="goAdmin()">← Volver</button><div class="brand">ADMINISTRACIÓN</div><h2>📚 Historial</h2><div id="historyList"></div></section>
+</main>
+
+<div id="accountModal" class="modalWrap" onclick="if(event.target===this)closeAccountModal()"><div class="modalCard"><div class="modalHead"><div class="brand">COLISEO FOOD PARK</div><h2 id="accountModalTitle">Cuenta</h2><div class="muted">Detalle de consumo</div></div><div id="accountModalBody"></div><button class="yellow" onclick="closeAccountModal()">Cerrar</button></div></div>
+
+<script>
+const SB_URL="https://vrxkxfsysfnlcuxdsxfx.supabase.co";
+const SB_KEY="sb_publishable_7ey94d3udNRBYj5o85XeYQ_XXsqDwsM";
+const db=supabase.createClient(SB_URL,SB_KEY);
+const $=id=>document.getElementById(id);
+let me=null,cats=[],subs=[],items=[],basket=[],activeCat=null,current=null,cashMode=false;
+let inventoryItems=[],recipes=[],movements=[];
+const money=n=>Number(n||0).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+const num=n=>Number(n||0).toLocaleString("es-MX",{maximumFractionDigits:4});
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const stamp=s=>new Date(s).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("on"));$(id).classList.add("on");scrollTo(0,0)}
+function businessName(b){return b==="Cuervos Pizza"?"Cuervo’s Pizza":b||""}
+function orderName(o){if(o.order_type==="takeaway")return"Para llevar";if(o.order_type==="delivery")return"Delivery · "+(o.delivery_platform||"");const n=String(o.table_number||"").replace(/^mesa\s*/i,"");return"Mesa "+n}
+
+async function login(){const btn=$("loginBtn"),msg=$("loginMsg");const email=$("email").value.trim(),password=$("password").value;if(!email||!password){msg.textContent="Escribe correo y contraseña.";return}btn.disabled=true;btn.textContent="Iniciando sesión…";msg.textContent="Conectando…";try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;await route(data.user)}catch(e){msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.")}finally{btn.disabled=false;btn.textContent="Iniciar sesión"}}
+async function logout(){await db.auth.signOut();me=null;show("login");$("loginMsg").textContent=""}
+async function route(u){const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}me={...p,id:u.id};if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin");await dashboardStockAlert()}else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}else{$("staffUser").textContent=p.full_name||u.email;await staff()}}
+function goAdmin(){show("admin");dashboardStockAlert()}
+async function volverRol(){me.role==="cashier"?await caja():await staff()}
+
+/* MENU */
+async function loadMenu(){const [a,b,c]=await Promise.all([db.from("menu_categories").select("*").order("sort_order").order("name"),db.from("menu_subcategories").select("*").order("sort_order"),db.from("menu_items").select("*").order("sort_order").order("name")]);cats=a.data||[];subs=b.data||[];items=c.data||[]}
+async function menuAdmin(){show("menu");await loadMenu();$("itemCat").innerHTML=cats.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("catList").innerHTML=cats.map(x=>`<div class="card"><b>${esc(x.name)}</b><div class="muted">${x.active?"Disponible":"Fuera de venta"}</div><div class="actions"><button class="dark" onclick="editCat('${x.id}')">Editar</button><button class="dark" onclick="toggleCat('${x.id}',${!x.active})">${x.active?"Poner fuera de venta":"Hacer disponible"}</button></div></div>`).join("")||'<div class="empty">Sin categorías</div>';let html="";for(const x of items){const s=subs.find(y=>y.id===x.subcategory_id);const c=s&&cats.find(y=>y.id===s.category_id);const profit=Number(x.price)-Number(x.unit_cost||0);const margin=Number(x.price)>0?profit/Number(x.price)*100:0;let can=false;if(x.active&&!x.manual_unavailable){const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});can=!!r.data}html+=`<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(c?.name||"")} · ${esc(businessName(x.business))}</div><div class="muted">Costo ${money(x.unit_cost)} · Utilidad ${money(profit)} · Margen ${margin.toFixed(1)}%</div><div style="margin-top:7px"><span class="status ${can?"ok":"out"}">${can?"DISPONIBLE":"NO DISPONIBLE"}</span></div></div><div class="price">${money(x.price)}</div></div><div class="actions"><button class="dark" onclick="editItem('${x.id}')">Editar</button><button class="dark" onclick="manualItem('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"Marcar agotado"}</button><button class="danger" onclick="deleteMenuItem('${x.id}')">Eliminar</button></div></div>`}$("itemList").innerHTML=html||'<div class="empty">Sin artículos</div>'}
+async function crearCat(){const n=$("newCat").value.trim();if(!n)return;const {data,error}=await db.from("menu_categories").insert({name:n}).select().single();if(error){alert(error.message);return}await db.from("menu_subcategories").insert({category_id:data.id,name:"General"});$("newCat").value="";await menuAdmin()}
+async function crearItem(){const cid=$("itemCat").value,n=$("itemName").value.trim(),cost=Number($("itemCost").value||0),price=Number($("itemPrice").value),business=$("itemBusiness").value;if(!cid||!n||isNaN(cost)||isNaN(price)){alert("Completa los datos.");return}let s=subs.find(x=>x.category_id===cid&&x.name==="General");if(!s){const r=await db.from("menu_subcategories").insert({category_id:cid,name:"General"}).select().single();if(r.error){alert(r.error.message);return}s=r.data}const {error}=await db.from("menu_items").insert({subcategory_id:s.id,name:n,unit_cost:cost,price,business,active:true});if(error){alert(error.message);return}$("itemName").value="";$("itemCost").value="";$("itemPrice").value="";await menuAdmin()}
+async function editCat(id){const x=cats.find(a=>a.id===id),n=prompt("Nombre:",x.name);if(n)await db.from("menu_categories").update({name:n.trim()}).eq("id",id);await menuAdmin()}
+async function toggleCat(id,v){await db.from("menu_categories").update({active:v}).eq("id",id);await menuAdmin()}
+async function manualItem(id,v){await db.from("menu_items").update({manual_unavailable:v}).eq("id",id);await menuAdmin()}
+async function deleteMenuItem(id){if(!confirm("¿Eliminar este artículo del menú?"))return;if(!confirm("Esta acción elimina el artículo. ¿Continuar?"))return;const {error}=await db.from("menu_items").delete().eq("id",id);if(error){alert("No se puede eliminar porque tiene información relacionada. Puedes marcarlo como no disponible.");return}await menuAdmin()}
+async function editItem(id){const x=items.find(a=>a.id===id);const n=prompt("Artículo:",x.name);if(!n)return;const p=prompt("Precio de venta:",x.price);if(p===null||isNaN(+p))return;const c=prompt("Costo estimado:",x.unit_cost||0);if(c===null||isNaN(+c))return;const b=prompt("Negocio: Cuervos Pizza o EL CLúB",x.business||"Cuervos Pizza");if(!["Cuervos Pizza","EL CLúB"].includes(b)){alert("Negocio no válido.");return}const {error}=await db.from("menu_items").update({name:n.trim(),price:+p,unit_cost:+c,business:b}).eq("id",id);if(error)alert(error.message);await menuAdmin()}
+
+/* INVENTARIO 1.9 · BOTELLAS ABIERTAS Y CERRADAS */
+async function loadInventory(){
+ const [a,b,c,d,e]=await Promise.all([
+  db.from("inventory_status").select("*").order("business").order("name"),
+  db.from("recipes").select("*"),
+  db.from("inventory_movements").select("*").order("movement_date",{ascending:false}).limit(100),
+  db.from("menu_items").select("*").order("name"),
+  db.from("inventory_items").select("id,display_unit,quantity_per_display_unit,serving_size,serving_unit,open_bottle_ml,open_bottle_count,unit_cost,minimum_stock,current_stock")
+ ]);
+ if(a.error)throw a.error;
+ if(e.error)throw e.error;
+ const details=new Map((e.data||[]).map(x=>[x.id,x]));
+ inventoryItems=(a.data||[]).map(x=>({...x,...(details.get(x.id)||{})}));
+ recipes=b.data||[];movements=c.data||[];items=d.data||[];
+}
+async function dashboardStockAlert(){const {data}=await db.from("inventory_status").select("stock_status");const arr=data||[];const low=arr.filter(x=>x.stock_status==="Existencia baja").length;const out=arr.filter(x=>x.stock_status==="Agotado"||x.stock_status==="No disponible").length;$("stockAlert").innerHTML=(low||out)?`<div class="notice">📦 Inventario: <b>${low}</b> con existencia baja · <b>${out}</b> agotados/no disponibles</div>`:""}
+async function inventario(){show("inventory");await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts();renderMovementHistory();inventoryUnitUI();invTab("stock")}
+function stockClass(s){return s==="Disponible"?"ok":s==="Existencia baja"?"low":"out"}
+
+function inventoryUnitUI(){
+ const bottle=$("invUnit").value==="botella";
+ $("bottleBox").classList.toggle("hidden",!bottle);
+ $("invStockLabel").textContent=bottle?"Botellas cerradas disponibles":"Existencia inicial";
+ $("invMinLabel").textContent=bottle?"Avisarme cuando me queden estas botellas":"Aviso de existencia baja";
+ $("invCostLabel").textContent=bottle?"Costo por botella":"Costo por unidad";
+ updateShotPreview();
+}
+function updateShotPreview(){
+ const ml=Number($("bottleMl").value),shot=Number($("shotMl").value),bottles=Number($("invStock").value||0);
+ if(ml>0&&shot>0){
+  const complete=Math.floor(ml/shot),rem=+(ml-complete*shot).toFixed(4),total=ml*bottles;
+  $("shotPreview").innerHTML=`🍸 Una botella rinde <b>${complete} shots de ${num(shot)} ml</b>${rem>0?` + ${num(rem)} ml`:""}.<div style="margin-top:7px">📦 ${num(bottles)} botellas = ${num(total)} ml · ${Math.floor(total/shot)} shots completos</div>`;
+ }else $("shotPreview").textContent="Indica los ml por botella y por shot.";
+}
+document.addEventListener("input",e=>{if(["bottleMl","shotMl","invStock"].includes(e.target.id))updateShotPreview();if(e.target.id==="recipeQty")recipeConvertPreview()});
+function renderInventory(){
+ const low=inventoryItems.filter(x=>x.stock_status==="Existencia baja").length;
+ const out=inventoryItems.filter(x=>["Agotado","No disponible"].includes(x.stock_status)).length;
+ $("inventorySummary").innerHTML=`<div class="summary"><div class="card"><div class="muted">INSUMOS</div><div class="big">${inventoryItems.length}</div></div><div class="card"><div class="muted">EXISTENCIA BAJA</div><div class="big">${low}</div></div><div class="card"><div class="muted">AGOTADOS</div><div class="big">${out}</div></div></div>`;
+ $("inventoryList").innerHTML=inventoryItems.map(x=>{
+  const bottle=x.display_unit==="botella",size=Number(x.quantity_per_display_unit||750),total=Number(x.current_stock||0),open=Number(x.open_bottle_ml||0),shot=Number(x.serving_size||45);
+  const closed=Math.max(0,Math.floor((total-open)/size+0.000001)),opened=Number(x.open_bottle_count||0),shots=Math.floor(open/shot),rem=+(open-shots*shot).toFixed(4);
+  const stock=bottle?`<div class="two" style="margin-top:15px"><div><div class="muted">TE QUEDAN</div><div class="stockNumber">${closed} botellas</div><div class="muted">Cerradas</div></div><div><div class="muted">BOTELLAS ABIERTAS</div><div class="stockNumber">${opened}</div><div class="muted">${num(open)} ml disponibles</div></div></div><div class="success">🍸 <b>${shots} shots de ${num(shot)} ml</b>${rem>0?` + ${num(rem)} ml`:""}<div class="muted">Rendimiento de botellas abiertas</div></div><div class="muted">Total: ${num(total)} ml · Aviso al quedar ${num(Number(x.minimum_stock||0)/size)} botellas · Costo por botella: ${money(Number(x.unit_cost||0)*size)}</div>`:`<div class="row" style="margin-top:15px"><div><div class="muted">EXISTENCIA</div><div class="stockNumber">${num(x.current_stock)} ${esc(x.unit)}</div></div><div style="text-align:right"><div class="muted">AVISO MÍNIMO</div><b>${num(x.minimum_stock)} ${esc(x.unit)}</b></div></div><div class="muted" style="margin-top:8px">Costo unitario: ${money(x.unit_cost)}</div>`;
+  return `<div class="card"><div class="row"><div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))}${x.category?" · "+esc(x.category):""}</div></div><span class="status ${stockClass(x.stock_status)}">${esc(x.stock_status).toUpperCase()}</span></div>${stock}<div class="actions">${bottle?`<button class="yellow" style="width:auto;margin:0" onclick="abrirBotella('${x.id}')">🍾 Abrir botella</button>`:""}<button class="dark" onclick="editarInsumo('${x.id}')">Editar</button><button class="dark" onclick="quickMove('${x.id}','entrada')">＋ Entrada</button><button class="dark" onclick="quickMove('${x.id}','merma')">− Merma</button><button class="dark" onclick="toggleInventory('${x.id}',${!x.manual_unavailable})">${x.manual_unavailable?"Hacer disponible":"No disponible"}</button></div></div>`;
+ }).join("")||'<div class="empty">Todavía no hay insumos registrados.</div>';
+}
+async function abrirBotella(id){
+ const x=inventoryItems.find(z=>z.id===id);if(!x)return;
+ const size=Number(x.quantity_per_display_unit);
+ const remaining=prompt(`¿Cuántos ml contiene la botella de ${x.name} que vas a abrir?`,String(size));
+ if(remaining===null)return;
+ const ml=Number(remaining);
+ if(!Number.isFinite(ml)||ml<=0||ml>size){alert(`Indica una cantidad entre 1 y ${size} ml.`);return}
+ if(!confirm(`¿Abrir una botella de ${x.name} con ${num(ml)} ml?`))return;
+ try{
+  const {error}=await db.rpc("open_inventory_bottle",{p_item:id,p_remaining_ml:ml});
+  if(error)throw error;
+  await loadInventory();renderInventory();fillMovementItems();
+ }catch(e){alert("No se pudo completar la operación: "+e.message+". Comprueba el inventario antes de intentar nuevamente.")}
+}
+async function crearInsumo(){
+ const name=$("invName").value.trim(),business=$("invBusiness").value;
+ let category=$("invCategory").value.trim()||null,unit=$("invUnit").value;
+ let stock=Number($("invStock").value),min=Number($("invMin").value),cost=Number($("invCost").value);
+ if(!name||![stock,min,cost].every(Number.isFinite)||stock<0||min<0||cost<0){alert("Revisa nombre, existencias y costo.");return}
+ let base_unit=unit,display_unit=unit,quantity_per_display_unit=1,serving_size=null,serving_unit=null;
+ if(unit==="botella"){
+  const bottleMl=Number($("bottleMl").value),shotMl=Number($("shotMl").value);
+  if(!Number.isInteger(stock)||!Number.isInteger(min)||![bottleMl,shotMl].every(v=>Number.isFinite(v)&&v>0)||shotMl>bottleMl){alert("Indica botellas enteras y ml válidos para botella y shot.");return}
+  unit="ml";base_unit="ml";display_unit="botella";quantity_per_display_unit=bottleMl;
+  serving_size=shotMl;serving_unit="ml";stock*=bottleMl;min*=bottleMl;cost/=bottleMl;
+  if(!category)category="Botella";
+ }
+ const btn=document.querySelector('#invStockPanel button[onclick="crearInsumo()"]');
+ if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Guardando…";
+ try{
+  const {error}=await db.from("inventory_items").insert({business,name,category,unit,base_unit,display_unit,quantity_per_display_unit,serving_size,serving_unit,current_stock:stock,minimum_stock:min,unit_cost:cost,active:true});
+  if(error)throw error;
+  $("invName").value="";$("invCategory").value="";$("invStock").value="0";$("invMin").value="0";$("invCost").value="0";
+  try{await loadInventory();renderInventory();fillMovementItems();fillRecipeProducts()}catch(e){alert("El insumo se guardó, pero no se pudo actualizar la lista. Recarga la página. No vuelvas a registrarlo.")}
+ }catch(e){alert("No se pudo confirmar el registro: "+e.message+". Revisa existencias antes de volver a intentarlo.")}
+ finally{btn.disabled=false;btn.textContent="Guardar insumo"}
+}
+async function editarInsumo(id){
+ const x=inventoryItems.find(a=>a.id===id);if(!x)return;
+ const bottle=x.display_unit==="botella",factor=bottle?Number(x.quantity_per_display_unit):1;
+ const name=prompt("Nombre del insumo:",x.name);if(!name||!name.trim())return;
+ const min=prompt(bottle?"Avisarme cuando me queden estas botellas:":"Aviso de existencia baja:",String(Number(x.minimum_stock)/factor));
+ if(min===null||!Number.isFinite(Number(min))||Number(min)<0)return;
+ const cost=prompt(bottle?"Costo por botella:":"Costo por unidad:",String(+(Number(x.unit_cost)*factor).toFixed(2)));
+ if(cost===null||!Number.isFinite(Number(cost))||Number(cost)<0)return;
+ const payload={name:name.trim(),minimum_stock:Number(min)*factor,unit_cost:Number(cost)/factor,updated_at:new Date().toISOString()};
+ if(bottle){
+  const shot=prompt("Mililitros por shot:",String(x.serving_size||45));
+  if(shot===null)return;
+  if(!Number.isFinite(Number(shot))||Number(shot)<=0||Number(shot)>factor){alert("Tamaño de shot inválido.");return}
+  payload.serving_size=Number(shot);payload.serving_unit="ml";
+ }
+ const {error}=await db.from("inventory_items").update(payload).eq("id",id);
+ if(error){alert(error.message);return}
+ try{await loadInventory();renderInventory()}catch(e){alert("Cambios guardados. Recarga la página para verlos.")}
+}
+async function toggleInventory(id,v){await db.from("inventory_items").update({manual_unavailable:v,updated_at:new Date().toISOString()}).eq("id",id);await loadInventory();renderInventory()}
+function quickMove(id,type){invTab("move");$("moveItem").value=id;$("moveType").value=type;moveTypeUI();$("moveQty").focus()}
+function invTab(t){["stock","move","recipe","history"].forEach(x=>{$("inv"+x.charAt(0).toUpperCase()+x.slice(1)+"Panel").classList.toggle("hidden",x!==t);$("invTab"+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle("on",x===t)});if(t==="history")renderMovementHistory();if(t==="recipe")cargarReceta()}
+function fillMovementItems(){$("moveItem").innerHTML=inventoryItems.map(x=>`<option value="${x.id}">${esc(x.name)} · ${num(x.current_stock)} ${esc(x.unit)}</option>`).join("");moveTypeUI()}
+function moveTypeUI(){const t=$("moveType").value;$("mermaReasonBox").classList.toggle("hidden",t!=="merma");$("employeeBox").classList.toggle("hidden",t!=="empleado");$("moveDirectionBox").classList.toggle("hidden",t!=="ajuste");const x=inventoryItems.find(a=>a.id===$("moveItem").value);$("moveQtyLabel").textContent="Cantidad"+(x?" ("+x.unit+(x.display_unit==="botella"?"; 750 ml = 1 botella aproximadamente" : "")+")":"")}
+async function registrarMovimiento(){const id=$("moveItem").value,t=$("moveType").value,q=Number($("moveQty").value);if(!id||!q||q<=0){$("moveMsg").textContent="Indica insumo y cantidad.";return}let direction=t==="entrada"?"entrada":"salida";if(t==="ajuste")direction=$("moveDirection").value;let reason=t==="merma"?$("mermaReason").value:t==="empleado"?"Consumo de empleado":t==="cortesia"?"Cortesía":t==="entrada"?"Entrada de mercancía":"Ajuste";const business=t==="empleado"?$("employeeBusiness").value:null;const area=t==="empleado"?$("employeeArea").value.trim()||null:null;const employee=t==="empleado"?$("employeeName").value.trim()||null:null;const notes=$("moveNotes").value.trim()||null;const {error}=await db.rpc("record_inventory_movement",{p_item:id,p_type:t,p_reason:reason,p_quantity:q,p_direction:direction,p_business:business,p_employee_area:area,p_employee_name:employee,p_notes:notes,p_order:null});if(error){$("moveMsg").textContent="Error: "+error.message;return}$("moveMsg").textContent="✓ Movimiento registrado.";$("moveQty").value="";$("moveNotes").value="";$("employeeArea").value="";$("employeeName").value="";await loadInventory();renderInventory();fillMovementItems();renderMovementHistory()}
+function movementLabel(x){const map={entrada:"Entrada",venta:"Venta",merma:"Merma",empleado:"Empleado",cortesia:"Cortesía",ajuste:"Ajuste"};return map[x]||x}
+function renderMovementHistory(){$("movementHistory").innerHTML=movements.map(m=>{const i=inventoryItems.find(x=>x.id===m.inventory_item_id);return `<div class="card"><div class="row"><div><b>${esc(i?.name||"Insumo")}</b><div class="muted">${stamp(m.movement_date)} · ${esc(movementLabel(m.movement_type))}</div></div><div class="${m.direction==="entrada"?"ok":"out"} status">${m.direction==="entrada"?"+":"−"} ${num(m.quantity)} ${esc(i?.unit||"")}</div></div>${m.reason?`<div class="muted" style="margin-top:8px">Motivo: ${esc(m.reason)}</div>`:""}${m.employee_name?`<div style="margin-top:6px">👤 ${esc(m.employee_name)}${m.employee_area?" · "+esc(m.employee_area):""}</div>`:""}${m.business?`<div class="muted">${esc(businessName(m.business))}</div>`:""}${m.notes?`<div class="muted">Nota: ${esc(m.notes)}</div>`:""}</div>`}).join("")||'<div class="empty">Todavía no hay movimientos.</div>'}
+
+/* RECETAS CON CONVERSION AUTOMÁTICA */
+function fillRecipeProducts(){$("recipeProduct").innerHTML=items.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc(businessName(x.business))}</option>`).join("");$("recipeInventory").innerHTML=inventoryItems.filter(x=>x.active).map(x=>`<option value="${x.id}">${esc(x.name)} (${esc(x.unit)})</option>`).join("");recipeUnitHint()}
+function unitOptions(u){u=String(u||"").toLowerCase();if(["kg","g"].includes(u))return["g","kg"];if(["litro","l","lt","ml"].includes(u))return["ml","litro"];return[u]}
+function recipeUnitHint(){const x=inventoryItems.find(a=>a.id===$("recipeInventory").value);$("recipeQtyLabel").textContent="Cantidad utilizada por cada producto";if(!x)return;$("recipeUnit").innerHTML=unitOptions(x.unit).map(u=>`<option value="${u}">${u}</option>`).join("");$("recipeUnit").value=unitOptions(x.unit)[0];recipeConvertPreview()}
+async function recipeConvertPreview(){const x=inventoryItems.find(a=>a.id===$("recipeInventory").value),q=Number($("recipeQty")?.value||0),u=$("recipeUnit")?.value;if(!x||!q||q<=0||!u){if($("recipeConvertHint"))$("recipeConvertHint").textContent="";return}const r=await db.rpc("convert_inventory_quantity",{p_quantity:q,p_from:u,p_to:x.unit});$("recipeConvertHint").textContent=r.error?"No se puede convertir esa unidad.":`${num(q)} ${u} descontará ${num(r.data)} ${x.unit} del inventario.`}
+async function cargarReceta(){if(!$("recipeProduct"))return;const pid=$("recipeProduct").value;const rows=recipes.filter(x=>x.menu_item_id===pid);$("recipeList").innerHTML=rows.map(r=>{const i=inventoryItems.find(x=>x.id===r.inventory_item_id);const shown=r.input_quantity&&r.input_unit?`${num(r.input_quantity)} ${esc(r.input_unit)}`:`${num(r.quantity_required)} ${esc(i?.unit||"")}`;return `<div class="card"><div class="row"><div><b>${esc(i?.name||"Insumo")}</b><div class="muted">Por cada producto vendido</div></div><div><b>${shown}</b></div></div>${r.input_quantity&&r.input_unit&&r.input_unit!==i?.unit?`<div class="muted">Descuento normalizado: ${num(r.quantity_required)} ${esc(i?.unit||"")}</div>`:""}<div class="actions"><button class="danger" onclick="quitarIngrediente('${r.id}')">Quitar de receta</button></div></div>`}).join("")||'<div class="empty">Este producto todavía no tiene receta.</div>'}
+async function agregarIngrediente(){const pid=$("recipeProduct").value,iid=$("recipeInventory").value,q=Number($("recipeQty").value),u=$("recipeUnit").value;const inv=inventoryItems.find(x=>x.id===iid);if(!pid||!iid||!q||q<=0||!u||!inv){alert("Selecciona producto, insumo, cantidad y unidad.");return}const conv=await db.rpc("convert_inventory_quantity",{p_quantity:q,p_from:u,p_to:inv.unit});if(conv.error){alert(conv.error.message);return}const {error}=await db.from("recipes").upsert({menu_item_id:pid,inventory_item_id:iid,quantity_required:Number(conv.data),input_quantity:q,input_unit:u},{onConflict:"menu_item_id,inventory_item_id"});if(error){alert(error.message);return}$("recipeQty").value="";await loadInventory();fillRecipeProducts();$("recipeProduct").value=pid;await cargarReceta()}
+async function quitarIngrediente(id){if(!confirm("¿Quitar este ingrediente de la receta?"))return;await db.from("recipes").delete().eq("id",id);await loadInventory();fillRecipeProducts();await cargarReceta()}
+
+/* POS */
+async function nuevoPedido(isCash){cashMode=isCash;basket=[];show("pos");$("posTitle").textContent=isCash?"Nueva venta de Caja":"Abrir nueva cuenta";$("orderType").value="table";$("tableNumber").value="";$("notes").value="";$("orderMsg").textContent="";tipoUI();await loadMenu();cats=cats.filter(x=>x.active);subs=subs.filter(x=>x.active);items=items.filter(x=>x.active&&!x.manual_unavailable);activeCat=cats[0]?.id||null;drawPOS()}
+function tipoUI(){$("tableBox").style.display=$("orderType").value==="table"?"block":"none";$("deliveryBox").style.display=$("orderType").value==="delivery"?"block":"none"}
+async function drawPOS(){$("tabs").innerHTML=cats.map(x=>`<button class="tab ${x.id===activeCat?"on":""}" onclick="selectCat('${x.id}')">${esc(x.name)}</button>`).join("");const ss=subs.filter(x=>x.category_id===activeCat).map(x=>x.id);const list=items.filter(x=>ss.includes(x.subcategory_id));let html="";for(const x of list){const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});const can=!!r.data;html+=`<div class="product" ${can?`onclick="addItem('${x.id}')"`:""}><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))}</div><div class="price">${money(x.price)}</div><div style="margin-top:7px"><span class="status ${can?"ok":"out"}">${can?"DISPONIBLE":"AGOTADO"}</span></div></div>`}$("products").innerHTML=html||'<div class="empty">Sin productos</div>';drawCart()}
+function selectCat(id){activeCat=id;drawPOS()}
+async function addItem(id){const x=items.find(a=>a.id===id);const check=await db.rpc("menu_item_can_sell",{p_menu_item:id});if(!check.data){alert("Este producto no está disponible en este momento.");await drawPOS();return}if(!x.business){alert("El administrador debe asignar el negocio.");return}const b=basket.find(a=>a.id===id);b?b.q++:basket.push({id:x.id,name:x.name,price:+x.price,cost:+(x.unit_cost||0),business:x.business,q:1});drawCart()}
+function changeQty(id,d){const x=basket.find(a=>a.id===id);x.q+=d;if(x.q<1)basket=basket.filter(a=>a.id!==id);drawCart()}
+function drawCart(){$("cart").innerHTML=basket.length?basket.map(x=>`<div class="cartline"><div><b>${esc(x.name)}</b><div class="muted">${esc(businessName(x.business))} · ${money(x.price)}</div></div><div class="qty"><button onclick="changeQty('${x.id}',-1)">−</button> ${x.q} <button onclick="changeQty('${x.id}',1)">+</button></div><b>${money(x.price*x.q)}</b></div>`).join(""):'<div class="empty">Selecciona productos</div>';$("cartTotal").textContent=money(basket.reduce((s,x)=>s+x.price*x.q,0))}
+async function guardarPedido(){const type=$("orderType").value,numTable=$("tableNumber").value.trim();const platform=type==="delivery"?$("deliveryPlatform").value:null;if(type==="table"&&(!numTable||+numTable<1)){$("orderMsg").textContent="Ingresa únicamente el número de mesa.";return}if(!basket.length){$("orderMsg").textContent="Selecciona productos.";return}for(const x of basket){const r=await db.rpc("menu_item_can_sell",{p_menu_item:x.id});if(!r.data){$("orderMsg").textContent=x.name+" ya no está disponible. Retíralo del pedido.";return}}const table=type==="table"?numTable:type==="takeaway"?"Para llevar":"Delivery";const total=basket.reduce((s,x)=>s+x.price*x.q,0);const {data:o,error}=await db.from("orders").insert({business_date:new Date().toISOString().slice(0,10),table_number:table,order_type:type,delivery_platform:platform,status:"open",notes:$("notes").value.trim()||null,total,created_by:me.id,assigned_to:me.id}).select().single();if(error){$("orderMsg").textContent="Error: "+error.message;return}const rows=basket.map(x=>({order_id:o.id,menu_item_id:x.id,item_name:x.name,unit_price:x.price,quantity:x.q,line_total:x.price*x.q,business:x.business}));const r=await db.from("order_items").insert(rows);if(r.error){$("orderMsg").textContent="Error: "+r.error.message;return}await db.rpc("recalc_order_total",{p_order:o.id});$("orderMsg").textContent="✓ Cuenta guardada.";basket=[];setTimeout(volverRol,500)}
+
+/* MESERO */
+async function staff(){show("staff");const {data}=await db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false});$("staffOrders").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge open">ABIERTA</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${o.id}')">Ver cuenta</button></div></div>`).join("")||'<div class="empty">No tienes cuentas abiertas.</div>'}
+
+/* MODAL */
+function closeAccountModal(){$("accountModal").classList.remove("on")}
+async function verOrden(id){const [{data:o,error:oe},{data:i,error:ie}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id).order("created_at")]);if(oe||ie||!o){alert("No fue posible cargar la cuenta.");return}$("accountModalTitle").textContent=orderName(o);const lines=(i||[]).map(x=>`<div class="modalLine"><div><b>${x.quantity} × ${esc(x.item_name)}</b><div class="muted">${money(x.unit_price)} c/u</div></div><b>${money(x.line_total)}</b></div>`).join("");$("accountModalBody").innerHTML=(lines||'<div class="empty">Sin productos</div>')+(o.notes?`<div class="modalNotes"><div class="muted">NOTAS</div><div style="margin-top:5px">${esc(o.notes)}</div></div>`:"")+`<div class="modalTotal">TOTAL: ${money(o.total)}</div>`;$("accountModal").classList.add("on")}
+
+/* CAJA */
+async function caja(){show("cashier");const [{data:o},{data:p}]=await Promise.all([db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false}),db.from("profiles").select("id,full_name")]);$("cashOrders").innerHTML=(o||[]).map(x=>{const u=(p||[]).find(y=>y.id===x.assigned_to);return `<div class="order"><div class="row"><div><b>${orderName(x)}</b><div class="muted">${stamp(x.opened_at)} · ${esc(u?.full_name||"Personal")}</div></div><div><span class="badge cash">POR COBRAR</span><div class="amount">${money(x.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${x.id}')">Ver</button><button class="yellow" style="width:auto;margin:0" onclick="cobrar('${x.id}')">Cobrar</button></div></div>`}).join("")||'<div class="empty">No hay cuentas por cobrar.</div>'}
+async function cobrar(id){const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;const inv=await db.rpc("process_order_inventory",{p_order:id});if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}const {error}=await db.from("orders").update({status:"closed",payment_method:pay,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id);if(error){alert(error.message);return}await caja()}
+
+/* ADMIN COMANDAS */
+async function comandas(){show("orders");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);const card=o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div></div>`;$("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';$("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'}
+async function detalle(id){show("detail");const [{data:o},{data:i},{data:p}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id),db.from("profiles").select("id,full_name").eq("active",true)]);current={o,i:i||[],p:p||[]};const cv=current.i.filter(x=>x.business==="Cuervos Pizza").reduce((s,x)=>s+ +x.line_total,0);const cl=current.i.filter(x=>x.business==="EL CLúB").reduce((s,x)=>s+ +x.line_total,0);$("detailBody").innerHTML=`<div class="card"><div class="row"><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><h3>${orderName(o)}</h3></div><div class="amount">${money(o.total)}</div></div><div class="summary"><div class="card"><div class="muted">Cuervo’s Pizza</div><div class="big">${money(cv)}</div></div><div class="card"><div class="muted">EL CLúB</div><div class="big">${money(cl)}</div></div></div>${o.order_type==="table"?`<label>Mesa</label><input id="dTable" type="number" min="1" value="${esc(String(o.table_number).replace(/^mesa\s*/i,""))}">`:""}<label>Personal asignado</label><select id="dStaff">${(p||[]).map(x=>`<option value="${x.id}" ${x.id===o.assigned_to?"selected":""}>${esc(x.full_name||"Personal")}</option>`).join("")}</select><button class="yellow" onclick="saveOrder()">Guardar cambios</button></div><h3 class="section">Productos</h3>${current.i.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.item_name)}</b><div class="muted">${x.quantity} × ${money(x.unit_price)} · ${esc(businessName(x.business))}</div></div><b>${money(x.line_total)}</b></div><div class="actions"><button class="dark" onclick="qtyAdmin('${x.id}',${x.quantity})">Cantidad</button><button class="danger" onclick="removeItem('${x.id}')">Quitar</button></div></div>`).join("")}<div class="card"><label>Método de pago</label><select id="dPay"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Otro</option></select>${o.status==="open"?`<button class="yellow" onclick="closeAdmin()">Cerrar cuenta</button>`:`<button class="yellow" onclick="reopen()">Reabrir cuenta</button>`}<button class="danger" style="width:100%;margin-top:12px" onclick="deleteOrder()">Eliminar permanentemente</button></div>`}
+async function saveOrder(){const u={assigned_to:$("dStaff").value,updated_by:me.id};if(current.o.order_type==="table"){if(!$("dTable").value)return;u.table_number=$("dTable").value}const {error}=await db.from("orders").update(u).eq("id",current.o.id);if(error)alert(error.message);else await detalle(current.o.id)}
+async function qtyAdmin(id,q){const n=+prompt("Nueva cantidad:",q);if(!Number.isInteger(n)||n<1)return;const x=current.i.find(a=>a.id===id);await db.from("order_items").update({quantity:n,line_total:+x.unit_price*n}).eq("id",id);await db.rpc("recalc_order_total",{p_order:current.o.id});await detalle(current.o.id)}
+async function removeItem(id){if(!confirm("¿Quitar artículo?"))return;await db.from("order_items").delete().eq("id",id);await db.rpc("recalc_order_total",{p_order:current.o.id});await detalle(current.o.id)}
+async function closeAdmin(){if(!confirm("¿Confirmar pago y cerrar cuenta?"))return;const inv=await db.rpc("process_order_inventory",{p_order:current.o.id});if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}const {error}=await db.from("orders").update({status:"closed",payment_method:$("dPay").value,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",current.o.id);if(error){alert(error.message);return}await comandas()}
+async function reopen(){if(!confirm("¿Reabrir cuenta?"))return;await db.from("orders").update({status:"open",closed_at:null,updated_by:me.id}).eq("id",current.o.id);await detalle(current.o.id)}
+async function deleteOrder(){if(!confirm("¿Eliminar esta cuenta?"))return;if(!confirm("ELIMINACIÓN PERMANENTE. ¿Continuar?"))return;const {error}=await db.from("orders").delete().eq("id",current.o.id);if(error)alert(error.message);else await comandas()}
+
+/* HISTORIAL */
+async function historial(){show("history");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);$("historyList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)} · ${esc(o.payment_method||"Sin pago")}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Ver / editar</button></div></div>`).join("")||'<div class="empty">Sin movimientos</div>'}
+
+(async()=>{try{const {data,error}=await db.auth.getSession();if(error)throw error;if(data.session)await route(data.session.user)}catch(e){$("loginMsg").textContent="Error de conexión: "+e.message}})();
+
+/* COLISEO MANAGER 2.0 - ACTUALIZACION COMPLETA
+   Requiere ejecutar primero Coliseo_Manager_2_0_SUPABASE.sql.
+   Mantiene todas las pantallas de la versión 1.9. */
+
+guardarPedido = async function(){
+ const type=$("orderType").value, table=$("tableNumber").value.trim();
+ if(type==="table"&&(!/^\d+$/.test(table)||Number(table)<1)){$("orderMsg").textContent="Ingresa un número de mesa válido.";return}
+ if(!basket.length){$("orderMsg").textContent="Selecciona productos.";return}
+ const btn=document.querySelector('button[onclick="guardarPedido()"]');
+ if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Confirmando pedido…";
+ try{
+  const {data,error}=await db.rpc("create_order_v2",{
+   p_type:type,p_table:table,p_platform:type==="delivery"?$("deliveryPlatform").value:null,
+   p_notes:$("notes").value.trim(),p_lines:basket.map(x=>({id:x.id,q:x.q}))
+  });
+  if(error)throw error;
+  basket=[];
+  const bottles=(data?.opened_bottles||[]).map(x=>`🍾 ${x.count} ${x.count===1?"botella abierta":"botellas abiertas"} de ${x.name} (${x.ml} ml)`);
+  alert("✓ Pedido confirmado. Inventario actualizado."+(bottles.length?"\n"+bottles.join("\n"):""));
+  await volverRol();
+ }catch(e){$("orderMsg").textContent="No se pudo confirmar: "+e.message+". Comprueba las cuentas antes de reintentar."}
+ finally{btn.disabled=false;btn.textContent="Guardar cuenta"}
+};
+
+cobrar = async function(id){
+ const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");
+ if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;
+ const {error}=await db.rpc("close_order_v2",{p_order:id,p_payment:pay});
+ if(error){alert("No se pudo cerrar: "+error.message);return}
+ await caja();
+};
+
+closeAdmin = async function(){
+ if(!confirm("¿Confirmar pago y cerrar cuenta?"))return;
+ const {error}=await db.rpc("close_order_v2",{p_order:current.o.id,p_payment:$("dPay").value});
+ if(error){alert("No se pudo cerrar: "+error.message);return}
+ await comandas();
+};
+
+const detalleOriginalV19=detalle;
+detalle = async function(id){
+ await detalleOriginalV19(id);
+ if(!current?.o||me?.role!=="admin")return;
+ const host=$("detailBody");
+ if(current.o.status!=="open")return;
+ const div=document.createElement("div");div.className="card";
+ div.innerHTML='<h3>🎁 Cortesías y descuentos</h3><div class="muted">Solo administrador. Se registra el motivo y el importe.</div><div class="actions"><button class="dark" onclick="autorizarAjusteV2(\'discount\')">Descuento 1–30%</button><button class="dark" onclick="autorizarAjusteV2(\'complimentary\')">Cortesía</button></div>';
+ host.prepend(div);
+ const {data}=await db.from("order_adjustments").select("kind,percent,reason,amount,created_at").eq("order_id",id);
+ if(data?.length){const a=document.createElement("div");a.className="notice";a.textContent=data.map(x=>`${x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía"}: ${money(x.amount)} · ${x.reason}`).join(" | ")+" · Autorizado por administrador01";div.append(a)}
+};
+
+const MOTIVOS_V22=["Atención al cliente","Error en pedido","Producto de cortesía","Promoción especial","Cliente frecuente","Compensación por demora"];
+function motivosV22(){try{return [...new Set([...MOTIVOS_V22,...JSON.parse(localStorage.getItem("motivosColiseoV22")||"[]")])]}catch(e){return [...MOTIVOS_V22]}}
+function cargarMotivosV22(){
+ const sel=$("ajusteMotivoV22");sel.innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option>'+esc(x)+'</option>').join("");
+}
+function agregarMotivoV22(){
+ const x=prompt("Nuevo motivo fijo:");if(!x?.trim())return;
+ const reason=x.trim().slice(0,120), all=motivosV22();
+ if(!all.includes(reason)){try{localStorage.setItem("motivosColiseoV22",JSON.stringify([...all.filter(y=>!MOTIVOS_V22.includes(y)),reason]))}catch(e){alert("No se pudo guardar el motivo en este dispositivo.")}}
+ cargarMotivosV22();$("ajusteMotivoV22").value=reason;
+}
+function abrirAjusteV22(kind){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ $("ajusteTipoValueV22").value=kind;
+ $("ajusteTipoV22").textContent=kind==="discount"?"Autorizar descuento":"Autorizar cortesía";
+ $("ajustePorcentajeWrapV22").style.display=kind==="discount"?"block":"none";
+ $("ajustePorcentajeV22").value="10";$("ajusteMotivoExtraV22").value="";$("ajusteErrorV22").textContent="";
+ $("ajusteCuentaV22").innerHTML='<option value="">Cuenta completa</option>'+current.i.map((x,i)=>'<option value="'+i+'">'+esc(x.item_name)+' × '+x.quantity+'</option>').join("");
+ cargarMotivosV22();$("adjustmentModalV22").classList.add("on");
+}
+function cerrarAjusteV22(){$("adjustmentModalV22").classList.remove("on")}
+async function confirmarAjusteV22(){
+ if(me?.role!=="admin")return;
+ const kind=$("ajusteTipoValueV22").value, pct=kind==="discount"?Number($("ajustePorcentajeV22").value):null;
+ const reason=$("ajusteMotivoV22").value.trim(),extra=$("ajusteMotivoExtraV22").value.trim();
+ if(!reason){$("ajusteErrorV22").textContent="Selecciona un motivo.";return}
+ if(kind==="discount"&&(!Number.isFinite(pct)||pct<1||pct>30)){$("ajusteErrorV22").textContent="Descuento permitido: 1 a 30%.";return}
+ const index=$("ajusteCuentaV22").value, item=index===""?null:current.i[Number(index)]?.id;
+ if(index!==""&&!item)return;
+ const btn=$("ajusteConfirmarV22");btn.disabled=true;
+ try{
+  const {data,error}=await db.rpc("apply_order_adjustment_v2",{p_order:current.o.id,p_kind:kind,p_reason:reason+(extra?" — "+extra:""),p_percent:pct,p_order_item:item});
+  if(error)throw error;
+  cerrarAjusteV22();alert("✓ "+money(data)+" · Autorizado por administrador01");await detalle(current.o.id);
+ }catch(e){$("ajusteErrorV22").textContent=e.message}finally{btn.disabled=false}
+}
+async function autorizarAjusteV2(kind){abrirAjusteV22(kind)}
+async function autorizacionesV21(){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ show("authorizations");
+ cargarCortesiasLibresV25();
+ $("authorizationOrders").innerHTML='<div class="muted">Cargando cuentas…</div>';
+ $("authorizationHistory").innerHTML='<div class="muted">Cargando autorizaciones…</div>';
+ const [ordersResult, adjustmentsResult]=await Promise.all([
+  db.from("orders").select("id,table_number,order_type,opened_at,total,status").eq("status","open").order("opened_at",{ascending:false}).limit(100),
+  db.from("order_adjustments").select("order_id,kind,percent,reason,amount,created_at,authorized_by").order("created_at",{ascending:false}).limit(100)
+ ]);
+ if(ordersResult.error){$("authorizationOrders").textContent="Error al cargar cuentas: "+ordersResult.error.message}
+ else{
+  const a=ordersResult.data||[];
+  $("authorizationOrders").innerHTML=a.map(o=>'<div class="order"><div class="row"><div><b>'+esc(orderName(o))+'</b><div class="muted">'+stamp(o.opened_at)+'</div></div><div class="amount">'+money(o.total)+'</div></div><button class="yellow" onclick="detalle(\''+o.id+'\')">Abrir y autorizar</button></div>').join("")||'<div class="empty">No hay cuentas abiertas.</div>';
+ }
+ if(adjustmentsResult.error){$("authorizationHistory").textContent="Error al cargar historial: "+adjustmentsResult.error.message}
+ else{
+  const a=adjustmentsResult.data||[];
+  $("authorizationHistory").innerHTML=a.map(x=>'<div class="card"><b>'+(x.kind==="discount"?"Descuento "+x.percent+"%":"Cortesía")+'</b><div class="amount">'+money(x.amount)+'</div><div class="muted">'+stamp(x.created_at)+'</div><div>Motivo: '+esc(x.reason)+'</div><div class="muted">Cuenta: '+esc(x.order_id)+'</div><div class="muted">Autorizado por administrador01</div><button class="dark smallbtn" onclick="detalle(\''+x.order_id+'\')">Ver cuenta</button></div>').join("")||'<div class="empty">Aún no hay autorizaciones registradas.</div>';
+ }
+}
+async function resumenVentasV21(){
+ if(me?.role!=="admin"){alert("Solo administrador");return}
+ show("salesSummary");
+ const host=$("salesSummaryContent");
+ host.textContent="Cargando…";
+ const {data,error}=await db.from("orders").select("id,total,status,opened_at").order("opened_at",{ascending:false}).limit(1000);
+ if(error){host.textContent="No se pudo consultar: "+error.message;return}
+ const a=data||[],closed=a.filter(x=>x.status==="closed"),opened=a.filter(x=>x.status==="open");
+ const sum=arr=>arr.reduce((v,x)=>v+Number(x.total||0),0);
+ host.innerHTML='<div class="summary"><div class="card"><div class="muted">Cuentas cobradas</div><div class="big">'+closed.length+'</div><div class="amount">'+money(sum(closed))+'</div></div><div class="card"><div class="muted">Cuentas abiertas</div><div class="big">'+opened.length+'</div><div class="amount">'+money(sum(opened))+'</div></div></div><div class="muted">Últimas '+a.length+' cuentas registradas (máximo 1,000).</div>';
+}
+
+// Bloquear edición de cantidades después de descontar inventario: requiere devolución controlada.
+qtyAdmin = async function(){alert("El inventario ya fue descontado. Para modificar un pedido confirmado se requiere un procedimiento de devolución y nuevo consumo.")};
+removeItem = async function(){alert("El inventario ya fue descontado. No elimines artículos confirmados; registra la incidencia con administración.")};
+deleteOrder = async function(){alert("Por seguridad, no se eliminan cuentas con movimientos de inventario.")};
+reopen = async function(){alert("La cuenta cerrada conserva sus movimientos. No se puede reabrir desde esta versión.")};
+
+// Evitar que la versión 1.9 recalcule y borre ajustes autorizados al guardar asignación.
+saveOrder = async function(){
+ const u={assigned_to:$("dStaff").value,updated_by:me.id};
+ if(current.o.order_type==="table"){
+  if(!/^\d+$/.test($("dTable").value)||Number($("dTable").value)<1){alert("Mesa inválida");return}
+  u.table_number=$("dTable").value;
+ }
+ const {error}=await db.from("orders").update(u).eq("id",current.o.id);
+ if(error)alert(error.message);else await detalle(current.o.id);
+};
+function notificacionV24(titulo,mensaje){
+ const toast=document.getElementById("coliseoToastV24");
+ document.getElementById("toastTitleV24").textContent="✓ "+titulo;
+ document.getElementById("toastMessageV24").textContent=mensaje;
+ toast.classList.add("on");
+}
+/* COLISEO MANAGER 2.3 - CAJA Y CONSUMOS ADICIONALES */
+let addToOrderV23=null;
+function abrirCajaV23(){if(me?.role!=="admin"&&me?.role!=="cashier"){alert("Sin acceso a caja");return}caja()}
+async function volverRolV23(){
+ if(addToOrderV23){const role=me?.role;addToOrderV23=null;if(role==="admin")return comandas();if(role==="cashier")return caja();return staff()}
+ if(me?.role==="admin")return abrirCajaV23();
+ return volverRol();
+}
+const nuevoPedidoOriginalV23=nuevoPedido;
+nuevoPedido=async function(isCash){
+ addToOrderV23=null;
+ $("newOrderFieldsV23").classList.remove("hidden");
+ $("newOrderNotesV23").classList.remove("hidden");
+ $("addToOrderNoticeV23").classList.add("hidden");
+ $("savePosV23").textContent="Guardar cuenta";
+ await nuevoPedidoOriginalV23(isCash);
+};
+async function agregarAOrdenV23(id){
+ if(!["admin","staff","cashier"].includes(me?.role)){alert("Sin permiso");return}
+ const {data:o,error}=await db.from("orders").select("id,status,table_number,order_type,delivery_platform").eq("id",id).single();
+ if(error||!o||o.status!=="open"){alert("La cuenta ya no está abierta.");return}
+ closeAccountModal();
+ addToOrderV23={id:o.id,name:orderName(o)};
+ basket=[];show("pos");
+ $("posTitle").textContent="＋ Agregar a "+orderName(o);
+ $("newOrderFieldsV23").classList.add("hidden");
+ $("newOrderNotesV23").classList.add("hidden");
+ $("addToOrderNoticeV23").classList.remove("hidden");
+ $("addToOrderNoticeV23").textContent="Los nuevos productos se sumarán a la cuenta existente. Se descontará del inventario únicamente lo que agregues.";
+ $("savePosV23").textContent="Confirmar productos adicionales";
+ $("orderMsg").textContent="";
+ await loadMenu();
+ cats=cats.filter(x=>x.active);subs=subs.filter(x=>x.active);items=items.filter(x=>x.active&&!x.manual_unavailable);
+ activeCat=cats[0]?.id||null;
+ await drawPOS();
+}
+const guardarPedidoV2OriginalV23=guardarPedido;
+guardarPedido=async function(){
+ if(!addToOrderV23)return guardarPedidoV2OriginalV23();
+ if(!basket.length){$("orderMsg").textContent="Selecciona al menos un producto.";return}
+ const btn=$("savePosV23");if(btn.disabled)return;
+ btn.disabled=true;btn.textContent="Agregando productos…";
+ const orderId=addToOrderV23.id;
+ try{
+  const {data,error}=await db.rpc("add_order_items_v23",{p_order:orderId,p_lines:basket.map(x=>({id:x.id,q:x.q}))});
+  if(error)throw error;
+  basket=[];addToOrderV23=null;
+  notificacionV24("Productos agregados correctamente", "Nuevo total: "+money(data?.total)+" · Inventario actualizado.");
+  if(me.role==="cashier")await caja();
+  else if(me.role==="staff")await staff();
+  else await detalle(orderId);
+ }catch(e){$("orderMsg").textContent="No se pudo agregar: "+e.message+". Revisa la cuenta antes de reintentar."}
+ finally{btn.disabled=false;btn.textContent=addToOrderV23?"Confirmar productos adicionales":"Guardar cuenta"}
+};
+const cajaOriginalV23=caja;
+caja=async function(){
+ $("cashAdminBackV23").style.display=me?.role==="admin"?"block":"none";
+ $("cashierUser").textContent=me?.full_name||"";
+ await cajaOriginalV23();
+ document.querySelectorAll("#cashOrders .order").forEach(card=>{
+  const cobrar=card.querySelector('button[onclick^="cobrar("]');
+  if(!cobrar)return;
+  const match=cobrar.getAttribute("onclick").match(/'([^']+)'/);
+  if(!match)return;
+  const b=document.createElement("button");
+  b.className="dark";b.textContent="＋ Agregar productos";
+  b.onclick=()=>agregarAOrdenV23(match[1]);
+  cobrar.parentElement.insertBefore(b,cobrar);
+ });
+};
+const staffOriginalV23=staff;
+staff=async function(){
+ await staffOriginalV23();
+ document.querySelectorAll("#staffOrders .order").forEach(card=>{
+  const ver=card.querySelector('button[onclick^="verOrden("]');
+  if(!ver)return;
+  const match=ver.getAttribute("onclick").match(/'([^']+)'/);
+  if(!match)return;
+  const b=document.createElement("button");
+  b.className="yellow";b.style.width="auto";b.style.margin="0";
+  b.textContent="＋ Agregar productos";b.onclick=()=>agregarAOrdenV23(match[1]);
+  ver.parentElement.appendChild(b);
+ });
+};
+const detalleV22OriginalV23=detalle;
+detalle=async function(id){
+ await detalleV22OriginalV23(id);
+ if(me?.role!=="admin"||current?.o?.status!=="open")return;
+ const host=$("detailBody");
+ const b=document.createElement("button");
+ b.className="yellow";b.textContent="＋ Agregar productos a esta cuenta";
+ b.onclick=()=>agregarAOrdenV23(id);
+ host.prepend(b);
+};
+const verOrdenOriginalV23=verOrden;
+verOrden=async function(id){
+ await verOrdenOriginalV23(id);
+ if(!["staff","cashier","admin"].includes(me?.role))return;
+ const {data:o}=await db.from("orders").select("status").eq("id",id).single();
+ if(o?.status!=="open")return;
+ const b=document.createElement("button");b.className="yellow";b.textContent="＋ Agregar productos";
+ b.onclick=()=>agregarAOrdenV23(id);
+ $("accountModalBody").appendChild(b);
+};
+
+
+
+/* COLISEO MANAGER 2.6 - CORTESÍAS DEL MENÚ POR CUENTA Y CANCELACIONES AUDITABLES */
+let cancellationV26=null;
+const abrirCortesiaLibreOriginalV26=abrirCortesiaLibreV25;
+abrirCortesiaLibreV25=async function(orderId=null){
+ await abrirCortesiaLibreOriginalV26();
+ if(!$('freeCourtesyModalV25').classList.contains('on'))return;
+ const sel=$('courtesyOrderV26');
+ sel.innerHTML='<option value="">Sin cuenta · Cortesía libre</option>';
+ const {data,error}=await db.from('orders').select('id,table_number,order_type,delivery_platform,opened_at').eq('status','open').order('opened_at',{ascending:false}).limit(100);
+ if(error){$('freeCourtesyErrorV25').textContent='No se pudieron cargar las cuentas: '+error.message;return}
+ for(const o of data||[]){const opt=document.createElement('option');opt.value=o.id;opt.textContent=orderName(o)+' · '+stamp(o.opened_at);sel.appendChild(opt)}
+ if(orderId)sel.value=orderId;
+};
+guardarCortesiaLibreV25=async function(){
+ if(me?.role!=='admin')return;
+ const id=$('freeCourtesyProductV25').value,qty=Number($('freeCourtesyQtyV25').value),orderId=$('courtesyOrderV26').value;
+ const reason=$('freeCourtesyReasonV25').value.trim(),extra=$('freeCourtesyNotesV25').value.trim();
+ const msg=$('freeCourtesyErrorV25');msg.textContent='';
+ if(!id||!Number.isInteger(qty)||qty<1||qty>100||!reason){msg.textContent='Selecciona producto, cantidad válida y motivo.';return}
+ const btn=$('freeCourtesyConfirmV25');if(btn.disabled)return;btn.disabled=true;btn.textContent='Registrando cortesía…';
+ try{
+  const rpc=orderId?'issue_account_courtesy_v26':'issue_free_courtesy_v25';
+  const args=orderId?{p_order:orderId,p_menu_item:id,p_quantity:qty,p_reason:reason+(extra?' — '+extra:'')}:{p_menu_item:id,p_quantity:qty,p_reason:reason+(extra?' — '+extra:'')};
+  const {data,error}=await db.rpc(rpc,args);if(error)throw error;
+  cerrarCortesiaLibreV25();notificacionV24('Cortesía registrada',qty+' × '+data.item_name+(orderId?' · Agregada a la cuenta sin cargo':' · Sin cuenta')+' · Inventario actualizado.');
+  if(orderId){if($('authorizations').classList.contains('on'))await autorizacionesV21();else await detalle(orderId)}
+  else await cargarCortesiasLibresV25();
+ }catch(e){msg.textContent='No se pudo registrar: '+e.message}
+ finally{btn.disabled=false;btn.textContent='Confirmar cortesía'}
+};
+let cancelAdjustmentV29=null;
+async function cargarDescuentoCancelV29(){
+ cancelAdjustmentV29=null;
+ const box=$('cancelDiscountBoxV29');box.classList.add('hidden');
+ $('cancelTotalPreviewV29').textContent='Calculando nuevo total…';
+ document.querySelectorAll('input[name=cancelDiscountScopeV29]').forEach(x=>x.checked=false);
+ const {data,error}=await db.from('order_adjustments').select('id,kind,percent,amount,order_item_id').eq('order_id',cancellationV26.orderId);
+ if(!cancellationV26)return;
+ if(error){$('cancelItemErrorV26').textContent='No se pudo consultar el descuento: '+error.message;return}
+ if((data||[]).length>1){$('cancelItemErrorV26').textContent='Hay varios ajustes en esta cuenta; requiere revisión manual.';return}
+ cancelAdjustmentV29=data?.[0]||null;
+ if(cancelAdjustmentV29){
+  box.classList.remove('hidden');
+  $('cancelDiscountCurrentV29').textContent=(cancelAdjustmentV29.kind==='discount'?'Descuento '+cancelAdjustmentV29.percent+'%':'Cortesía monetaria')+' · Importe actual: '+money(cancelAdjustmentV29.amount);
+  $('cancelDiscountItemV29').innerHTML=current.i.map(x=>'<option value="'+x.id+'">'+esc(x.item_name)+' · '+esc(businessName(x.business))+'</option>').join('');
+  if(cancelAdjustmentV29.order_item_id)$('cancelDiscountItemV29').value=cancelAdjustmentV29.order_item_id;
+ }
+ actualizarPreviewCancelV29();
+}
+function actualizarPreviewCancelV29(){
+ if(!cancellationV26)return;
+ const q=Number($('cancelItemQtyV26').value);
+ const item=current.i.find(x=>x.id===cancellationV26.itemId);
+ const scope=document.querySelector('input[name=cancelDiscountScopeV29]:checked')?.value;
+ $('cancelDiscountItemBoxV29').classList.toggle('hidden',scope!=='parcial');
+ const remaining=current.i.map(x=>({...x,qty:x.quantity-(x.id===cancellationV26.itemId?q:0)})).filter(x=>x.qty>0);
+ const sel=$('cancelDiscountItemV29');
+ if(cancelAdjustmentV29){
+  const old=sel.value;
+  sel.innerHTML=remaining.map(x=>'<option value="'+x.id+'">'+esc(x.item_name)+' · '+esc(businessName(x.business))+'</option>').join('');
+  if(remaining.some(x=>x.id===old))sel.value=old;
+ }
+ const gross=remaining.reduce((a,x)=>a+Number(x.unit_price)*x.qty,0);
+ let amount=0;
+ if(cancelAdjustmentV29&&scope){
+  const base=scope==='completa'?gross:(remaining.find(x=>x.id===sel.value)?Number(remaining.find(x=>x.id===sel.value).unit_price)*remaining.find(x=>x.id===sel.value).qty:0);
+  amount=cancelAdjustmentV29.kind==='discount'?Math.round(base*Number(cancelAdjustmentV29.percent))/100:base;
+ }
+ $('cancelTotalPreviewV29').textContent=(!Number.isInteger(q)||q<1||q>cancellationV26.max)?'Selecciona una cantidad válida':
+  (cancelAdjustmentV29&&!scope?'Selecciona cómo conservar el descuento para ver el total.':
+  'Nuevo subtotal: '+money(gross)+' · Descuento: '+money(amount)+' · Total estimado: '+money(Math.max(0,gross-amount)));
+}
+function abrirCancelacionV26(id){
+ if(me?.role!=='admin'||current?.o?.status!=='open')return;
+ const x=current.i.find(y=>y.id===id);if(!x)return;
+ cancellationV26={orderId:current.o.id,itemId:id,max:x.quantity};
+ cancelAdjustmentV29=null;
+ $('cancelItemNameV26').textContent=x.item_name+' · '+businessName(x.business)+' · '+x.quantity+' × '+money(x.unit_price);
+ $('cancelItemQtyV26').value='1';$('cancelItemQtyV26').max=x.quantity;
+ $('cancelItemQtyV26').oninput=actualizarPreviewCancelV29;
+ document.querySelectorAll('input[name=cancelDispositionV28]').forEach(x=>x.checked=false);actualizarDestinoCancelacionV28();
+ $('cancelItemExtraV26').value='';$('cancelItemErrorV26').textContent='';
+ $('cancelItemReasonV26').innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(x=>'<option>'+esc(x)+'</option>').join('');
+ $('cancelItemModalV26').classList.add('on');
+ cargarDescuentoCancelV29();
+}
+function cerrarCancelacionV26(){$('cancelItemModalV26').classList.remove('on');cancellationV26=null}
+function agregarMotivoCancelacionV26(){
+ const x=prompt('Nuevo motivo fijo:');if(!x?.trim())return;
+ const v=x.trim().slice(0,120),all=motivosV22();
+ if(!all.includes(v)){try{localStorage.setItem('motivosColiseoV22',JSON.stringify([...all.filter(y=>!MOTIVOS_V22.includes(y)),v]))}catch(e){}}
+ $('cancelItemReasonV26').innerHTML='<option value="">Selecciona un motivo</option>'+motivosV22().map(y=>'<option>'+esc(y)+'</option>').join('');
+ $('cancelItemReasonV26').value=v;
+}
+async function confirmarCancelacionV26(){
+ if(me?.role!=='admin'||!cancellationV26)return;
+ const q=Number($('cancelItemQtyV26').value),reason=$('cancelItemReasonV26').value.trim(),extra=$('cancelItemExtraV26').value.trim();
+ const msg=$('cancelItemErrorV26');msg.textContent='';
+ if(!Number.isInteger(q)||q<1||q>cancellationV26.max||!reason){msg.textContent='Indica cantidad válida y motivo.';return}
+ const disposition=document.querySelector('input[name=cancelDispositionV28]:checked')?.value;
+ if(!disposition){msg.textContent='Selecciona qué pasará con el producto.';return}
+ const returnStock=disposition==='inventario';
+ if(returnStock&&!$('cancelReturnConfirmedV27').checked){msg.textContent='Confirma que el producto está apto para venta.';return}
+ const scope=document.querySelector('input[name=cancelDiscountScopeV29]:checked')?.value||null;
+ const target=scope==='parcial'?$('cancelDiscountItemV29').value:null;
+ if(cancelAdjustmentV29&&!scope){msg.textContent='Elige cómo conservar el descuento.';return}
+ if(scope==='parcial'&&!target){msg.textContent='Elige un producto para el descuento parcial.';return}
+ const btn=$('cancelItemSubmitV26');if(btn.disabled)return;btn.disabled=true;
+ const orderId=cancellationV26.orderId;
+ try{
+  const {data,error}=await db.rpc('cancel_order_item_v29',{p_order:orderId,p_order_item:cancellationV26.itemId,p_quantity:q,p_reason:reason+(extra?' — '+extra:''),p_return_stock:returnStock,p_discount_scope:scope,p_discount_item:target});
+  if(error)throw error;
+  cerrarCancelacionV26();notificacionV24('Producto cancelado',q+' × '+data.item_name+' · Total: '+money(data.total)+(returnStock?' · Devuelto a inventario.':' · Registrado como merma (sin descontar dos veces).'));
+  await detalle(orderId);
+ }catch(e){msg.textContent='No se pudo cancelar: '+e.message}
+ finally{btn.disabled=false}
+}
+function actualizarDestinoCancelacionV28(){
+ const value=document.querySelector('input[name=cancelDispositionV28]:checked')?.value;
+ $('cancelReturnBoxV28').classList.toggle('hidden',value!=='inventario');
+ $('cancelMermaInfoV28').classList.toggle('hidden',value!=='merma');
+ if(value!=='inventario')$('cancelReturnConfirmedV27').checked=false;
+}
+const detalleOriginalV26=detalle;
+detalle=async function(id){
+ await detalleOriginalV26(id);
+ if(me?.role!=='admin'||current?.o?.status!=='open')return;
+ const host=$('detailBody');
+ const courtesy=document.createElement('div');courtesy.className='card';
+ courtesy.innerHTML='<h3>🎁 Cortesía del menú</h3><div class="muted">Agrega cualquier producto sin cargo a esta cuenta.</div>';
+ const b=document.createElement('button');b.className='yellow';b.textContent='＋ Elegir producto de cortesía';b.onclick=()=>abrirCortesiaLibreV25(id);courtesy.appendChild(b);host.prepend(courtesy);
+ const {data:grants}=await db.from('account_courtesies_v26').select('item_name,quantity,reason,created_at').eq('order_id',id).order('created_at',{ascending:false});
+ if(grants?.length){const box=document.createElement('div');box.className='card';box.innerHTML='<h3>Cortesías de esta cuenta</h3>'+grants.map(x=>'<div class="modalLine"><div><b>'+esc(x.quantity+' × '+x.item_name)+'<div class="muted">'+esc(businessName(x.business))+'</div>'+'</b><div class="muted">'+esc(x.reason)+' · Autorizado por administrador01</div></div><b>$0.00</b></div>').join('');host.appendChild(box)}
+ for(const item of current.i){
+  const buttons=[...host.querySelectorAll('button[onclick^="qtyAdmin("]')];
+  const button=buttons.find(x=>x.getAttribute('onclick').includes(item.id));
+  if(button){const cancel=document.createElement('button');cancel.className='danger';cancel.textContent='✕ Cancelar producto';cancel.onclick=()=>abrirCancelacionV26(item.id);button.parentElement.appendChild(cancel)}
+ }
+ const {data:cancelled}=await db.from('order_cancellations_v26').select('item_name,business,quantity,unit_price,amount,reason,created_at,returned_to_inventory,disposition,authorized_by').eq('order_id',id).order('created_at',{ascending:false});
+ if(cancelled?.length){const box=document.createElement('div');box.className='card';box.innerHTML='<h3>Cancelaciones registradas</h3>'+cancelled.map(x=>'<div class="modalLine"><div><b>'+esc(x.quantity+' × '+x.item_name)+'<div class="muted">'+esc(businessName(x.business))+'</div>'+'</b><div class="muted">'+esc(x.reason)+' · '+(x.returned_to_inventory?'Devuelto a inventario':'Merma · no apto para venta')+' · Autorizado por administrador01</div></div><b>−'+money(x.amount)+'</b></div>').join('');host.appendChild(box)}
+};
+const autorizacionesOriginalV26=autorizacionesV21;
+autorizacionesV21=async function(){
+ await autorizacionesOriginalV26();
+ const card=$('freeCourtesyHistoryV25')?.previousElementSibling;
+ // Selector de cuenta disponible también desde el módulo de cortesías.
+ const button=document.querySelector('#authorizations button[onclick="abrirCortesiaLibreV25()"]');
+ if(button)button.textContent='＋ Elegir producto · libre o para una cuenta';
+};
+
+</script>
+<div class="modalWrap" id="adjustmentModalV22" role="dialog" aria-modal="true">
+<div class="modalCard">
+<div class="top"><h2 id="ajusteTipoV22">Autorizar ajuste</h2><button class="dark" onclick="cerrarAjusteV22()">✕</button></div>
+<input id="ajusteTipoValueV22" type="hidden">
+<label>Aplicar a</label><select id="ajusteCuentaV22"></select>
+<div id="ajustePorcentajeWrapV22"><label>Descuento (%) · máximo 30%</label><input id="ajustePorcentajeV22" type="number" min="1" max="30" value="10"></div>
+<label>Motivo de autorización</label>
+<div class="row"><select id="ajusteMotivoV22" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoV22()" title="Agregar motivo fijo">＋</button></div>
+<label>Detalle adicional (opcional)</label><textarea id="ajusteMotivoExtraV22" placeholder="Información adicional"></textarea>
+<div class="notice">Autorizado por administrador01</div>
+<div id="ajusteErrorV22" class="msg"></div>
+<button id="ajusteConfirmarV22" class="yellow" onclick="confirmarAjusteV22()">Confirmar autorización</button>
+</div></div>
+<div id="coliseoToastV24" class="coliseoToast" role="status" aria-live="polite"><button onclick="document.getElementById('coliseoToastV24').classList.remove('on')">Cerrar</button><strong id="toastTitleV24"></strong><span id="toastMessageV24"></span></div>
+<div class="modalWrap" id="cancelItemModalV26" role="dialog" aria-modal="true"><div class="modalCard">
+<div class="top"><h2>✕ Cancelar producto</h2><button class="dark" onclick="cerrarCancelacionV26()">✕</button></div>
+<div class="notice">La cancelación quita el producto del cobro. Indica qué ocurrió con el producto para registrar correctamente el inventario y la merma.</div>
+<div id="cancelItemNameV26" class="card"></div>
+<label>Cantidad a cancelar</label><input id="cancelItemQtyV26" type="number" min="1" step="1">
+<div class="card"><h3>¿Qué pasó con el producto?</h3>
+<label style="display:flex;gap:12px;align-items:flex-start"><input type="radio" name="cancelDispositionV28" value="inventario" onchange="actualizarDestinoCancelacionV28()" style="width:auto;margin-top:2px"><span><b>↩ Devolver a inventario</b><div class="muted">Sí está apto para venderse: producto sin preparar o botella/lata cerrada e íntegra.</div></span></label>
+<label style="display:flex;gap:12px;align-items:flex-start"><input type="radio" name="cancelDispositionV28" value="merma" onchange="actualizarDestinoCancelacionV28()" style="width:auto;margin-top:2px"><span><b>🗑 Registrar como merma</b><div class="muted">No se puede vender: comida o bebida ya preparada, botella abierta, producto dañado o contaminado.</div></span></label>
+<div id="cancelReturnBoxV28" class="hidden"><label style="display:flex;gap:8px"><input id="cancelReturnConfirmedV27" type="checkbox" style="width:auto"> Confirmo que el producto está íntegro y apto para venta.</label></div>
+<div id="cancelMermaInfoV28" class="notice hidden">Se registra como merma y NO se descuenta otra vez: el inventario ya se descontó al confirmar el pedido.</div>
+<div class="muted">Las botellas controladas por mililitros requieren verificar también el control de botellas abiertas.</div></div><label>Motivo</label><div class="row"><select id="cancelItemReasonV26" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoCancelacionV26()">＋</button></div>
+<label>Detalle adicional (opcional)</label><textarea id="cancelItemExtraV26" placeholder="Especifica el motivo"></textarea>
+<div id="cancelDiscountBoxV29" class="card hidden">
+<h3>💰 ¿Cómo conservar el descuento?</h3>
+<div id="cancelDiscountCurrentV29" class="muted"></div>
+<label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="cancelDiscountScopeV29" value="completa" style="width:auto" onchange="actualizarPreviewCancelV29()"><span><b>Cuenta completa</b><div class="muted">Mantener el descuento autorizado sobre el nuevo total.</div></span></label>
+<label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="cancelDiscountScopeV29" value="parcial" style="width:auto" onchange="actualizarPreviewCancelV29()"><span><b>Parcial · producto específico</b><div class="muted">Aplicarlo solamente al producto que elijas.</div></span></label>
+<div id="cancelDiscountItemBoxV29" class="hidden"><label>Producto que conserva el descuento</label><select id="cancelDiscountItemV29" onchange="actualizarPreviewCancelV29()"></select></div>
+</div>
+<div class="notice" id="cancelTotalPreviewV29">Total estimado después de cancelar: —</div>
+
+<div class="notice">Autorizado por administrador01</div><div id="cancelItemErrorV26" class="msg"></div>
+<button id="cancelItemSubmitV26" class="yellow" onclick="confirmarCancelacionV26()">Confirmar cancelación</button>
+</div></div>
+<div class="modalWrap" id="freeCourtesyModalV25" role="dialog" aria-modal="true"><div class="modalCard">
+<div class="top"><h2>🎁 Cortesía del menú</h2><button class="dark" onclick="cerrarCortesiaLibreV25()">✕</button></div>
+<label>Asignar cortesía a</label><select id="courtesyOrderV26"><option value="">Sin cuenta · Cortesía libre</option></select>
+<label>Buscar en el menú</label><input id="freeCourtesySearchV25" placeholder="Pizza, shot, bebida, hamburguesa…" oninput="filtrarCortesiasV25()">
+<label>Producto</label><select id="freeCourtesyProductV25"></select>
+<label>Cantidad</label><input id="freeCourtesyQtyV25" type="number" min="1" max="100" step="1" value="1">
+<label>Motivo</label><div class="row"><select id="freeCourtesyReasonV25" style="flex:1;min-width:0"></select><button class="dark" onclick="agregarMotivoLibreV25()">＋</button></div>
+<label>Detalle adicional (opcional)</label><textarea id="freeCourtesyNotesV25" placeholder="Especifica la razón si hace falta"></textarea>
+<div class="notice">Autorizado por administrador01 · Producto sin cargo</div>
+<div id="freeCourtesyErrorV25" class="msg"></div>
+<button id="freeCourtesyConfirmV25" class="yellow" onclick="guardarCortesiaLibreV25()">Confirmar cortesía</button>
+</div></div>
+ 
+<!-- COLISEO MANAGER 3.0 - VENTAS SEPARADAS POR NEGOCIO -->
 <script>
 (function () {
   "use strict";
 
-  const $32 = id => document.getElementById(id);
-  const fmt32 = n => money(Number(n || 0));
-  const esc32 = s => esc(String(s ?? ""));
-  const permiso32 = () =>
-    me && ["admin", "cashier"].includes(me.role);
+  function fechaTijuana() {
+    const partes = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Tijuana",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(new Date());
 
-  let sesion32 = null;
+    const p = {};
+    partes.forEach(x => p[x.type] = x.value);
 
-  async function consultar32(tabla, columnas, campo, valor) {
-    const todos = [];
-
-    for (let i = 0; i < 10000; i += 500) {
-      let q = db.from(tabla)
-        .select(columnas)
-        .range(i, i + 499);
-
-      if (campo) q = q.eq(campo, valor);
-
-      const { data, error } = await q;
-      if (error) throw error;
-
-      todos.push(...(data || []));
-      if ((data || []).length < 500) return todos;
-    }
-
-    throw Error("Demasiados registros para consultar.");
+    return p.year + "-" + p.month + "-" + p.day;
   }
 
-  function importe32(id, permitirCero = false) {
-    const texto = String($32(id)?.value ?? "").trim();
+  function crearModuloCortes() {
+    const moduloVentas = document.querySelector(
+      '.module[onclick="resumenVentasV21()"]'
+    );
 
-    if (!/^\d+(\.\d{1,2})?$/.test(texto)) {
-      throw Error("Captura un importe válido.");
+    if (!moduloVentas || document.getElementById("moduloCortesV30")) {
+      return;
     }
 
-    const valor = Number(texto);
+    const modulo = document.createElement("div");
+    modulo.id = "moduloCortesV30";
+    modulo.className = "module";
+    modulo.onclick = abrirCortesV30;
 
-    if (valor > 1000000 ||
-        (!permitirCero && valor <= 0)) {
-      throw Error("Importe fuera del rango permitido.");
+    modulo.innerHTML =
+      "<b>🏦 Ventas por negocio</b>" +
+      "<span>Cuervo’s Pizza, EL CLúB y total Coliseo</span>";
+
+    moduloVentas.insertAdjacentElement("afterend", modulo);
+  }
+
+  function crearPantallaCortes() {
+    if (document.getElementById("cortesV30")) return;
+
+    const pantalla = document.createElement("section");
+    pantalla.id = "cortesV30";
+    pantalla.className = "screen";
+
+    pantalla.innerHTML = `
+      <button class="back" onclick="goAdmin()">
+        ← Volver a administración
+      </button>
+
+      <div class="brand">COLISEO FOOD PARK</div>
+      <h2>🏦 Ventas por negocio</h2>
+
+      <div class="notice">
+        Este reporte muestra las ventas cobradas de cada negocio.
+        No representa utilidades ni sustituye el conteo físico
+        de efectivo para realizar un corte definitivo de caja.
+      </div>
+
+      <label>Selecciona la fecha</label>
+      <input id="fechaCortesV30" type="date">
+
+      <button class="yellow" onclick="consultarCortesV30()">
+        Consultar ventas
+      </button>
+
+      <div id="resultadoCortesV30" style="margin-top:18px"></div>
+    `;
+
+    document.querySelector("main.app").appendChild(pantalla);
+  }
+
+  function normalizarNegocio(nombre) {
+    const valor = String(nombre || "").trim();
+
+    if (valor === "Cuervos Pizza" || valor === "Cuervo’s Pizza") {
+      return "Cuervos Pizza";
+    }
+
+    if (valor === "EL CLúB" || valor === "EL CLUB") {
+      return "EL CLúB";
     }
 
     return valor;
   }
 
-  // Botón para el personal de Caja
-  const pantallaCaja = $32("cashier");
-
-  if (pantallaCaja && !$32("botonCajaDiaria32")) {
-    const boton = document.createElement("button");
-    boton.id = "botonCajaDiaria32";
-    boton.className = "yellow";
-    boton.textContent = "💵 Caja diaria";
-
-    boton.onclick = () => abrirCajaDiaria32();
-
-    const referencia =
-      pantallaCaja.querySelector(".section");
-
-    if (referencia) {
-      pantallaCaja.insertBefore(boton, referencia);
-    } else {
-      pantallaCaja.appendChild(boton);
-    }
+  function nombreNegocio(nombre) {
+    return nombre === "Cuervos Pizza"
+      ? "Cuervo’s Pizza"
+      : nombre;
   }
 
-  const volver = $32("cashV31")?.querySelector(".back");
+  function nombrePago(valor) {
+    const texto = String(valor || "").trim().toLowerCase();
 
-  if (volver) {
-    volver.onclick = () => {
-      if (me?.role === "cashier") caja();
-      else goAdmin();
-    };
+    if (texto === "efectivo") return "Efectivo";
+    if (texto === "tarjeta") return "Tarjeta";
+    if (texto === "transferencia") return "Transferencia";
+
+    return "Otro / sin especificar";
   }
 
-  window.abrirCajaDiaria32 = async function () {
-    if (!permiso32()) {
-      alert("No tienes permiso.");
-      return;
-    }
+  async function consultarPaginas(tabla, columnas, fecha) {
+    const registros = [];
+    const limite = 10000;
+    const pagina = 500;
 
-    show("cashV31");
-    await refreshCashV31();
-  };
-
-  window.openCashV31 = window.abrirCajaDiaria32;
-
-  window.refreshCashV31 = async function () {
-    if (!permiso32()) return;
-
-    const panel = $32("cashContentV31");
-    panel.textContent = "Consultando caja…";
-
-    try {
+    for (let inicio = 0; inicio < limite; inicio += pagina) {
       const { data, error } = await db
-        .from("cash_sessions_v31")
-        .select("*")
-        .order("opened_at", { ascending: false })
-        .limit(50);
+        .from(tabla)
+        .select(columnas)
+        .eq("business_date", fecha)
+        .range(inicio, inicio + pagina - 1);
 
       if (error) throw error;
 
-      const sesiones = data || [];
-      const admin = me.role === "admin";
+      registros.push(...(data || []));
 
-      sesion32 = sesiones.find(
-        x => x.status === "open"
-      ) || null;
+      if ((data || []).length < pagina) {
+        return registros;
+      }
+    }
 
-      if (!sesion32) {
-        panel.innerHTML = `
-          <div class="card">
-            <h3>Abrir caja</h3>
-            <p>Captura el fondo inicial para dar cambio.</p>
+    throw new Error(
+      "Se alcanzó el límite de registros. " +
+      "Es necesario ampliar la consulta antes de usar este reporte."
+    );
+  }
 
-            <label>Fondo inicial (MXN)</label>
-            <input id="fondo32" type="number"
-              min="0" step="0.01">
+  window.abrirCortesV30 = async function () {
+    if (me?.role !== "admin") {
+      alert("Solo administración puede consultar este reporte.");
+      return;
+    }
 
-            <button class="yellow"
-              onclick="abrirFondo32()">
-              Abrir caja
-            </button>
-          </div>
-        `;
-      } else {
-        const s = sesion32;
+    document.getElementById("fechaCortesV30").value = fechaTijuana();
 
-        const movimientos = await consultar32(
-          "cash_movements_v31",
-          "id,kind,amount,reason,business,created_at,created_by",
-          "session_id",
-          s.id
-        );
+    show("cortesV30");
+    await consultarCortesV30();
+  };
 
-        const entradas = movimientos
-          .filter(x => x.kind === "entry")
-          .reduce((a, x) => a + Number(x.amount), 0);
+  window.consultarCortesV30 = async function () {
+    if (me?.role !== "admin") return;
 
-        const salidas = movimientos
-          .filter(x => x.kind !== "entry")
-          .reduce((a, x) => a + Number(x.amount), 0);
+    const fecha = document.getElementById("fechaCortesV30").value;
+    const resultado = document.getElementById("resultadoCortesV30");
 
-        let ventas = {
-          efectivo: 0,
-          tarjeta: 0,
-          transferencia: 0,
-          otro: 0,
-          abiertas: 0
-        };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      resultado.textContent = "Selecciona una fecha válida.";
+      return;
+    }
 
-        if (admin) {
-          const ordenes = await consultar32(
-            "orders",
-            "id,total,status,payment_method",
-            "business_date",
-            s.business_date
+    resultado.textContent = "Consultando ventas cobradas…";
+
+    try {
+      const [ordenes, desglose] = await Promise.all([
+        consultarPaginas(
+          "orders",
+          "id,total,status,payment_method,business_date",
+          fecha
+        ),
+        consultarPaginas(
+          "v_order_business_split",
+          "order_id,business,status,payment_method," +
+          "net_business,gross_business,business_date",
+          fecha
+        )
+      ]);
+
+      const cobradas = ordenes.filter(x => x.status === "closed");
+      const abiertas = ordenes.filter(x => x.status === "open");
+
+      const mapaOrdenes = new Map(
+        cobradas.map(x => [x.id, x])
+      );
+
+      const negocios = {
+        "Cuervos Pizza": {
+          total: 0,
+          cuentas: new Set(),
+          pagos: {}
+        },
+        "EL CLúB": {
+          total: 0,
+          cuentas: new Set(),
+          pagos: {}
+        }
+      };
+
+      const totalesPorCuenta = new Map();
+      const combinaciones = new Set();
+
+      for (const fila of desglose) {
+        if (fila.status !== "closed") continue;
+
+        const orden = mapaOrdenes.get(fila.order_id);
+        if (!orden) continue;
+
+        const negocio = normalizarNegocio(fila.business);
+
+        if (!negocios[negocio]) {
+          throw new Error(
+            "Se encontró un producto con negocio no reconocido: " +
+            (fila.business || "sin asignar") +
+            ". Revisa su clasificación."
           );
-
-          for (const o of ordenes) {
-            if (o.status === "open") {
-              ventas.abiertas++;
-              continue;
-            }
-
-            if (o.status !== "closed") continue;
-
-            const metodo = String(
-              o.payment_method || ""
-            ).trim().toLowerCase();
-
-            const clave = [
-              "efectivo",
-              "tarjeta",
-              "transferencia"
-            ].includes(metodo) ? metodo : "otro";
-
-            ventas[clave] += Number(o.total || 0);
-          }
         }
 
-        const esperado =
-          Number(s.opening_fund) +
-          ventas.efectivo +
-          entradas - salidas;
+        const clave = fila.order_id + "|" + negocio;
 
-        window.expectedCashV31 = esperado;
+        if (combinaciones.has(clave)) {
+          throw new Error(
+            "Hay registros duplicados en el desglose de una cuenta."
+          );
+        }
 
-        let html = `
+        combinaciones.add(clave);
+
+        const importe = Number(fila.net_business);
+
+        if (!Number.isFinite(importe)) {
+          throw new Error("Se encontró un importe inválido.");
+        }
+
+        const metodo = nombrePago(orden.payment_method);
+        const registro = negocios[negocio];
+
+        registro.total += importe;
+        registro.cuentas.add(fila.order_id);
+
+        registro.pagos[metodo] =
+          (registro.pagos[metodo] || 0) + importe;
+
+        totalesPorCuenta.set(
+          fila.order_id,
+          (totalesPorCuenta.get(fila.order_id) || 0) + importe
+        );
+      }
+
+      const diferencias = cobradas.filter(orden => {
+        const importeCuenta = Number(orden.total || 0);
+        const importeNegocios = totalesPorCuenta.get(orden.id) || 0;
+
+        return Math.abs(importeCuenta - importeNegocios) > 0.011;
+      });
+
+      if (diferencias.length) {
+        throw new Error(
+          "Hay " + diferencias.length +
+          " cuenta(s) cuyos importes no coinciden con el desglose. " +
+          "Revisa los datos antes de realizar el corte."
+        );
+      }
+
+      const totalCuervos = negocios["Cuervos Pizza"].total;
+      const totalClub = negocios["EL CLúB"].total;
+      const totalGeneral = totalCuervos + totalClub;
+
+      const totalCobrado = cobradas.reduce(
+        (suma, orden) => suma + Number(orden.total || 0),
+        0
+      );
+
+      const metodos = [
+        "Efectivo",
+        "Tarjeta",
+        "Transferencia",
+        "Otro / sin especificar"
+      ];
+
+      function formatoPagos(pagos) {
+        return metodos.map(metodo => `
+          <div class="row" style="padding:9px 0">
+            <span>${metodo}</span>
+            <b>${money(pagos[metodo] || 0)}</b>
+          </div>
+        `).join("");
+      }
+
+      function tarjetaNegocio(clave) {
+        const negocio = negocios[clave];
+
+        return `
           <div class="card">
-            <h3>Caja abierta · ${esc32(s.business_date)}</h3>
+            <h3>${nombreNegocio(clave)}</h3>
 
-            <div class="row">
-              <span>Fondo inicial</span>
-              <b>${fmt32(s.opening_fund)}</b>
+            <div class="amount">${money(negocio.total)}</div>
+
+            <div class="muted" style="margin-top:7px">
+              Cuentas con productos de este negocio:
+              ${negocio.cuentas.size}
             </div>
 
-            <div class="row">
-              <span>Entradas adicionales</span>
-              <b>${fmt32(entradas)}</b>
-            </div>
-
-            <div class="row">
-              <span>Gastos y retiros</span>
-              <b>−${fmt32(salidas)}</b>
-            </div>
-        `;
-
-        if (admin) {
-          html += `
             <div class="divider"></div>
 
-            <div class="row">
-              <span>Ventas en efectivo</span>
-              <b>${fmt32(ventas.efectivo)}</b>
-            </div>
+            ${formatoPagos(negocio.pagos)}
+          </div>
+        `;
+      }
 
-            <div class="row">
-              <span>Tarjeta</span>
-              <b>${fmt32(ventas.tarjeta)}</b>
-            </div>
+      const pagosGenerales = {};
 
-            <div class="row">
-              <span>Transferencia</span>
-              <b>${fmt32(ventas.transferencia)}</b>
-            </div>
+      metodos.forEach(metodo => {
+        pagosGenerales[metodo] =
+          (negocios["Cuervos Pizza"].pagos[metodo] || 0) +
+          (negocios["EL CLúB"].pagos[metodo] || 0);
+      });
 
-            <div class="row">
-              <b>Efectivo esperado</b>
-              <b>${fmt32(esperado)}</b>
-            </div>
-          `;
+      resultado.innerHTML = `
+        <div class="success">
+          ✓ Importes conciliados con las cuentas cobradas.
+        </div>
 
-          if (ventas.abiertas) {
-            html += `<div class="notice">
-              Hay ${ventas.abiertas} cuentas abiertas.
-              Deben cobrarse antes del cierre.
-            </div>`;
-          }
-
-          if (ventas.otro) {
-            html += `<div class="notice">
-              Hay cobros con método no reconocido.
-            </div>`;
-          }
-        } else {
-          html += `
-            <div class="notice">
-              El conteo y cierre definitivo
-              son exclusivos de administración.
-            </div>
-          `;
-        }
-
-        html += `
+        <div class="summary">
+          <div class="card">
+            <div class="muted">CUENTAS COBRADAS</div>
+            <div class="big">${cobradas.length}</div>
           </div>
 
           <div class="card">
-            <h3>Registrar movimiento de efectivo</h3>
-
-            <label>Tipo de movimiento</label>
-            <select id="tipo32">
-              <option value="expense">
-                Gasto pagado de caja
-              </option>
-              <option value="withdrawal">
-                Retiro de efectivo
-              </option>
-              <option value="entry">
-                Entrada adicional (no venta)
-              </option>
-            </select>
-
-            <label>Negocio (obligatorio)</label>
-            <select id="negocio32">
-              <option value="">Seleccionar negocio</option>
-              <option value="Cuervos Pizza">
-                Cuervo’s Pizza
-              </option>
-              <option value="EL CLúB">
-                EL CLúB
-              </option>
-              <option value="General">
-                Gastos generales de Coliseo
-              </option>
-            </select>
-
-            <label>Importe (MXN)</label>
-            <input id="cantidad32" type="number"
-              min="0.01" step="0.01">
-
-            <label>Motivo del pago (obligatorio)</label>
-            <textarea id="motivo32" rows="3"
-              placeholder="Ej. Compra de hielo para EL CLúB"
-            ></textarea>
-
-            <button class="yellow"
-              onclick="guardarMovimiento32()">
-              Guardar movimiento
-            </button>
-
-            <div class="divider"></div>
-            <h3>Movimientos registrados</h3>
-        `;
-
-        if (!movimientos.length) {
-          html += "<p>Sin movimientos registrados.</p>";
-        }
-
-        for (const m of movimientos) {
-          const nombre = m.kind === "entry"
-            ? "Entrada"
-            : m.kind === "expense"
-              ? "Gasto"
-              : "Retiro";
-
-          const fecha = new Date(
-            m.created_at
-          ).toLocaleString("es-MX", {
-            timeZone: "America/Tijuana"
-          });
-
-          html += `
-            <div style="padding:10px 0;
-              border-bottom:1px solid #7775">
-
-              <div class="row">
-                <span>
-                  ${nombre} · ${esc32(m.business)}
-                </span>
-                <b>
-                  ${m.kind === "entry" ? "+" : "−"}
-                  ${fmt32(m.amount)}
-                </b>
-              </div>
-
-              <div class="muted">
-                ${esc32(m.reason)}
-              </div>
-
-              <small>
-                ${esc32(fecha)}
-                · Usuario: ${esc32(m.created_by)}
-              </small>
-            </div>
-          `;
-        }
-
-        html += "</div>";
-
-        // Cierre visible exclusivamente al administrador
-        if (admin) {
-          html += `
-            <div class="card">
-              <h3>Cierre definitivo</h3>
-
-              <p>Cuenta todo el efectivo,
-              incluyendo el fondo inicial.</p>
-
-              <label>Efectivo contado</label>
-              <input id="countedV31" type="number"
-                min="0" step="0.01"
-                oninput="previewCashV31()">
-
-              <label>Fondo para el siguiente día</label>
-              <input id="nextFundV31" type="number"
-                min="0" step="0.01"
-                oninput="previewCashV31()">
-
-              <div id="previewV31" class="notice">
-                Captura los importes para
-                calcular la diferencia.
-              </div>
-
-              <label>Observaciones</label>
-              <textarea id="notesV31" rows="3">
-              </textarea>
-
-              <button class="yellow"
-                onclick="closeCashV31()">
-                Confirmar cierre definitivo
-              </button>
-            </div>
-          `;
-        }
-
-        panel.innerHTML = html;
-      }
-
-      if (admin) {
-        const cerradas = sesiones.filter(
-          x => x.status === "closed"
-        );
-
-        let historial = `
-          <div class="card">
-            <h3>Historial de cierres</h3>
-        `;
-
-        for (const c of cerradas) {
-          historial += `
-            <div style="padding:10px 0;
-              border-bottom:1px solid #7775">
-              <b>${esc32(c.business_date)}</b>
-
-              <div class="row">
-                <span>Fondo inicial</span>
-                <b>${fmt32(c.opening_fund)}</b>
-              </div>
-
-              <div class="row">
-                <span>Efectivo esperado</span>
-                <b>${fmt32(c.expected_cash)}</b>
-              </div>
-
-              <div class="row">
-                <span>Efectivo contado</span>
-                <b>${fmt32(c.counted_cash)}</b>
-              </div>
-
-              <div class="row">
-                <span>Diferencia</span>
-                <b>${fmt32(c.difference)}</b>
-              </div>
-
-              <div class="row">
-                <span>Fondo reservado</span>
-                <b>${fmt32(c.next_fund)}</b>
-              </div>
-
-              <div class="muted">
-                ${esc32(c.notes)}
-              </div>
-            </div>
-          `;
-        }
-
-        if (!cerradas.length) {
-          historial += "<p>Sin cierres guardados.</p>";
-        }
-
-        panel.insertAdjacentHTML(
-          "beforeend",
-          historial + "</div>"
-        );
-      }
-
-    } catch (e) {
-      panel.innerHTML = `
-        <div class="notice">
-          ⚠️ ${esc32(e.message || String(e))}
+            <div class="muted">CUENTAS ABIERTAS</div>
+            <div class="big">${abiertas.length}</div>
+          </div>
         </div>
-        <button class="yellow"
-          onclick="refreshCashV31()">
-          Reintentar
-        </button>
+
+        ${tarjetaNegocio("Cuervos Pizza")}
+
+        ${tarjetaNegocio("EL CLúB")}
+
+        <div class="card">
+          <h3>🏛️ TOTAL COLISEO FOOD PARK</h3>
+
+          <div class="amount">${money(totalGeneral)}</div>
+
+          <div class="divider"></div>
+
+          ${formatoPagos(pagosGenerales)}
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <span>Total registrado en cuentas</span>
+            <b>${money(totalCobrado)}</b>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <span>Diferencia</span>
+            <b>${money(totalGeneral - totalCobrado)}</b>
+          </div>
+        </div>
+
+        <div class="notice">
+          <b>Importante:</b> cuando una cuenta incluye productos
+          de ambos negocios, el sistema distribuye el importe
+          conforme al desglose registrado en Supabase.
+
+          <div style="margin-top:10px">
+            El método de pago corresponde a la cuenta completa.
+            Esta versión no permite registrar dos métodos de pago
+            distintos dentro de una misma cuenta.
+          </div>
+        </div>
+      `;
+
+    } catch (error) {
+      resultado.innerHTML = `
+        <div class="notice">
+          ⚠️ No se puede generar un reporte confiable:
+          ${esc(error.message || String(error))}
+        </div>
       `;
     }
   };
 
-  window.abrirFondo32 = async function () {
-    if (!permiso32()) return;
-
-    try {
-      const fondo = importe32("fondo32", true);
-
-      if (!confirm(
-        "¿Abrir caja con fondo de " + fmt32(fondo) + "?"
-      )) return;
-
-      const { error } = await db.rpc("cash_open_v31", {
-        p_fund: fondo
-      });
-
-      if (error) throw error;
-
-      await refreshCashV31();
-
-    } catch (e) {
-      alert("No se abrió la caja: " + e.message);
-    }
-  };
-
-  window.guardarMovimiento32 = async function () {
-    if (!permiso32() || !sesion32) return;
-
-    try {
-      const cantidad = importe32("cantidad32");
-      const tipo = $32("tipo32").value;
-      const negocio = $32("negocio32").value;
-      const motivo = $32("motivo32").value.trim();
-
-      if (!negocio || !motivo) {
-        throw Error(
-          "Debes seleccionar el negocio " +
-          "y escribir el motivo del pago."
-        );
-      }
-
-      if (motivo.length > 500) {
-        throw Error("El motivo es demasiado largo.");
-      }
-
-      if (!confirm(
-        "¿Guardar movimiento de " +
-        fmt32(cantidad) + "?\n" +
-        "Negocio: " + negocio + "\n" +
-        "Motivo: " + motivo
-      )) return;
-
-      const { error } = await db.rpc(
-        "cash_move_v32",
-        {
-          p_session: sesion32.id,
-          p_kind: tipo,
-          p_amount: cantidad,
-          p_reason: motivo,
-          p_business: negocio
-        }
-      );
-
-      if (error) throw error;
-
-      alert("Movimiento guardado correctamente.");
-      await refreshCashV31();
-
-    } catch (e) {
-      alert("No se guardó: " + e.message);
-    }
-  };
-
+  crearModuloCortes();
+  crearPantallaCortes();
 })();
 </script>
+
+<!-- COLISEO MANAGER 3.1 - CAJA DIARIA -->
+<script>
+(function(){
+'use strict';
+
+const ID = 'cashV31';
+const fmt = n => money(Number(n || 0));
+const field = id => document.getElementById(id);
+const clean = s => esc(String(s ?? ''));
+let active = null;
+
+function mxdate(){
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US',{
+      timeZone:'America/Tijuana',
+      year:'numeric',
+      month:'2-digit',
+      day:'2-digit'
+    }).formatToParts(new Date())
+      .filter(x => x.type !== 'literal')
+      .map(x => [x.type,x.value])
+  );
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+function amount(id){
+  const raw = field(id).value.trim();
+  if(raw === '' || !/^\d+(\.\d{1,2})?$/.test(raw)){
+    throw Error('Revisa el importe. Usa pesos y hasta dos decimales.');
+  }
+  return Number(raw);
+}
+
+async function loadRows(table,select,filter,value){
+  let all = [];
+  for(let i=0;i<10000;i+=500){
+    let q = db.from(table)
+      .select(select)
+      .order('created_at',{ascending:false})
+      .range(i,i+499);
+    if(filter) q = q.eq(filter,value);
+    const {data,error} = await q;
+    if(error) throw error;
+    all.push(...data);
+    if(data.length < 500) return all;
+  }
+  throw Error('Demasiados registros; consulta soporte.');
+}
+
+async function getSales(date){
+  let all = [];
+  for(let i=0;i<10000;i+=500){
+    const {data,error} = await db.from('orders')
+      .select('id,total,status,payment_method')
+      .eq('business_date',date)
+      .range(i,i+499);
+    if(error) throw error;
+    all.push(...data);
+    if(data.length < 500) break;
+  }
+
+  const totals = {
+    efectivo:0,
+    tarjeta:0,
+    transferencia:0,
+    otro:0,
+    abiertas:0
+  };
+
+  for(const o of all){
+    if(o.status === 'open'){
+      totals.abiertas++;
+      continue;
+    }
+    if(o.status !== 'closed') continue;
+
+    const k = String(o.payment_method || '')
+      .toLowerCase().trim();
+
+    totals[k in totals ? k : 'otro'] += Number(o.total || 0);
+  }
+  return totals;
+}
+
+function block(){
+  if(field(ID)) return;
+
+  const admin = document.querySelector(
+    '.module[onclick="resumenVentasV21()"]'
+  );
+
+  if(admin){
+    const btn = document.createElement('div');
+    btn.className = 'module';
+    btn.innerHTML =
+      '<b>💵 Caja diaria</b>' +
+      '<span>Fondo, movimientos, cierre e historial</span>';
+    btn.onclick = window.openCashV31;
+    admin.insertAdjacentElement('afterend',btn);
+  }
+
+  const el = document.createElement('section');
+  el.className = 'screen';
+  el.id = ID;
+  el.innerHTML = `
+    <button class="back" onclick="goAdmin()">
+      ← Volver a administración
+    </button>
+    <div class="brand">COLISEO FOOD PARK</div>
+    <h2>💵 Caja diaria</h2>
+    <div class="notice">
+      Una caja física para ambos negocios.
+      El fondo no es una venta.
+      Solo administración puede registrar y confirmar cierres.
+    </div>
+    <div id="cashContentV31">Cargando…</div>
+  `;
+  document.querySelector('main.app').appendChild(el);
+}
+
+function notice(s){
+  field('cashContentV31').innerHTML =
+    '<div class="notice">' + clean(s) + '</div>' +
+    '<button class="yellow" onclick="refreshCashV31()">' +
+    'Reintentar</button>';
+}
+
+window.openCashV31 = async () => {
+  if(me?.role !== 'admin'){
+    alert('Solo administración');
+    return;
+  }
+  show(ID);
+  await refreshCashV31();
+};
+
+window.refreshCashV31 = async () => {
+  if(me?.role !== 'admin') return;
+
+  const host = field('cashContentV31');
+  host.textContent = 'Consultando caja…';
+
+  try{
+    const {data,error} = await db.from('cash_sessions_v31')
+      .select('*')
+      .order('opened_at',{ascending:false})
+      .limit(40);
+
+    if(error) throw error;
+
+    const rows = data || [];
+    active = rows.find(x => x.status === 'open') || null;
+
+    if(!active){
+      host.innerHTML = `
+        <div class="card">
+          <h3>Abrir caja</h3>
+          <p>Indica el fondo de efectivo que recibes
+          al comenzar el turno.</p>
+          <label>Fondo inicial (MXN)</label>
+          <input id="fundV31" type="number"
+            min="0" step="0.01" placeholder="Ej. 1000.00">
+          <button class="yellow" onclick="startCashV31()">
+            Abrir caja
+          </button>
+        </div>
+      `;
+    } else {
+      const [sales,movements] = await Promise.all([
+        getSales(active.business_date),
+        loadRows(
+          'cash_movements_v31',
+          'id,created_at,kind,amount,reason',
+          'session_id',
+          active.id
+        )
+      ]);
+
+      const entries = movements
+        .filter(x => x.kind === 'entry')
+        .reduce((s,x) => s + Number(x.amount),0);
+
+      const out = movements
+        .filter(x => x.kind !== 'entry')
+        .reduce((s,x) => s + Number(x.amount),0);
+
+      const expected =
+        Number(active.opening_fund) +
+        sales.efectivo + entries - out;
+
+      host.innerHTML = `
+        <div class="card">
+          <h3>Caja abierta · ${clean(active.business_date)}</h3>
+          <div class="row">
+            <span>Fondo inicial</span>
+            <b>${fmt(active.opening_fund)}</b>
+          </div>
+          <div class="row">
+            <span>Ventas en efectivo</span>
+            <b>${fmt(sales.efectivo)}</b>
+          </div>
+          <div class="row">
+            <span>Entradas adicionales</span>
+            <b>${fmt(entries)}</b>
+          </div>
+          <div class="row">
+            <span>Gastos y retiros</span>
+            <b>−${fmt(out)}</b>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <b>Efectivo esperado</b>
+            <b>${fmt(expected)}</b>
+          </div>
+          <div class="divider"></div>
+          <div class="row">
+            <span>Ventas tarjeta</span>
+            <b>${fmt(sales.tarjeta)}</b>
+          </div>
+          <div class="row">
+            <span>Ventas transferencia</span>
+            <b>${fmt(sales.transferencia)}</b>
+          </div>
+          ${sales.otro ? `
+            <div class="notice">
+              ⚠️ ${fmt(sales.otro)} sin método de pago
+              reconocido; revisa esas cuentas.
+            </div>` : ''}
+          ${sales.abiertas ? `
+            <div class="notice">
+              ⚠️ ${sales.abiertas} cuenta(s) abiertas.
+              Debes cobrarlas antes de cerrar.
+            </div>` : ''}
+        </div>
+
+        <div class="card">
+          <h3>Registrar movimiento de efectivo</h3>
+          <label>Tipo de movimiento</label>
+          <select id="kindV31">
+            <option value="expense">
+              Gasto pagado de caja
+            </option>
+            <option value="withdrawal">
+              Retiro de efectivo
+            </option>
+            <option value="entry">
+              Entrada adicional (no venta)
+            </option>
+          </select>
+          <label>Importe (MXN)</label>
+          <input id="movementAmountV31"
+            type="number" min="0.01" step="0.01">
+          <label>Motivo</label>
+          <input id="movementReasonV31"
+            placeholder="Explica el movimiento">
+          <button class="yellow" onclick="moveCashV31()">
+            Guardar movimiento
+          </button>
+          <div class="divider"></div>
+          <h3>Movimientos del turno</h3>
+          ${movements.length ? movements.map(x => `
+            <div class="row">
+              <span>
+                ${x.kind === 'entry' ? 'Entrada' :
+                  x.kind === 'expense' ? 'Gasto' : 'Retiro'}
+                · ${clean(x.reason)}
+              </span>
+              <b>
+                ${x.kind === 'entry' ? '+' : '−'}
+                ${fmt(x.amount)}
+              </b>
+            </div>
+          `).join('') : '<p>Sin movimientos.</p>'}
+        </div>
+
+        <div class="card">
+          <h3>Realizar cierre</h3>
+          <p>Cuenta físicamente todo el efectivo,
+          incluyendo el fondo inicial.</p>
+
+          <label>Efectivo contado (MXN)</label>
+          <input id="countedV31" type="number"
+            min="0" step="0.01"
+            oninput="previewCashV31()">
+
+          <label>Fondo que dejarás para el siguiente turno</label>
+          <input id="nextFundV31" type="number"
+            min="0" step="0.01"
+            oninput="previewCashV31()">
+
+          <div id="previewV31" class="notice">
+            Ingresa el efectivo contado para calcular
+            la diferencia.
+          </div>
+
+          <label>Observaciones</label>
+          <textarea id="notesV31" rows="3"
+            placeholder="Faltantes, sobrantes o aclaraciones"
+          ></textarea>
+
+          <button class="yellow" onclick="closeCashV31()">
+            Confirmar cierre de caja
+          </button>
+        </div>
+      `;
+
+      window.expectedCashV31 = expected;
+    }
+
+    host.insertAdjacentHTML('beforeend',`
+      <div class="card">
+        <h3>Historial de caja</h3>
+        ${rows.filter(x => x.status === 'closed').length ?
+          rows.filter(x => x.status === 'closed')
+            .map(x => `
+              <div style="padding:10px 0;
+                border-bottom:1px solid #7775">
+                <b>${clean(x.business_date)}</b>
+                <div class="row">
+                  <span>Fondo inicial</span>
+                  <b>${fmt(x.opening_fund)}</b>
+                </div>
+                <div class="row">
+                  <span>Esperado / Contado</span>
+                  <b>${fmt(x.expected_cash)} /
+                     ${fmt(x.counted_cash)}</b>
+                </div>
+                <div class="row">
+                  <span>Diferencia</span>
+                  <b>${fmt(x.difference)}</b>
+                </div>
+                <div class="row">
+                  <span>Fondo reservado</span>
+                  <b>${fmt(x.next_fund)}</b>
+                </div>
+                <div class="muted">
+                  ${clean(x.notes)}
+                </div>
+              </div>
+            `).join('')
+          : 'Todavía no hay cierres guardados.'}
+      </div>
+    `);
+
+  }catch(e){
+    notice(e.message || String(e));
+  }
+};
+
+window.startCashV31 = async () => {
+  try{
+    if(!confirm('¿Abrir caja con el fondo capturado?')) return;
+
+    const {error} = await db.rpc('cash_open_v31',{
+      p_fund:amount('fundV31')
+    });
+
+    if(error) throw error;
+    await refreshCashV31();
+  }catch(e){
+    alert('No se abrió la caja: ' + e.message);
+  }
+};
+
+window.moveCashV31 = async () => {
+  try{
+    if(!active) throw Error('No hay caja abierta');
+
+    const kind = field('kindV31').value;
+    const reason = field('movementReasonV31').value.trim();
+    const value = amount('movementAmountV31');
+
+    if(value <= 0 || !reason){
+      throw Error('Captura importe positivo y motivo.');
+    }
+
+    if(!confirm('¿Guardar ' + fmt(value) +
+      ' como ' + kind + '?')) return;
+
+    const {error} = await db.rpc('cash_move_v31',{
+      p_session:active.id,
+      p_kind:kind,
+      p_amount:value,
+      p_reason:reason
+    });
+
+    if(error) throw error;
+    await refreshCashV31();
+  }catch(e){
+    alert('No se guardó el movimiento: ' + e.message);
+  }
+};
+
+window.previewCashV31 = () => {
+  try{
+    const counted = amount('countedV31');
+    const next = amount('nextFundV31');
+
+    if(next > counted){
+      throw Error('El fondo reservado no puede superar ' +
+        'el efectivo contado.');
+    }
+
+    const diff = counted - window.expectedCashV31;
+
+    field('previewV31').innerHTML = `
+      Diferencia: <b>${fmt(diff)}</b>
+      (${diff < -.009 ? 'faltante' :
+        diff > .009 ? 'sobrante' : 'sin diferencia'})
+      <div>
+        Efectivo a retirar después del cierre:
+        <b>${fmt(counted-next)}</b>
+      </div>
+    `;
+  }catch(e){
+    field('previewV31').textContent = e.message;
+  }
+};
+
+window.closeCashV31 = async () => {
+  try{
+    if(!active) throw Error('No hay caja abierta');
+
+    const counted = amount('countedV31');
+    const next = amount('nextFundV31');
+    const notes = field('notesV31').value.trim();
+
+    if(next > counted){
+      throw Error('El fondo reservado supera ' +
+        'el efectivo contado.');
+    }
+
+    const diff = counted - window.expectedCashV31;
+
+    if(Math.abs(diff) > .009 && !notes){
+      throw Error('Escribe una observación para ' +
+        'justificar la diferencia.');
+    }
+
+    if(!confirm(
+      '¿Confirmas el cierre definitivo?\n' +
+      'Efectivo contado: ' + fmt(counted) + '\n' +
+      'Diferencia: ' + fmt(diff) + '\n' +
+      'Fondo reservado: ' + fmt(next)
+    )) return;
+
+    const {error} = await db.rpc('cash_close_v31',{
+      p_session:active.id,
+      p_counted:counted,
+      p_next:next,
+      p_notes:notes
+    });
+
+    if(error) throw error;
+
+    alert('Cierre guardado correctamente.');
+    await refreshCashV31();
+
+  }catch(e){
+    alert('No se cerró la caja: ' + e.message);
+  }
+};
+
+block();
+})();
+</script>
+
+</body>
+</html>
