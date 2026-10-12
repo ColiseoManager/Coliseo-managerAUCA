@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coliseo Manager 2.9</title>
+<title>Coliseo Manager 3.2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* COLISEO MANAGER 2.5: CORTESIAS LIBRES DEL MENU */
@@ -950,385 +950,42 @@ autorizacionesV21=async function(){
 <div id="freeCourtesyErrorV25" class="msg"></div>
 <button id="freeCourtesyConfirmV25" class="yellow" onclick="guardarCortesiaLibreV25()">Confirmar cortesía</button>
 </div></div>
- 
+
 <!-- COLISEO MANAGER 3.0 - VENTAS SEPARADAS POR NEGOCIO -->
 <script>
-(function () {
-  "use strict";
-
-  function fechaTijuana() {
-    const partes = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Tijuana",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    }).formatToParts(new Date());
-
-    const p = {};
-    partes.forEach(x => p[x.type] = x.value);
-
-    return p.year + "-" + p.month + "-" + p.day;
-  }
-
-  function crearModuloCortes() {
-    const moduloVentas = document.querySelector(
-      '.module[onclick="resumenVentasV21()"]'
-    );
-
-    if (!moduloVentas || document.getElementById("moduloCortesV30")) {
-      return;
-    }
-
-    const modulo = document.createElement("div");
-    modulo.id = "moduloCortesV30";
-    modulo.className = "module";
-    modulo.onclick = abrirCortesV30;
-
-    modulo.innerHTML =
-      "<b>🏦 Ventas por negocio</b>" +
-      "<span>Cuervo’s Pizza, EL CLúB y total Coliseo</span>";
-
-    moduloVentas.insertAdjacentElement("afterend", modulo);
-  }
-
-  function crearPantallaCortes() {
-    if (document.getElementById("cortesV30")) return;
-
-    const pantalla = document.createElement("section");
-    pantalla.id = "cortesV30";
-    pantalla.className = "screen";
-
-    pantalla.innerHTML = `
-      <button class="back" onclick="goAdmin()">
-        ← Volver a administración
-      </button>
-
-      <div class="brand">COLISEO FOOD PARK</div>
-      <h2>🏦 Ventas por negocio</h2>
-
-      <div class="notice">
-        Este reporte muestra las ventas cobradas de cada negocio.
-        No representa utilidades ni sustituye el conteo físico
-        de efectivo para realizar un corte definitivo de caja.
-      </div>
-
-      <label>Selecciona la fecha</label>
-      <input id="fechaCortesV30" type="date">
-
-      <button class="yellow" onclick="consultarCortesV30()">
-        Consultar ventas
-      </button>
-
-      <div id="resultadoCortesV30" style="margin-top:18px"></div>
-    `;
-
-    document.querySelector("main.app").appendChild(pantalla);
-  }
-
-  function normalizarNegocio(nombre) {
-    const valor = String(nombre || "").trim();
-
-    if (valor === "Cuervos Pizza" || valor === "Cuervo’s Pizza") {
-      return "Cuervos Pizza";
-    }
-
-    if (valor === "EL CLúB" || valor === "EL CLUB") {
-      return "EL CLúB";
-    }
-
-    return valor;
-  }
-
-  function nombreNegocio(nombre) {
-    return nombre === "Cuervos Pizza"
-      ? "Cuervo’s Pizza"
-      : nombre;
-  }
-
-  function nombrePago(valor) {
-    const texto = String(valor || "").trim().toLowerCase();
-
-    if (texto === "efectivo") return "Efectivo";
-    if (texto === "tarjeta") return "Tarjeta";
-    if (texto === "transferencia") return "Transferencia";
-
-    return "Otro / sin especificar";
-  }
-
-  async function consultarPaginas(tabla, columnas, fecha) {
-    const registros = [];
-    const limite = 10000;
-    const pagina = 500;
-
-    for (let inicio = 0; inicio < limite; inicio += pagina) {
-      const { data, error } = await db
-        .from(tabla)
-        .select(columnas)
-        .eq("business_date", fecha)
-        .range(inicio, inicio + pagina - 1);
-
-      if (error) throw error;
-
-      registros.push(...(data || []));
-
-      if ((data || []).length < pagina) {
-        return registros;
-      }
-    }
-
-    throw new Error(
-      "Se alcanzó el límite de registros. " +
-      "Es necesario ampliar la consulta antes de usar este reporte."
-    );
-  }
-
-  window.abrirCortesV30 = async function () {
-    if (me?.role !== "admin") {
-      alert("Solo administración puede consultar este reporte.");
-      return;
-    }
-
-    document.getElementById("fechaCortesV30").value = fechaTijuana();
-
-    show("cortesV30");
-    await consultarCortesV30();
-  };
-
-  window.consultarCortesV30 = async function () {
-    if (me?.role !== "admin") return;
-
-    const fecha = document.getElementById("fechaCortesV30").value;
-    const resultado = document.getElementById("resultadoCortesV30");
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      resultado.textContent = "Selecciona una fecha válida.";
-      return;
-    }
-
-    resultado.textContent = "Consultando ventas cobradas…";
-
-    try {
-      const [ordenes, desglose] = await Promise.all([
-        consultarPaginas(
-          "orders",
-          "id,total,status,payment_method,business_date",
-          fecha
-        ),
-        consultarPaginas(
-          "v_order_business_split",
-          "order_id,business,status,payment_method," +
-          "net_business,gross_business,business_date",
-          fecha
-        )
-      ]);
-
-      const cobradas = ordenes.filter(x => x.status === "closed");
-      const abiertas = ordenes.filter(x => x.status === "open");
-
-      const mapaOrdenes = new Map(
-        cobradas.map(x => [x.id, x])
-      );
-
-      const negocios = {
-        "Cuervos Pizza": {
-          total: 0,
-          cuentas: new Set(),
-          pagos: {}
-        },
-        "EL CLúB": {
-          total: 0,
-          cuentas: new Set(),
-          pagos: {}
-        }
-      };
-
-      const totalesPorCuenta = new Map();
-      const combinaciones = new Set();
-
-      for (const fila of desglose) {
-        if (fila.status !== "closed") continue;
-
-        const orden = mapaOrdenes.get(fila.order_id);
-        if (!orden) continue;
-
-        const negocio = normalizarNegocio(fila.business);
-
-        if (!negocios[negocio]) {
-          throw new Error(
-            "Se encontró un producto con negocio no reconocido: " +
-            (fila.business || "sin asignar") +
-            ". Revisa su clasificación."
-          );
-        }
-
-        const clave = fila.order_id + "|" + negocio;
-
-        if (combinaciones.has(clave)) {
-          throw new Error(
-            "Hay registros duplicados en el desglose de una cuenta."
-          );
-        }
-
-        combinaciones.add(clave);
-
-        const importe = Number(fila.net_business);
-
-        if (!Number.isFinite(importe)) {
-          throw new Error("Se encontró un importe inválido.");
-        }
-
-        const metodo = nombrePago(orden.payment_method);
-        const registro = negocios[negocio];
-
-        registro.total += importe;
-        registro.cuentas.add(fila.order_id);
-
-        registro.pagos[metodo] =
-          (registro.pagos[metodo] || 0) + importe;
-
-        totalesPorCuenta.set(
-          fila.order_id,
-          (totalesPorCuenta.get(fila.order_id) || 0) + importe
-        );
-      }
-
-      const diferencias = cobradas.filter(orden => {
-        const importeCuenta = Number(orden.total || 0);
-        const importeNegocios = totalesPorCuenta.get(orden.id) || 0;
-
-        return Math.abs(importeCuenta - importeNegocios) > 0.011;
-      });
-
-      if (diferencias.length) {
-        throw new Error(
-          "Hay " + diferencias.length +
-          " cuenta(s) cuyos importes no coinciden con el desglose. " +
-          "Revisa los datos antes de realizar el corte."
-        );
-      }
-
-      const totalCuervos = negocios["Cuervos Pizza"].total;
-      const totalClub = negocios["EL CLúB"].total;
-      const totalGeneral = totalCuervos + totalClub;
-
-      const totalCobrado = cobradas.reduce(
-        (suma, orden) => suma + Number(orden.total || 0),
-        0
-      );
-
-      const metodos = [
-        "Efectivo",
-        "Tarjeta",
-        "Transferencia",
-        "Otro / sin especificar"
-      ];
-
-      function formatoPagos(pagos) {
-        return metodos.map(metodo => `
-          <div class="row" style="padding:9px 0">
-            <span>${metodo}</span>
-            <b>${money(pagos[metodo] || 0)}</b>
-          </div>
-        `).join("");
-      }
-
-      function tarjetaNegocio(clave) {
-        const negocio = negocios[clave];
-
-        return `
-          <div class="card">
-            <h3>${nombreNegocio(clave)}</h3>
-
-            <div class="amount">${money(negocio.total)}</div>
-
-            <div class="muted" style="margin-top:7px">
-              Cuentas con productos de este negocio:
-              ${negocio.cuentas.size}
-            </div>
-
-            <div class="divider"></div>
-
-            ${formatoPagos(negocio.pagos)}
-          </div>
-        `;
-      }
-
-      const pagosGenerales = {};
-
-      metodos.forEach(metodo => {
-        pagosGenerales[metodo] =
-          (negocios["Cuervos Pizza"].pagos[metodo] || 0) +
-          (negocios["EL CLúB"].pagos[metodo] || 0);
-      });
-
-      resultado.innerHTML = `
-        <div class="success">
-          ✓ Importes conciliados con las cuentas cobradas.
-        </div>
-
-        <div class="summary">
-          <div class="card">
-            <div class="muted">CUENTAS COBRADAS</div>
-            <div class="big">${cobradas.length}</div>
-          </div>
-
-          <div class="card">
-            <div class="muted">CUENTAS ABIERTAS</div>
-            <div class="big">${abiertas.length}</div>
-          </div>
-        </div>
-
-        ${tarjetaNegocio("Cuervos Pizza")}
-
-        ${tarjetaNegocio("EL CLúB")}
-
-        <div class="card">
-          <h3>🏛️ TOTAL COLISEO FOOD PARK</h3>
-
-          <div class="amount">${money(totalGeneral)}</div>
-
-          <div class="divider"></div>
-
-          ${formatoPagos(pagosGenerales)}
-
-          <div class="divider"></div>
-
-          <div class="row">
-            <span>Total registrado en cuentas</span>
-            <b>${money(totalCobrado)}</b>
-          </div>
-
-          <div class="row" style="margin-top:10px">
-            <span>Diferencia</span>
-            <b>${money(totalGeneral - totalCobrado)}</b>
-          </div>
-        </div>
-
-        <div class="notice">
-          <b>Importante:</b> cuando una cuenta incluye productos
-          de ambos negocios, el sistema distribuye el importe
-          conforme al desglose registrado en Supabase.
-
-          <div style="margin-top:10px">
-            El método de pago corresponde a la cuenta completa.
-            Esta versión no permite registrar dos métodos de pago
-            distintos dentro de una misma cuenta.
-          </div>
-        </div>
-      `;
-
-    } catch (error) {
-      resultado.innerHTML = `
-        <div class="notice">
-          ⚠️ No se puede generar un reporte confiable:
-          ${esc(error.message || String(error))}
-        </div>
-      `;
-    }
-  };
-
-  crearModuloCortes();
-  crearPantallaCortes();
+(function(){
+'use strict';
+const hostId='resultadoCortesV30';
+const esc30=s=>esc(String(s??''));
+const fmt30=n=>money(Number(n||0));
+function date30(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Tijuana',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`}
+function create30(){
+ if(!document.getElementById('moduloCortesV30')){const after=document.querySelector('.module[onclick="resumenVentasV21()"]');if(after){const mod=document.createElement('div');mod.id='moduloCortesV30';mod.className='module';mod.innerHTML='<b>🏦 Ventas por negocio</b><span>Cuervo’s Pizza, EL CLúB y total Coliseo</span>';mod.onclick=()=>abrirCortesV30();after.insertAdjacentElement('afterend',mod)}}
+ if(!document.getElementById('cortesV30')){const sec=document.createElement('section');sec.id='cortesV30';sec.className='screen';sec.innerHTML='<button class="back" onclick="goAdmin()">← Volver a administración</button><div class="brand">COLISEO FOOD PARK</div><h2>🏦 Ventas por negocio</h2><div class="notice">Ventas cobradas por negocio. No representa utilidades ni sustituye el conteo físico del efectivo.</div><label>Selecciona la fecha</label><input id="fechaCortesV30" type="date"><button class="yellow" onclick="consultarCortesV30()">Consultar ventas</button><div id="resultadoCortesV30" style="margin-top:18px"></div>';document.querySelector('main.app').appendChild(sec)}
+}
+async function page30(table,cols,date){let all=[];for(let i=0;i<10000;i+=500){const {data,error}=await db.from(table).select(cols).eq('business_date',date).range(i,i+499);if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all}throw Error('Hay demasiados registros para este reporte')}
+window.abrirCortesV30=async()=>{if(me?.role!=='admin'){alert('Solo administración');return}document.getElementById('fechaCortesV30').value=date30();show('cortesV30');await consultarCortesV30()};
+window.consultarCortesV30=async()=>{
+ if(me?.role!=='admin')return;
+ const date=document.getElementById('fechaCortesV30').value,host=document.getElementById(hostId);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){host.textContent='Selecciona una fecha válida';return}
+ host.textContent='Consultando ventas cobradas…';
+ try{
+ const [orders,split]=await Promise.all([page30('orders','id,total,status,payment_method,business_date',date),page30('v_order_business_split','order_id,business,status,payment_method,net_business,gross_business,business_date',date)]);
+ const closed=orders.filter(o=>o.status==='closed'),open=orders.filter(o=>o.status==='open');
+ const byId=new Map(closed.map(o=>[o.id,o]));const sums={'Cuervos Pizza':{total:0,ids:new Set(),pay:{}},'EL CLúB':{total:0,ids:new Set(),pay:{}}};const perOrder=new Map(),seen=new Set();
+ const payment=x=>{const s=String(x||'').trim().toLowerCase();return s==='efectivo'?'Efectivo':s==='tarjeta'?'Tarjeta':s==='transferencia'?'Transferencia':'Otro / sin especificar'};
+ for(const row of split){if(row.status!=='closed')continue;const order=byId.get(row.order_id);if(!order)continue;const b=String(row.business||'').trim();const business=b==='Cuervo’s Pizza'?'Cuervos Pizza':b==='EL CLUB'?'EL CLúB':b;if(!sums[business])throw Error('Negocio no reconocido: '+b);const key=row.order_id+'|'+business;if(seen.has(key))throw Error('Desglose duplicado en una cuenta');seen.add(key);const amount=Number(row.net_business);if(!Number.isFinite(amount))throw Error('Importe inválido');sums[business].total+=amount;sums[business].ids.add(row.order_id);const pay=payment(order.payment_method);sums[business].pay[pay]=(sums[business].pay[pay]||0)+amount;perOrder.set(row.order_id,(perOrder.get(row.order_id)||0)+amount)}
+ const differences=closed.filter(o=>Math.abs(Number(o.total||0)-(perOrder.get(o.id)||0))>.011);if(differences.length)throw Error('Hay '+differences.length+' cuenta(s) con diferencias entre ventas y desglose. Revisa los datos antes del corte.');
+ const methods=['Efectivo','Tarjeta','Transferencia','Otro / sin especificar'];
+ const lines=pay=>methods.map(m=>'<div class="row" style="padding:9px 0"><span>'+m+'</span><b>'+fmt30(pay[m]||0)+'</b></div>').join('');
+ const card=b=>'<div class="card"><h3>'+(b==='Cuervos Pizza'?'Cuervo’s Pizza':b)+'</h3><div class="amount">'+fmt30(sums[b].total)+'</div><div class="muted">Cuentas con productos de este negocio: '+sums[b].ids.size+'</div><div class="divider"></div>'+lines(sums[b].pay)+'</div>';
+ const general={};for(const m of methods)general[m]=(sums['Cuervos Pizza'].pay[m]||0)+(sums['EL CLúB'].pay[m]||0);
+ const total=sums['Cuervos Pizza'].total+sums['EL CLúB'].total,charged=closed.reduce((a,o)=>a+Number(o.total||0),0);
+ host.innerHTML='<div class="success">✓ Importes conciliados con cuentas cobradas.</div><div class="summary"><div class="card"><div class="muted">CUENTAS COBRADAS</div><div class="big">'+closed.length+'</div></div><div class="card"><div class="muted">CUENTAS ABIERTAS</div><div class="big">'+open.length+'</div></div></div>'+card('Cuervos Pizza')+card('EL CLúB')+'<div class="card"><h3>🏛️ TOTAL COLISEO FOOD PARK</h3><div class="amount">'+fmt30(total)+'</div><div class="divider"></div>'+lines(general)+'<div class="divider"></div><div class="row"><span>Total registrado en cuentas</span><b>'+fmt30(charged)+'</b></div><div class="row"><span>Diferencia</span><b>'+fmt30(total-charged)+'</b></div></div><div class="notice">Las cuentas con productos de ambos negocios se distribuyen según el desglose de Supabase. El método de pago se aplica a la cuenta completa; no admite dos métodos distintos en la misma cuenta.</div>';
+ }catch(e){host.innerHTML='<div class="notice">⚠️ No se puede generar un reporte confiable: '+esc30(e.message||String(e))+'</div>'}
+};
+create30();
 })();
 </script>
 
@@ -1336,467 +993,79 @@ autorizacionesV21=async function(){
 <script>
 (function(){
 'use strict';
-
-const ID = 'cashV31';
-const fmt = n => money(Number(n || 0));
-const field = id => document.getElementById(id);
-const clean = s => esc(String(s ?? ''));
-let active = null;
-
-function mxdate(){
-  const p = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US',{
-      timeZone:'America/Tijuana',
-      year:'numeric',
-      month:'2-digit',
-      day:'2-digit'
-    }).formatToParts(new Date())
-      .filter(x => x.type !== 'literal')
-      .map(x => [x.type,x.value])
-  );
-  return `${p.year}-${p.month}-${p.day}`;
-}
-
-function amount(id){
-  const raw = field(id).value.trim();
-  if(raw === '' || !/^\d+(\.\d{1,2})?$/.test(raw)){
-    throw Error('Revisa el importe. Usa pesos y hasta dos decimales.');
-  }
-  return Number(raw);
-}
-
-async function loadRows(table,select,filter,value){
-  let all = [];
-  for(let i=0;i<10000;i+=500){
-    let q = db.from(table)
-      .select(select)
-      .order('created_at',{ascending:false})
-      .range(i,i+499);
-    if(filter) q = q.eq(filter,value);
-    const {data,error} = await q;
-    if(error) throw error;
-    all.push(...data);
-    if(data.length < 500) return all;
-  }
-  throw Error('Demasiados registros; consulta soporte.');
-}
-
-async function getSales(date){
-  let all = [];
-  for(let i=0;i<10000;i+=500){
-    const {data,error} = await db.from('orders')
-      .select('id,total,status,payment_method')
-      .eq('business_date',date)
-      .range(i,i+499);
-    if(error) throw error;
-    all.push(...data);
-    if(data.length < 500) break;
-  }
-
-  const totals = {
-    efectivo:0,
-    tarjeta:0,
-    transferencia:0,
-    otro:0,
-    abiertas:0
-  };
-
-  for(const o of all){
-    if(o.status === 'open'){
-      totals.abiertas++;
-      continue;
-    }
-    if(o.status !== 'closed') continue;
-
-    const k = String(o.payment_method || '')
-      .toLowerCase().trim();
-
-    totals[k in totals ? k : 'otro'] += Number(o.total || 0);
-  }
-  return totals;
-}
-
-function block(){
-  if(field(ID)) return;
-
-  const admin = document.querySelector(
-    '.module[onclick="resumenVentasV21()"]'
-  );
-
-  if(admin){
-    const btn = document.createElement('div');
-    btn.className = 'module';
-    btn.innerHTML =
-      '<b>💵 Caja diaria</b>' +
-      '<span>Fondo, movimientos, cierre e historial</span>';
-    btn.onclick = window.openCashV31;
-    admin.insertAdjacentElement('afterend',btn);
-  }
-
-  const el = document.createElement('section');
-  el.className = 'screen';
-  el.id = ID;
-  el.innerHTML = `
-    <button class="back" onclick="goAdmin()">
-      ← Volver a administración
-    </button>
-    <div class="brand">COLISEO FOOD PARK</div>
-    <h2>💵 Caja diaria</h2>
-    <div class="notice">
-      Una caja física para ambos negocios.
-      El fondo no es una venta.
-      Solo administración puede registrar y confirmar cierres.
-    </div>
-    <div id="cashContentV31">Cargando…</div>
-  `;
-  document.querySelector('main.app').appendChild(el);
-}
-
-function notice(s){
-  field('cashContentV31').innerHTML =
-    '<div class="notice">' + clean(s) + '</div>' +
-    '<button class="yellow" onclick="refreshCashV31()">' +
-    'Reintentar</button>';
-}
-
-window.openCashV31 = async () => {
-  if(me?.role !== 'admin'){
-    alert('Solo administración');
-    return;
-  }
-  show(ID);
-  await refreshCashV31();
-};
-
-window.refreshCashV31 = async () => {
-  if(me?.role !== 'admin') return;
-
-  const host = field('cashContentV31');
-  host.textContent = 'Consultando caja…';
-
-  try{
-    const {data,error} = await db.from('cash_sessions_v31')
-      .select('*')
-      .order('opened_at',{ascending:false})
-      .limit(40);
-
-    if(error) throw error;
-
-    const rows = data || [];
-    active = rows.find(x => x.status === 'open') || null;
-
-    if(!active){
-      host.innerHTML = `
-        <div class="card">
-          <h3>Abrir caja</h3>
-          <p>Indica el fondo de efectivo que recibes
-          al comenzar el turno.</p>
-          <label>Fondo inicial (MXN)</label>
-          <input id="fundV31" type="number"
-            min="0" step="0.01" placeholder="Ej. 1000.00">
-          <button class="yellow" onclick="startCashV31()">
-            Abrir caja
-          </button>
-        </div>
-      `;
-    } else {
-      const [sales,movements] = await Promise.all([
-        getSales(active.business_date),
-        loadRows(
-          'cash_movements_v31',
-          'id,created_at,kind,amount,reason',
-          'session_id',
-          active.id
-        )
-      ]);
-
-      const entries = movements
-        .filter(x => x.kind === 'entry')
-        .reduce((s,x) => s + Number(x.amount),0);
-
-      const out = movements
-        .filter(x => x.kind !== 'entry')
-        .reduce((s,x) => s + Number(x.amount),0);
-
-      const expected =
-        Number(active.opening_fund) +
-        sales.efectivo + entries - out;
-
-      host.innerHTML = `
-        <div class="card">
-          <h3>Caja abierta · ${clean(active.business_date)}</h3>
-          <div class="row">
-            <span>Fondo inicial</span>
-            <b>${fmt(active.opening_fund)}</b>
-          </div>
-          <div class="row">
-            <span>Ventas en efectivo</span>
-            <b>${fmt(sales.efectivo)}</b>
-          </div>
-          <div class="row">
-            <span>Entradas adicionales</span>
-            <b>${fmt(entries)}</b>
-          </div>
-          <div class="row">
-            <span>Gastos y retiros</span>
-            <b>−${fmt(out)}</b>
-          </div>
-          <div class="divider"></div>
-          <div class="row">
-            <b>Efectivo esperado</b>
-            <b>${fmt(expected)}</b>
-          </div>
-          <div class="divider"></div>
-          <div class="row">
-            <span>Ventas tarjeta</span>
-            <b>${fmt(sales.tarjeta)}</b>
-          </div>
-          <div class="row">
-            <span>Ventas transferencia</span>
-            <b>${fmt(sales.transferencia)}</b>
-          </div>
-          ${sales.otro ? `
-            <div class="notice">
-              ⚠️ ${fmt(sales.otro)} sin método de pago
-              reconocido; revisa esas cuentas.
-            </div>` : ''}
-          ${sales.abiertas ? `
-            <div class="notice">
-              ⚠️ ${sales.abiertas} cuenta(s) abiertas.
-              Debes cobrarlas antes de cerrar.
-            </div>` : ''}
-        </div>
-
-        <div class="card">
-          <h3>Registrar movimiento de efectivo</h3>
-          <label>Tipo de movimiento</label>
-          <select id="kindV31">
-            <option value="expense">
-              Gasto pagado de caja
-            </option>
-            <option value="withdrawal">
-              Retiro de efectivo
-            </option>
-            <option value="entry">
-              Entrada adicional (no venta)
-            </option>
-          </select>
-          <label>Importe (MXN)</label>
-          <input id="movementAmountV31"
-            type="number" min="0.01" step="0.01">
-          <label>Motivo</label>
-          <input id="movementReasonV31"
-            placeholder="Explica el movimiento">
-          <button class="yellow" onclick="moveCashV31()">
-            Guardar movimiento
-          </button>
-          <div class="divider"></div>
-          <h3>Movimientos del turno</h3>
-          ${movements.length ? movements.map(x => `
-            <div class="row">
-              <span>
-                ${x.kind === 'entry' ? 'Entrada' :
-                  x.kind === 'expense' ? 'Gasto' : 'Retiro'}
-                · ${clean(x.reason)}
-              </span>
-              <b>
-                ${x.kind === 'entry' ? '+' : '−'}
-                ${fmt(x.amount)}
-              </b>
-            </div>
-          `).join('') : '<p>Sin movimientos.</p>'}
-        </div>
-
-        <div class="card">
-          <h3>Realizar cierre</h3>
-          <p>Cuenta físicamente todo el efectivo,
-          incluyendo el fondo inicial.</p>
-
-          <label>Efectivo contado (MXN)</label>
-          <input id="countedV31" type="number"
-            min="0" step="0.01"
-            oninput="previewCashV31()">
-
-          <label>Fondo que dejarás para el siguiente turno</label>
-          <input id="nextFundV31" type="number"
-            min="0" step="0.01"
-            oninput="previewCashV31()">
-
-          <div id="previewV31" class="notice">
-            Ingresa el efectivo contado para calcular
-            la diferencia.
-          </div>
-
-          <label>Observaciones</label>
-          <textarea id="notesV31" rows="3"
-            placeholder="Faltantes, sobrantes o aclaraciones"
-          ></textarea>
-
-          <button class="yellow" onclick="closeCashV31()">
-            Confirmar cierre de caja
-          </button>
-        </div>
-      `;
-
-      window.expectedCashV31 = expected;
-    }
-
-    host.insertAdjacentHTML('beforeend',`
-      <div class="card">
-        <h3>Historial de caja</h3>
-        ${rows.filter(x => x.status === 'closed').length ?
-          rows.filter(x => x.status === 'closed')
-            .map(x => `
-              <div style="padding:10px 0;
-                border-bottom:1px solid #7775">
-                <b>${clean(x.business_date)}</b>
-                <div class="row">
-                  <span>Fondo inicial</span>
-                  <b>${fmt(x.opening_fund)}</b>
-                </div>
-                <div class="row">
-                  <span>Esperado / Contado</span>
-                  <b>${fmt(x.expected_cash)} /
-                     ${fmt(x.counted_cash)}</b>
-                </div>
-                <div class="row">
-                  <span>Diferencia</span>
-                  <b>${fmt(x.difference)}</b>
-                </div>
-                <div class="row">
-                  <span>Fondo reservado</span>
-                  <b>${fmt(x.next_fund)}</b>
-                </div>
-                <div class="muted">
-                  ${clean(x.notes)}
-                </div>
-              </div>
-            `).join('')
-          : 'Todavía no hay cierres guardados.'}
-      </div>
-    `);
-
-  }catch(e){
-    notice(e.message || String(e));
-  }
-};
-
-window.startCashV31 = async () => {
-  try{
-    if(!confirm('¿Abrir caja con el fondo capturado?')) return;
-
-    const {error} = await db.rpc('cash_open_v31',{
-      p_fund:amount('fundV31')
-    });
-
-    if(error) throw error;
-    await refreshCashV31();
-  }catch(e){
-    alert('No se abrió la caja: ' + e.message);
-  }
-};
-
-window.moveCashV31 = async () => {
-  try{
-    if(!active) throw Error('No hay caja abierta');
-
-    const kind = field('kindV31').value;
-    const reason = field('movementReasonV31').value.trim();
-    const value = amount('movementAmountV31');
-
-    if(value <= 0 || !reason){
-      throw Error('Captura importe positivo y motivo.');
-    }
-
-    if(!confirm('¿Guardar ' + fmt(value) +
-      ' como ' + kind + '?')) return;
-
-    const {error} = await db.rpc('cash_move_v31',{
-      p_session:active.id,
-      p_kind:kind,
-      p_amount:value,
-      p_reason:reason
-    });
-
-    if(error) throw error;
-    await refreshCashV31();
-  }catch(e){
-    alert('No se guardó el movimiento: ' + e.message);
-  }
-};
-
-window.previewCashV31 = () => {
-  try{
-    const counted = amount('countedV31');
-    const next = amount('nextFundV31');
-
-    if(next > counted){
-      throw Error('El fondo reservado no puede superar ' +
-        'el efectivo contado.');
-    }
-
-    const diff = counted - window.expectedCashV31;
-
-    field('previewV31').innerHTML = `
-      Diferencia: <b>${fmt(diff)}</b>
-      (${diff < -.009 ? 'faltante' :
-        diff > .009 ? 'sobrante' : 'sin diferencia'})
-      <div>
-        Efectivo a retirar después del cierre:
-        <b>${fmt(counted-next)}</b>
-      </div>
-    `;
-  }catch(e){
-    field('previewV31').textContent = e.message;
-  }
-};
-
-window.closeCashV31 = async () => {
-  try{
-    if(!active) throw Error('No hay caja abierta');
-
-    const counted = amount('countedV31');
-    const next = amount('nextFundV31');
-    const notes = field('notesV31').value.trim();
-
-    if(next > counted){
-      throw Error('El fondo reservado supera ' +
-        'el efectivo contado.');
-    }
-
-    const diff = counted - window.expectedCashV31;
-
-    if(Math.abs(diff) > .009 && !notes){
-      throw Error('Escribe una observación para ' +
-        'justificar la diferencia.');
-    }
-
-    if(!confirm(
-      '¿Confirmas el cierre definitivo?\n' +
-      'Efectivo contado: ' + fmt(counted) + '\n' +
-      'Diferencia: ' + fmt(diff) + '\n' +
-      'Fondo reservado: ' + fmt(next)
-    )) return;
-
-    const {error} = await db.rpc('cash_close_v31',{
-      p_session:active.id,
-      p_counted:counted,
-      p_next:next,
-      p_notes:notes
-    });
-
-    if(error) throw error;
-
-    alert('Cierre guardado correctamente.');
-    await refreshCashV31();
-
-  }catch(e){
-    alert('No se cerró la caja: ' + e.message);
-  }
-};
-
+const ID='cashV31';
+const fmt=n=>money(Number(n||0));
+const field=id=>document.getElementById(id);
+const clean=s=>esc(String(s??''));
+let active=null;
+function mxdate(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Tijuana',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`;}
+function amount(id){const raw=field(id).value.trim();if(raw===''||!/^\d+(\.\d{1,2})?$/.test(raw))throw Error('Revisa el importe de '+id+'. Usa pesos y hasta dos decimales.');return Number(raw);}
+async function loadRows(table,select,filter,value){let all=[];for(let i=0;i<10000;i+=500){let q=db.from(table).select(select).order('created_at',{ascending:false}).range(i,i+499);if(filter)q=q.eq(filter,value);const {data,error}=await q;if(error)throw error;all.push(...data);if(data.length<500)return all;}throw Error('Demasiados registros; consulta soporte.');}
+async function getSales(date){let all=[];for(let i=0;i<10000;i+=500){const {data,error}=await db.from('orders').select('id,total,status,payment_method').eq('business_date',date).range(i,i+499);if(error)throw error;all.push(...data);if(data.length<500)break;}const totals={efectivo:0,tarjeta:0,transferencia:0,otro:0,abiertas:0};for(const o of all){if(o.status==='open'){totals.abiertas++;continue;}if(o.status!=='closed')continue;const k=String(o.payment_method||'').toLowerCase().trim();totals[k in totals?k:'otro']+=Number(o.total||0);}return totals;}
+function block(){if(field(ID))return;const admin=document.querySelector('.module[onclick="resumenVentasV21()"]');if(admin){const btn=document.createElement('div');btn.className='module';btn.innerHTML='<b>💵 Caja diaria</b><span>Fondo, movimientos, cierre e historial</span>';btn.onclick=window.openCashV31;admin.insertAdjacentElement('afterend',btn);}const el=document.createElement('section');el.className='screen';el.id=ID;el.innerHTML=`<button class="back" onclick="goAdmin()">← Volver a administración</button><div class="brand">COLISEO FOOD PARK</div><h2>💵 Caja diaria</h2><div class="notice">Una caja física para ambos negocios. El fondo no es una venta. Solo administración puede registrar y confirmar cierres.</div><div id="cashContentV31">Cargando…</div>`;document.querySelector('main.app').appendChild(el);}
+function notice(s){field('cashContentV31').innerHTML='<div class="notice">'+clean(s)+'</div><button class="yellow" onclick="refreshCashV31()">Reintentar</button>';}
+window.openCashV31=async()=>{if(me?.role!=='admin'){alert('Solo administración');return;}show(ID);await refreshCashV31();};
+window.refreshCashV31=async()=>{if(me?.role!=='admin')return;const host=field('cashContentV31');host.textContent='Consultando caja…';try{const {data,error}=await db.from('cash_sessions_v31').select('*').order('opened_at',{ascending:false}).limit(40);if(error)throw error;const rows=data||[];active=rows.find(x=>x.status==='open')||null;if(!active){host.innerHTML=`<div class="card"><h3>Abrir caja</h3><p>Indica el fondo de efectivo que recibes al comenzar el turno.</p><label>Fondo inicial (MXN)</label><input id="fundV31" type="number" min="0" step="0.01" placeholder="Ej. 1000.00"><button class="yellow" onclick="startCashV31()">Abrir caja</button></div>`;}else{const [sales,movements]=await Promise.all([getSales(active.business_date),loadRows('cash_movements_v31','id,created_at,kind,amount,reason','session_id',active.id)]);const entries=movements.filter(x=>x.kind==='entry').reduce((s,x)=>s+Number(x.amount),0);const out=movements.filter(x=>x.kind!=='entry').reduce((s,x)=>s+Number(x.amount),0);const expected=Number(active.opening_fund)+sales.efectivo+entries-out;host.innerHTML=`<div class="card"><h3>Caja abierta · ${clean(active.business_date)}</h3><div class="row"><span>Fondo inicial</span><b>${fmt(active.opening_fund)}</b></div><div class="row"><span>Ventas en efectivo</span><b>${fmt(sales.efectivo)}</b></div><div class="row"><span>Entradas adicionales</span><b>${fmt(entries)}</b></div><div class="row"><span>Gastos y retiros</span><b>−${fmt(out)}</b></div><div class="divider"></div><div class="row"><b>Efectivo esperado</b><b>${fmt(expected)}</b></div><div class="divider"></div><div class="row"><span>Ventas tarjeta</span><b>${fmt(sales.tarjeta)}</b></div><div class="row"><span>Ventas transferencia</span><b>${fmt(sales.transferencia)}</b></div>${sales.otro?`<div class="notice">⚠️ ${fmt(sales.otro)} sin método de pago reconocido; revisa esas cuentas.</div>`:''}${sales.abiertas?`<div class="notice">⚠️ ${sales.abiertas} cuenta(s) abiertas. Debes cobrarlas antes de cerrar.</div>`:''}</div><div class="card"><h3>Registrar movimiento de efectivo</h3><label>Tipo de movimiento</label><select id="kindV31"><option value="expense">Gasto pagado de caja</option><option value="withdrawal">Retiro de efectivo</option><option value="entry">Entrada adicional (no venta)</option></select><label>Importe (MXN)</label><input id="movementAmountV31" type="number" min="0.01" step="0.01"><label>Motivo</label><input id="movementReasonV31" placeholder="Explica el movimiento"><button class="yellow" onclick="moveCashV31()">Guardar movimiento</button><div class="divider"></div><h3>Movimientos del turno</h3>${movements.length?movements.map(x=>`<div class="row"><span>${x.kind==='entry'?'Entrada':x.kind==='expense'?'Gasto':'Retiro'} · ${clean(x.reason)}</span><b>${x.kind==='entry'?'+':'−'}${fmt(x.amount)}</b></div>`).join(''):'<p>Sin movimientos.</p>'}</div><div class="card"><h3>Realizar cierre</h3><p>Cuenta físicamente todo el efectivo, incluyendo el fondo inicial.</p><label>Efectivo contado (MXN)</label><input id="countedV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><label>Fondo que dejarás para el siguiente turno</label><input id="nextFundV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><div id="previewV31" class="notice">Ingresa el efectivo contado para calcular la diferencia.</div><label>Observaciones</label><textarea id="notesV31" rows="3" placeholder="Faltantes, sobrantes o aclaraciones"></textarea><button class="yellow" onclick="closeCashV31()">Confirmar cierre de caja</button></div>`;window.expectedCashV31=expected;}
+host.insertAdjacentHTML('beforeend',`<div class="card"><h3>Historial de caja</h3>${rows.filter(x=>x.status==='closed').length?rows.filter(x=>x.status==='closed').map(x=>`<div style="padding:10px 0;border-bottom:1px solid #7775"><b>${clean(x.business_date)}</b><div class="row"><span>Fondo inicial</span><b>${fmt(x.opening_fund)}</b></div><div class="row"><span>Esperado / Contado</span><b>${fmt(x.expected_cash)} / ${fmt(x.counted_cash)}</b></div><div class="row"><span>Diferencia</span><b>${fmt(x.difference)}</b></div><div class="row"><span>Fondo reservado</span><b>${fmt(x.next_fund)}</b></div><div class="muted">${clean(x.notes)}</div></div>`).join(''):'Todavía no hay cierres guardados.'}</div>`);}catch(e){notice(e.message||String(e));}};
+window.startCashV31=async()=>{try{if(!confirm('¿Abrir caja con el fondo capturado?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:amount('fundV31')});if(error)throw error;await refreshCashV31();}catch(e){alert('No se abrió la caja: '+e.message);}};
+window.moveCashV31=async()=>{try{if(!active)throw Error('No hay caja abierta');const kind=field('kindV31').value,reason=field('movementReasonV31').value.trim(),value=amount('movementAmountV31');if(value<=0||!reason)throw Error('Captura importe positivo y motivo.');if(!confirm('¿Guardar '+fmt(value)+' como '+kind+'?'))return;const {error}=await db.rpc('cash_move_v31',{p_session:active.id,p_kind:kind,p_amount:value,p_reason:reason});if(error)throw error;await refreshCashV31();}catch(e){alert('No se guardó el movimiento: '+e.message);}};
+window.previewCashV31=()=>{try{const counted=amount('countedV31'),next=amount('nextFundV31');if(next>counted)throw Error('El fondo reservado no puede superar el efectivo contado.');const diff=counted-window.expectedCashV31;field('previewV31').innerHTML=`Diferencia: <b>${fmt(diff)}</b> (${diff<-.009?'faltante':diff>.009?'sobrante':'sin diferencia'})<div>Efectivo a retirar después del cierre: <b>${fmt(counted-next)}</b></div>`;}catch(e){field('previewV31').textContent=e.message;}};
+window.closeCashV31=async()=>{try{if(!active)throw Error('No hay caja abierta');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=field('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(Math.abs(diff)>.009&&!notes)throw Error('Escribe una observación para justificar la diferencia.');if(!confirm('¿Confirmas el cierre definitivo?\nEfectivo contado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:active.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;alert('Cierre guardado correctamente.');await refreshCashV31();}catch(e){alert('No se cerró la caja: '+e.message);}};
 block();
 })();
+</script>
+
+<script>
+/* COLISEO MANAGER 3.2 — CAJA DIARIA: ADMINISTRACION Y CAJA */
+(function(){
+'use strict';
+const el=id=>document.getElementById(id);
+const fmt=n=>money(Number(n||0));
+const safe=s=>esc(String(s??''));
+const allowed=()=>['admin','cashier'].includes(me?.role);
+const isAdmin=()=>me?.role==='admin';
+let session=null;
+function amount(id){const raw=el(id)?.value?.trim()??'';if(!/^\d+(\.\d{1,2})?$/.test(raw))throw Error('Indica un importe válido con máximo dos decimales.');return Number(raw)}
+function setup(){
+ const screen=el('cashV31');if(!screen)return;
+ const back=screen.querySelector('.back');if(back){back.textContent='← Volver';back.onclick=()=>isAdmin()?goAdmin():caja();}
+ const old=screen.querySelector('.notice');if(old)old.textContent='Una caja física para Cuervo’s Pizza y EL CLúB. Administración y Caja pueden registrar movimientos. Solo Administración realiza el corte definitivo.';
+ const cashier=el('cashier');if(cashier&&!el('cashierCashAccessV32')){
+ const btn=document.createElement('button');btn.id='cashierCashAccessV32';btn.className='yellow';btn.textContent='💵 Caja diaria · Fondo y movimientos';btn.onclick=()=>window.openCashV31();
+ const top=cashier.querySelector('.top');top?.insertAdjacentElement('afterend',btn);
+ }
+}
+async function paged(table,cols,field,value){const all=[];for(let i=0;i<10000;i+=500){let q=db.from(table).select(cols).range(i,i+499);if(field)q=q.eq(field,value);const {data,error}=await q;if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all;}throw Error('Hay más de 10,000 registros; requiere ampliar la consulta.')}
+async function sales(date){const orders=await paged('orders','id,total,status,payment_method,business_date','business_date',date);const sums={cash:0,card:0,transfer:0,other:0,open:0};for(const o of orders){if(o.status==='open'){sums.open++;continue}if(o.status!=='closed')continue;const p=String(o.payment_method||'').trim().toLowerCase();const k=p==='efectivo'?'cash':p==='tarjeta'?'card':p==='transferencia'?'transfer':'other';sums[k]+=Number(o.total||0)}return sums}
+const errorBox=e=>{const host=el('cashContentV31');if(host)host.innerHTML='<div class="notice">'+safe(e?.message||e)+'</div><button class="yellow" onclick="refreshCashV31()">Reintentar</button>'};
+window.openCashV31=async()=>{if(!allowed()){alert('Sin acceso a Caja diaria.');return}setup();show('cashV31');await window.refreshCashV31()};
+window.refreshCashV31=async()=>{
+ if(!allowed())return;setup();const host=el('cashContentV31');if(!host)return;host.textContent='Consultando caja…';
+ try{
+ const {data,error}=await db.from('cash_sessions_v31').select('*').order('opened_at',{ascending:false}).limit(100);if(error)throw error;
+ const rows=data||[];session=rows.find(x=>x.status==='open')||null;
+ if(!session){host.innerHTML='<div class="card"><h3>Abrir caja</h3><p>Captura el fondo que se recibe al iniciar el turno. El fondo no es una venta.</p><label>Fondo inicial (MXN)</label><input id="fundV31" type="number" min="0" step="0.01" placeholder="Ej. 1000.00"><button class="yellow" onclick="startCashV31()">Abrir caja</button></div>'}
+ else{
+ const movements=await paged('cash_movements_v31','id,session_id,created_at,created_by,kind,amount,reason,business','session_id',session.id);
+ movements.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ const entries=movements.filter(x=>x.kind==='entry').reduce((s,x)=>s+Number(x.amount),0);
+ const outgoing=movements.filter(x=>x.kind!=='entry').reduce((s,x)=>s+Number(x.amount),0);
+ let salesData=null,expected=null;
+ if(isAdmin()){salesData=await sales(session.business_date);expected=Number(session.opening_fund)+salesData.cash+entries-outgoing;window.expectedCashV31=expected;}
+ const cashSummary=isAdmin()?`<div class="row"><span>Ventas en efectivo</span><b>${fmt(salesData.cash)}</b></div><div class="row"><span>Tarjeta</span><b>${fmt(salesData.card)}</b></div><div class="row"><span>Transferencia</span><b>${fmt(salesData.transfer)}</b></div>${salesData.other?'<div class="notice">⚠️ Pagos no reconocidos: '+fmt(salesData.other)+'</div>':''}${salesData.open?'<div class="notice">⚠️ Hay '+salesData.open+' cuenta(s) abierta(s). Deben cobrarse antes del cierre.</div>':''}<div class="divider"></div><div class="row"><b>Efectivo esperado</b><b>${fmt(expected)}</b></div>`:'<div class="muted">El conteo y cierre definitivo están reservados a Administración.</div>';
+ const close=isAdmin()?`<div class="card"><h3>🔒 Cierre definitivo · Solo Administración</h3><p>Cuenta físicamente todo el efectivo, incluido el fondo.</p><label>Efectivo contado</label><input id="countedV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><label>Fondo para el siguiente turno</label><input id="nextFundV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><div id="previewV31" class="notice">Captura ambos importes.</div><label>Observaciones</label><textarea id="notesV31" placeholder="Aclaraciones o motivos de diferencias"></textarea><button class="yellow" onclick="closeCashV31()">Confirmar cierre definitivo</button></div>`:'';
+ host.innerHTML=`<div class="card"><h3>Caja abierta · ${safe(session.business_date)}</h3><div class="row"><span>Fondo inicial</span><b>${fmt(session.opening_fund)}</b></div><div class="row"><span>Entradas adicionales</span><b>${fmt(entries)}</b></div><div class="row"><span>Gastos y retiros</span><b>−${fmt(outgoing)}</b></div>${cashSummary}</div><div class="card"><h3>Registrar movimiento de efectivo</h3><label>Tipo</label><select id="kindV31"><option value="expense">Gasto pagado de caja</option><option value="withdrawal">Retiro de efectivo</option><option value="entry">Entrada adicional (no venta)</option></select><label>Negocio al que corresponde</label><select id="businessV32"><option value="General">General · Coliseo</option><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option></select><label>Importe (MXN)</label><input id="movementAmountV31" type="number" min="0.01" step="0.01"><label>Motivo obligatorio</label><textarea id="movementReasonV31" maxlength="500" placeholder="Explica qué se pagó o por qué se movió el efectivo"></textarea><button id="saveMovementV32" class="yellow" onclick="moveCashV31()">Guardar movimiento</button><div class="divider"></div><h3>Movimientos del turno</h3>${movements.length?movements.map(x=>`<div class="card"><div class="row"><b>${x.kind==='entry'?'Entrada':x.kind==='expense'?'Gasto':'Retiro'} · ${safe(businessName(x.business||'General'))}</b><b>${x.kind==='entry'?'+':'−'}${fmt(x.amount)}</b></div><div>${safe(x.reason)}</div><div class="muted">${stamp(x.created_at)} · Usuario: ${safe(x.created_by||'Sin identificar')}</div></div>`).join(''):'<div class="muted">Sin movimientos registrados.</div>'}</div>${close}`;
+ }
+ if(isAdmin())host.insertAdjacentHTML('beforeend',`<div class="card"><h3>Historial de cierres</h3>${rows.filter(x=>x.status==='closed').length?rows.filter(x=>x.status==='closed').map(x=>`<div class="card"><b>${safe(x.business_date)}</b><div>Fondo: ${fmt(x.opening_fund)}</div><div>Esperado: ${fmt(x.expected_cash)} · Contado: ${fmt(x.counted_cash)}</div><div>Diferencia: ${fmt(x.difference)}</div><div>Fondo reservado: ${fmt(x.next_fund)}</div><div class="muted">${safe(x.notes||'')}</div></div>`).join(''):'Aún no hay cierres.'}</div>`);
+ }catch(e){errorBox(e)}
+};
+window.startCashV31=async()=>{if(!allowed())return;try{const fund=amount('fundV31');if(!confirm('¿Abrir caja con fondo de '+fmt(fund)+'?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:fund});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se abrió caja: '+e.message)}};
+window.moveCashV31=async()=>{if(!allowed())return;const btn=el('saveMovementV32');if(btn?.disabled)return;try{if(!session)throw Error('No hay caja abierta.');const kind=el('kindV31').value,business=el('businessV32').value,reason=el('movementReasonV31').value.trim(),value=amount('movementAmountV31');if(value<=0||!reason)throw Error('Indica un importe positivo y el motivo obligatorio.');if(reason.length>500)throw Error('El motivo supera 500 caracteres.');if(!confirm('¿Registrar '+fmt(value)+' como '+kind+' de '+business+'?'))return;if(btn)btn.disabled=true;const {error}=await db.rpc('cash_move_v32',{p_session:session.id,p_kind:kind,p_amount:value,p_reason:reason,p_business:business});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se guardó el movimiento: '+e.message)}finally{if(btn?.isConnected)btn.disabled=false}};
+window.previewCashV31=()=>{if(!isAdmin())return;try{const counted=amount('countedV31'),next=amount('nextFundV31');if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;el('previewV31').innerHTML='Diferencia: <b>'+fmt(diff)+'</b> ('+(diff<-.009?'faltante':diff>.009?'sobrante':'sin diferencia')+')<div>Efectivo que se retira después del cierre: <b>'+fmt(counted-next)+'</b></div>'}catch(e){el('previewV31').textContent=e.message}};
+window.closeCashV31=async()=>{if(!isAdmin()){alert('Solo Administración puede cerrar la caja.');return}try{if(!session)throw Error('No hay caja abierta.');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=el('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(Math.abs(diff)>.009&&!notes)throw Error('Escribe una observación para justificar la diferencia.');if(!confirm('¿Confirmar el cierre definitivo?\nContado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:session.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;alert('Cierre guardado correctamente.');await window.refreshCashV31()}catch(e){alert('No se cerró la caja: '+e.message)}};
+setup();
+})();
+
 </script>
 
 </body>
