@@ -1,0 +1,17 @@
+{
+  "name": "coliseo-manager-preview",
+  "version": "3.3.0-preview",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-preview.cjs",
+    "build:preview": "node scripts/build-preview.cjs",
+    "test": "node tests/browser.cjs && node tests/database.cjs && node tests/integration.cjs",
+    "test:preview": "node tests/preview.cjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.3.14"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
