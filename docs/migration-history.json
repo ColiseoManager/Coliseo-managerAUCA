@@ -85,5 +85,11 @@
     "name": "coliseo_operational_safety_v33",
     "sql_sha256": "cdd10375158e2eb3e9cb7cf0d95d523ee3681a3fc4bf831e033358fdd5edfcfa",
     "note": "Aplicada una sola vez. No ejecutar db push antes de conciliar las versiones local y remota."
+  },
+  "security_applied": {
+    "local_file": "20261017060524_coliseo_v33_security_preparation.sql",
+    "remote_version": "20261017060626",
+    "name": "coliseo_v33_security_preparation",
+    "sql_sha256": "c268ef3f93aea4893b890291013d16042e18ad1a1fa1a2abdcbbbe02588cebfb"
   }
 }

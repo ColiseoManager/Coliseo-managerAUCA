@@ -2,7 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const root = path.resolve(__dirname, "../dist");
-const headers = require("../vercel.json").headers[0].headers;
+const headers = require("../vercel.preview.json").headers[0].headers;
 http
   .createServer((req, res) => {
     const pathname = new URL(req.url, "http://localhost").pathname;

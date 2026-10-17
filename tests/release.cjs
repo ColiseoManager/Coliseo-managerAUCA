@@ -36,3 +36,6 @@ assert.match(
 console.log(
   "PASS: release protegido, elimina residuos demo, lista cerrada de archivos y Supabase/CSP reales.",
 );
+
+assert.deepEqual(require("../vercel.json"), config);
+assert.equal(config.git.deploymentEnabled, false);

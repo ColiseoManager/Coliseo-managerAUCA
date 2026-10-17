@@ -1,3 +1,5 @@
+> Estado actual de publicación, seguridad y Auth: [PUBLICACION_V33.md](PUBLICACION_V33.md). Este documento conserva la revisión histórica.
+
 # Revisión y cambios preparados — Coliseo Manager
 
 **Estado actualizado y autorización pendiente:** [AUTORIZACION_V33.md](AUTORIZACION_V33.md).

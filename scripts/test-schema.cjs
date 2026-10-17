@@ -12,7 +12,7 @@ function createSQL({
   let sql = standaloneAuth
     ? `-- Snapshot de estructura, SIN filas de producción. Solo para pruebas aisladas.
  set check_function_bodies=off;
- create role anon; create role authenticated;
+ create role anon; create role authenticated; create role service_role;
  create schema auth;
  create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
@@ -52,6 +52,13 @@ function createSQL({
     if (pending.length !== 1)
       throw Error("No hay una única migración V33 revisable");
     sql += fs.readFileSync(path.join(directory, pending[0]), "utf8");
+    sql += fs.readFileSync(
+      path.join(
+        directory,
+        "20261017060524_coliseo_v33_security_preparation.sql",
+      ),
+      "utf8",
+    );
   }
   return sql;
 }

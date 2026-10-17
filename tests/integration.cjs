@@ -258,7 +258,7 @@ const ids = {
       "Prueba",
       JSON.stringify([{ id: "40000000-0000-4000-8000-000000000001", q: 1 }]),
     ]),
-    /Sin permiso/,
+    /Sin permiso|permission denied for function create_order_v2/,
   );
   await as("admin", "update profiles set active=false where id=$1", [
     ids.staff,

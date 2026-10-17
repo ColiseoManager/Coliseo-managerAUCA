@@ -21,7 +21,17 @@ const pending = fs
         (m) => n === m.version + "_" + m.name + ".sql",
       ),
   );
-assert.equal(pending.length, 1);
+assert.equal(pending.length, 2);
+const security = pending.find((f) => f === history.security_applied.local_file);
+assert.ok(security);
+assert.equal(
+  crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(path.join(dir, security)))
+    .digest("hex"),
+  history.security_applied.sql_sha256,
+);
+pending.splice(pending.indexOf(security), 1);
 assert.match(pending[0], /_coliseo_operational_safety_v33.sql$/);
 assert.equal(pending[0], history.v33_applied.local_file);
 assert.equal(
@@ -33,5 +43,5 @@ assert.equal(
 );
 assert.equal(history.v33_applied.remote_version, "20261017052418");
 console.log(
-  "PASS: 15 originales intactas y V33 aplicada documentada con correspondencia local/remota; sin nueva migración.",
+  "PASS: 15 originales intactas; V33 y refuerzo de seguridad aplicados, con SHA y correspondencia local/remota documentados.",
 );

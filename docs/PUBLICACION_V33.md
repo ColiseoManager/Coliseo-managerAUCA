@@ -1,48 +1,64 @@
-# Preparación de publicación V33 — 17 de octubre de 2026
+# Preparación V33 — actualización del 17 de octubre de 2026
 
-Estado: código preparado para revisión; publicación condicionada a los pendientes de este informe. No se publicó, fusionó main, creó una cuenta ni escribió información comercial durante esta preparación.
+Estado: preparación técnica terminada en la rama `feat/pending-management-modules`; publicación pendiente de comprobaciones reales de acceso y configuración privada de Auth. No se fusionó main ni se publicó en Vercel.
 
-## Configuración y artefacto
+## Producción y rama
 
-Proyecto Vercel verificado: `coliseo-manager`, `prj_iGta1G3OonnlQXnXeeymLkaep4kO`, equipo `coliseomanager`, Node 24.x. La configuración activa `vercel.json` sigue construyendo la demostración; no se cambió el proyecto remoto. La consulta de variables de Vercel no devolvió variables configuradas ni ocultas de producción.
+`vercel.json` y `vercel.release.json` seleccionan `npm run build:release`, salida `dist`, Supabase real `https://vrxkxfsysfnlcuxdsxfx.supabase.co` y CSP compatible. El build exige `COLISEO_RELEASE_AUTHORIZED=v33-reviewed`, elimina residuos previos y solo incluye index.html y js/management.js. No contiene el adaptador demo, semillas, PGlite, fixtures, respaldos o credenciales privadas. La clave del navegador es publishable.
 
-Configuración real preparada: `vercel.release.json`, comando `npm run build:release`, salida `dist`. Requiere `COLISEO_RELEASE_AUTHORIZED=v33-reviewed` al construir. Esta variable habilita un build; no autoriza un despliegue. Se utilizó solamente en pruebas locales.
+Los despliegues Git están desactivados explícitamente con `git.deploymentEnabled=false`, para subir esta rama sin publicar. No habilitarlos antes de la autorización separada. `vercel.preview.json` conserva la configuración de demostración exclusivamente para pruebas; el servidor local de preview utiliza ese archivo. El SDK externo continúa en @2; fijar una versión revisada mejoraría reproducibilidad.
 
-El build real prepara una carpeta limpia con lista explícita: `index.html` y `js/management.js`. Rechaza referencias al adaptador demo, PGlite, semillas y claves privadas. La prueba introduce residuos ficticios en dist y confirma que desaparecen. No publica fixtures, SQL, respaldos, node_modules ni archivos de preview.
+Proyecto Vercel: `coliseo-manager`, `prj_iGta1G3OonnlQXnXeeymLkaep4kO`, equipo coliseomanager. No se cambió la configuración remota del proyecto ni sus alias.
 
-La aplicación utiliza Supabase `https://vrxkxfsysfnlcuxdsxfx.supabase.co` y una clave pública publishable existente. No necesita service_role en el navegador. La CSP permite el SDK de jsDelivr y HTTPS/WSS únicamente al proyecto real para datos. El SDK permanece en su versión flotante @2: fijar una versión revisada mejoraría la reproducibilidad.
+## Correcciones seguras aplicadas a Supabase
 
-## Supabase y pruebas
+V33 sigue aplicada una sola vez, versión remota `20261017052418`. Adicionalmente se aplicó, conforme a la autorización de corregir seguridad sin afectar usuarios, `coliseo_v33_security_preparation`, versión remota `20261017060626` (archivo local `20261017060524_coliseo_v33_security_preparation.sql`).
 
-Se volvieron a consultar las 16 migraciones: 15 originales y una V33. La fecha operativa America/Tijuana, las políticas administrativas de inventario/reservaciones, las vistas security_invoker y las funciones V33 están instaladas. No se ejecutaron migraciones.
+- Se fijó search_path=public en convert_inventory_quantity e inventory_yield, sin cambiar su lógica.
+- Se retiró EXECUTE de PUBLIC y anon a 23 funciones SECURITY DEFINER. Se conservaron los permisos efectivos previos de authenticated y service_role. Las funciones y triggers internos siguen funcionando; el cliente utiliza usuarios autenticados.
+- El asesor ya no detecta funciones privilegiadas ejecutables por anon ni search_path mutable. No hay ERROR.
+- Permanecen 23 avisos de funciones SECURITY DEFINER accesibles a authenticated. El acceso es necesario para RPC/roles/triggers; siguen existiendo controles de rol y propiedad. No se eliminó indiscriminadamente este permiso.
+- Sigue desactivada la protección de contraseñas filtradas. No está expuesta por las herramientas de configuración disponibles.
 
-Archivo aprobado: `20261017045545_coliseo_operational_safety_v33.sql`. Versión asignada por Supabase al aplicarlo: `20261017052418`. La correspondencia y SHA están en migration-history.json. Antes de cualquier futuro `supabase db push`, conciliar el historial local/remoto con revisión específica; no reaplicar V33 ni ejecutar las propuestas de docs/sql. Esta diferencia no afecta al build estático ni requiere otra migración para publicar.
+Referencias: [funciones accesibles a authenticated](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), [contraseñas filtradas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
 
-Consulta real de solo lectura: un Administrador y un Personal activos, ningún Caja; cuatro comandas existentes, una abierta, un artículo de inventario y cero reservaciones. Las comandas no se cerraron ni se alteraron. Una comanda abierta impedirá cerrar su fecha operativa hasta resolverla mediante el flujo comercial normal.
+Se respaldaron las definiciones/ACL previas de funciones y se actualizó la copia de las 25 tablas públicas, fuera del repositorio, antes de aplicar. Se restauraron los 49 registros en PostgreSQL aislado y se verificó su coincidencia. La estructura base procede del snapshot V33 previamente verificado; las definiciones de funciones y ACL se actualizaron. Es un respaldo lógico de aplicación, excluye credenciales/sesiones Auth y Storage, y no representa una recuperación completa de Supabase.
 
-Pruebas locales ejecutadas en esta preparación: navegador con API simulada; esquema completo PostgreSQL aislado con RLS y roles Administrador/Caja/Personal; comandas propias y ajenas; recetas e inventario; cobro sin doble descuento; servicios, mantenimiento y reservaciones; movimientos y dos turnos de caja; migración sin cambios de datos y reversión; historial y build real limpio. También se había validado previamente Auth/PostgREST/PostgreSQL 17 locales con el SDK real y contraseñas ficticias. Esas pruebas locales no equivalen a un login real del dominio publicado.
+Después se compararon todas las filas de las 25 tablas: exactamente iguales. Las cuatro comandas, incluida la abierta, siguen intactas. No se cerraron cuentas ni se alteraron ventas, inventario, usuarios o roles comerciales.
 
-Caja puede abrir caja, registrar movimientos, crear comandas y cobrar. El cierre definitivo de Caja diaria es exclusivo de Administrador según V33. Personal tiene acceso a comandas propias/asignadas y no administra inventario, reservaciones ni cierres.
+Las versiones locales y remotas de ambas migraciones difieren porque Supabase asignó la versión al ejecutarlas. La correspondencia y los SHA están documentados en migration-history.json. No ejecutar db push, reaplicar V33 ni los SQL anteriores antes de conciliar el historial con una revisión específica. Publicar el frontend no requiere ejecutar SQL.
 
-## Cuenta real Caja: procedimiento preparado, no ejecutado
+## Autenticación: comprobado y pendiente
 
-1. Obtener del titular correo, nombre y autorización para crear la cuenta. Confirmar que el correo no corresponde a una cuenta existente.
-2. En Supabase del proyecto AUCA, Authentication → Users, invitar al usuario. Revisar previamente Site URL y redirect URLs del dominio definitivo y el servicio SMTP. La invitación permite al titular establecer su contraseña; no enviar contraseñas por documentos o repositorio.
-3. Confirmar que el trigger creó exactamente un registro profiles con el mismo UUID de Authentication. El rol inicial es staff. No insertar manualmente en auth.users y no usar el rol Auth/JWT para asignar permisos comerciales.
-4. Un operador autorizado asignará en public.profiles de ese UUID exacto `role = cashier`, `active = true` y el nombre. Revisar el UUID y la fila antes de guardar; no cambiar otras cuentas. Es una operación futura separada, no incluida en este trabajo.
-5. El titular inicia sesión desde el celular y confirma que ve Caja, puede consultar las comandas permitidas y no ve Administración. Validar cierre de sesión e inactividad. No efectuar cobros ficticios ni movimientos en la base comercial; validar escrituras en el entorno aislado.
-6. Conservar un Administrador activo: es quien realiza el cierre definitivo.
+El endpoint público /auth/v1/settings responde correctamente: acceso por correo habilitado, confirmación de correo requerida y registro público habilitado. No expone Site URL ni la lista de redirect URLs. Las herramientas Supabase conectadas permiten SQL/asesores/migraciones, pero no leer ni modificar la configuración privada Auth del Management API. No se intentó obtener secretos desde tablas ni saltarse esta limitación.
 
-## Pendientes para autorizar la publicación
+Pendiente revisar en Authentication → URL Configuration: Site URL `https://coliseo-manager.vercel.app` y redirect permitido del mismo dominio para invitaciones/recuperación. Conservar URLs legítimas de usuarios existentes hasta revisar su uso; no abrir comodines amplios. Revisar SMTP y entrega de invitaciones. También conviene desactivar nuevas altas públicas si todas las cuentas serán invitadas, manteniendo el acceso de cuentas existentes, y habilitar protección de contraseñas filtradas si el plan lo permite. Para completar estos cambios hace falta acceso de configuración Auth mediante Supabase Management API o intervención del propietario en el panel; la conexión SQL actual no ofrece esa capacidad.
 
-- Comprobación de login/logout real por el titular y URLs de Auth en el dominio final. No se dispuso de contraseña real ni se simuló una sesión como prueba de contraseña.
-- Crear y validar la cuenta Caja siguiendo el procedimiento anterior, con autorización y correo del titular.
-- Revisar las advertencias de seguridad detectadas al aplicar V33: dos funciones con search_path mutable, funciones SECURITY DEFINER ejecutables por anon/authenticated (revisar sus controles individualmente) y protección de contraseñas filtradas desactivada. V33 eliminó los dos errores de vistas; estas advertencias preexistentes no se corrigieron aquí.
-- Revisar el alcance funcional: Finanzas muestra resultado parcial, no utilidad contable neta; servicios registra pagos ya realizados, sin cobro automático; anticipos de reservaciones son referencias y no generan ventas/caja; no existe bloqueo de aforo o recurso por reservación.
-- Autorización separada del usuario para producción. No fusionar main ni desplegar automáticamente antes de ella.
+Pruebas repetidas con Supabase Auth, PostgREST, PostgreSQL 17 y supabase-js reales en contenedores aislados, con credenciales ficticias: login/logout de Administrador, Personal y Caja; JWT, perfiles y trigger, RLS, propiedad de comandas, inventario, cobros, módulos y cierre concurrente. El navegador móvil pasó el flujo con la corrección de seguridad aplicada.
 
-## Secuencia de publicación futura
+En Supabase real se comprobaron permisos por transacciones de solo lectura: Administrador ve cuatro comandas e inventario; Personal ve sus dos comandas y no inventario administrativo. Estas consultas no prueban una contraseña ni el cierre de una sesión real. No hay credenciales/sesiones reales disponibles de Administrador o Personal; no se resetearon contraseñas, crearon sesiones por suplantación ni revocaron sesiones existentes. Hace falta que los titulares validen inicio/cierre de sesión real antes de publicar.
 
-Tras resolver los pendientes y obtener autorización, revisar el diff y confirmar la revisión exacta a publicar. Usar explícitamente `vercel.release.json` como configuración local de Vercel (opción `--local-config` del CLI elegido), no el vercel.json de demostración. Habilitar el build real para ese build autorizado, comprobar artefacto y CSP y publicar en el proyecto/equipo verificados. No ejecutar migraciones como parte del build ni cambiar los alias antes de aprobar la publicación. Si se usa integración Git en lugar del CLI, preparar primero el cambio revisado de configuración activa, porque hoy Git continúa construyendo la demostración.
+## Crear la cuenta Caja: procedimiento pendiente, no ejecutado
 
-Después del despliegue autorizado: comprobar HTTPS, carga del SDK, login/logout y navegación por rol sin crear ventas ficticias. Mantener disponible la versión anterior para rollback del frontend; revertir el frontend no revierte Supabase. No ejecutar rollback-v33.sql sin autorización específica.
+Información necesaria del usuario: **nombre completo y correo electrónico del titular de Caja**. No enviar contraseñas.
+
+1. Revisar URLs de Auth y SMTP; comprobar que el correo no corresponde a una cuenta existente.
+2. Invitar desde Authentication → Users del proyecto AUCA. El titular establece su contraseña mediante el enlace seguro.
+3. Confirmar el perfil creado por el trigger con el mismo UUID; inicia con rol staff.
+4. Un operador autorizado cambia solamente ese perfil a role=cashier, active=true y el nombre. No insertar manualmente en auth.users ni utilizar user_metadata para decidir permisos.
+5. El titular valida login/logout desde su celular y la pantalla Caja. Comprobar consulta de comandas y denegación de administración, sin crear cobros ficticios en la base real.
+
+Caja puede abrir turno, registrar movimientos y cobrar; el cierre definitivo de Caja diaria corresponde a Administrador. La prueba aislada de Caja ya está preparada y pasó, sin crear una cuenta comercial real.
+
+## Condiciones para publicar
+
+- Validación real de login/logout por los titulares de Administrador y Personal.
+- Revisión privada de URLs/SMTP y protección de contraseñas; política de registro público.
+- Creación y validación de la cuenta Caja con el correo y nombre solicitados.
+- Autorización separada de publicación. Hasta entonces mantener Git deploymentEnabled=false y no fusionar main.
+
+No hay migraciones pendientes necesarias para servir esta versión. La comanda abierta debe resolverse por el flujo comercial normal para poder cerrar su fecha operativa; no impide publicar el frontend.
+
+Al autorizar producción, seleccionar una revisión exacta y el build real, comprobar el artefacto y desplegar de forma controlada. Publicar no debe ejecutar migraciones ni pruebas que creen ventas ficticias. Conservar el frontend anterior para rollback; no ejecutar rollback-v33.sql sin autorización específica.
+
+Limitaciones funcionales conocidas: Finanzas calcula resultado parcial, no utilidad contable neta; servicios registra pagos realizados, no cargos automáticos; los anticipos de reservación son referencias y no generan ventas/caja; no hay bloqueo de aforo/recurso. La publicación no modifica estas reglas.
