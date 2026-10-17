@@ -1,20 +1,46 @@
-// Preparación de artefacto real, sin desplegar y sin ejecutar migraciones.
-// La habilitación de producción requiere una autorización explícita posterior.
-const fs = require("node:fs"),
-  path = require("node:path");
+// Solo prepara archivos: no despliega ni ejecuta migraciones.
+const fs = require("node:fs");
+const path = require("node:path");
 if (process.env.COLISEO_RELEASE_AUTHORIZED !== "v33-reviewed")
-  throw Error("Falta autorización final para habilitar el build real.");
-const root = path.join(__dirname, ".."),
-  out = process.env.COLISEO_RELEASE_OUTPUT || path.join(root, "dist");
-fs.mkdirSync(out, { recursive: true });
-const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
-if (
-  html.includes("preview/bootstrap.js") ||
-  html.includes("preview-local-only")
-)
-  throw Error("El código real contiene el adaptador de demostración");
-fs.writeFileSync(path.join(out, "index.html"), html);
-fs.cpSync(path.join(root, "js"), path.join(out, "js"), { recursive: true });
+  throw Error(
+    "Falta habilitación explícita del build real. No implica autorización de despliegue.",
+  );
+const root = path.resolve(__dirname, "..");
+const out = path.join(root, "dist");
+if (process.env.COLISEO_RELEASE_OUTPUT)
+  throw Error(
+    "El build real utiliza exclusivamente dist para evitar destinos inseguros.",
+  );
+const files = ["index.html", "js/management.js"];
+const sources = files.map((file) => [
+  file,
+  fs.readFileSync(path.join(root, file), "utf8"),
+]);
+for (const [file, content] of sources) {
+  if (
+    /preview\/|preview-local-only|prueba\.invalid|PGlite|seed\.sql|service_role|sb_secret_/.test(
+      content,
+    )
+  )
+    throw Error(`Contenido de prueba o credencial privada en ${file}`);
+}
+if (!sources[0][1].includes("https://vrxkxfsysfnlcuxdsxfx.supabase.co"))
+  throw Error("Proyecto Supabase real inesperado");
+if (fs.existsSync(out) && fs.lstatSync(out).isSymbolicLink())
+  throw Error("dist no puede ser un enlace simbólico");
+const staging = fs.mkdtempSync(path.join(root, ".release-build-"));
+try {
+  for (const [file, content] of sources) {
+    const dest = path.join(staging, file);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, content);
+  }
+  // Destino fijo y lista explícita: elimina cualquier residuo del build de prueba.
+  fs.rmSync(out, { recursive: true, force: true });
+  fs.renameSync(staging, out);
+} finally {
+  fs.rmSync(staging, { recursive: true, force: true });
+}
 console.log(
-  "Artefacto de operación real preparado. Este comando no publica ni modifica Supabase.",
+  "Artefacto real preparado: solo index.html y js/management.js. Sin publicación ni cambios en Supabase.",
 );

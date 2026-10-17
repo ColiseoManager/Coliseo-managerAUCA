@@ -23,6 +23,15 @@ const pending = fs
   );
 assert.equal(pending.length, 1);
 assert.match(pending[0], /_coliseo_operational_safety_v33.sql$/);
+assert.equal(pending[0], history.v33_applied.local_file);
+assert.equal(
+  crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(path.join(dir, pending[0])))
+    .digest("hex"),
+  history.v33_applied.sql_sha256,
+);
+assert.equal(history.v33_applied.remote_version, "20261017052418");
 console.log(
-  "PASS: 15 migraciones históricas idénticas al remoto y solo una migración nueva pendiente.",
+  "PASS: 15 originales intactas y V33 aplicada documentada con correspondencia local/remota; sin nueva migración.",
 );
