@@ -5,8 +5,9 @@
   "scripts": {
     "build": "node scripts/build-preview.cjs",
     "build:preview": "node scripts/build-preview.cjs",
-    "test": "node tests/browser.cjs && node tests/database.cjs && node tests/integration.cjs",
-    "test:preview": "node tests/preview.cjs"
+    "test": "node tests/browser.cjs && node tests/database.cjs && node tests/integration.cjs && node tests/migrations.cjs && node tests/migration-history.cjs",
+    "test:preview": "node tests/preview.cjs",
+    "build:release": "node scripts/build-release.cjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.3.14"

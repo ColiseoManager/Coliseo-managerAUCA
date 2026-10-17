@@ -1,5 +1,9 @@
 # Revisión y cambios preparados — Coliseo Manager
 
+**Estado actualizado y autorización pendiente:** [AUTORIZACION_V33.md](AUTORIZACION_V33.md).
+El historial recuperado, respaldo restaurado, migración única y pruebas reales
+de Auth/API locales están descritos en ese documento.
+
 Repositorio base: `ColiseoManager/Coliseo-managerAUCA`, rama `main`.
 Commit base: `1e79470641af4a0929a6707fe5b662198301b485`.
 Rama de trabajo local: `feat/pending-management-modules`.
@@ -161,6 +165,8 @@ contra el motor SQL: formularios, cancelación de reservación, cambio de rol,
 comanda, cobro, menú, inventario, finanzas y corte. Detecta errores JavaScript,
 desbordamiento horizontal y cualquier petición a Supabase real.
 
-La prueba de autenticación real de Supabase, múltiples dispositivos y carreras
-entre transacciones simultáneas continúa pendiente. La demostración no acredita
-estas condiciones de producción.
+Auth, JWT y PostgREST reales se verificaron después en contenedores locales,
+incluido un cobro concurrente con el corte, y con el cliente web real. La
+configuración específica del proyecto hospedado y del dominio definitivo sigue
+pendiente de verificación tras la autorización. La demostración pública sigue
+siendo aislada y no acredita operaciones sobre datos reales.
