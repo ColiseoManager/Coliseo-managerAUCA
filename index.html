@@ -1163,11 +1163,13 @@ async function prepRefreshV35(){
  const threshold=settings.data||{warning_minutes:prepStationV35==="kitchen"?10:5,late_minutes:prepStationV35==="kitchen"?20:10};
  const tickets=board.data||[];
  const html=(status,title)=>'<h3 class="section">'+title+' · '+tickets.filter(t=>t.status===status).length+'</h3>'+tickets.filter(t=>t.status===status).map(t=>{
- const min=Math.max(0,Math.floor((Date.now()-new Date(t.queued_at).getTime())/60000));
- const urgency=min>=threshold.late_minutes?"🔴 Retrasado":min>=threshold.warning_minutes?"🟡 Atención":"🟢 En tiempo";
+ const elapsedMs=Math.max(0,(status==="ready"&&t.ready_at?new Date(t.ready_at).getTime():Date.now())-new Date(t.queued_at).getTime());
+ const min=Math.floor(elapsedMs/60000);
+ const duration=min<1?Math.max(0,Math.round(elapsedMs/1000))+" seg":min+" min";
+ const urgency=status==="ready"?"✓ Terminado":min>=threshold.late_minutes?"🔴 Retrasado":min>=threshold.warning_minutes?"🟡 Atención":"🟢 En tiempo";
  const location=t.order_type==="takeaway"?"Para llevar":t.order_type==="delivery"?"Delivery · "+(t.delivery_platform||""):"Mesa "+(t.table_number||"sin número");
  const next=status==="pending"?"preparing":status==="preparing"?"ready":null;
- return '<div class="card"><div class="row"><b>'+esc(location)+'</b><b>'+urgency+' · '+min+' min</b></div><div><b>'+Number(t.quantity)+' × '+esc(t.item_name)+'</b></div>'+(t.order_notes?'<div class="muted">Notas de cuenta: '+esc(t.order_notes)+'</div>':"")+(next?'<button class="yellow" onclick="prepAdvanceV35(\''+t.id+'\',\''+next+'\')">'+(next==="preparing"?"▶ Preparando":"✓ Listo")+'</button>':'<span class="badge">Listo</span>')+'</div>';
+ return '<div class="card"><div class="row"><b>'+esc(location)+'</b><b>'+urgency+' · '+duration+'</b></div><div><b>'+Number(t.quantity)+' × '+esc(t.item_name)+'</b></div>'+(t.order_notes?'<div class="muted">Notas de cuenta: '+esc(t.order_notes)+'</div>':"")+(next?'<button class="yellow" onclick="prepAdvanceV35(\''+t.id+'\',\''+next+'\')">'+(next==="preparing"?"▶ Preparando":"✓ Listo")+'</button>':'<span class="badge">Listo</span>')+'</div>';
  }).join("")||'<div class="empty">Sin artículos</div>';
  host.innerHTML=html("pending","Pendiente")+html("preparing","Preparando")+html("ready","Listo");
  }catch(e){host.textContent="Error al cargar preparación: "+(e.message||String(e))}
