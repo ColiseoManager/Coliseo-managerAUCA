@@ -1158,7 +1158,7 @@ async function prepRefreshV35(){
  prepBusyV35=true;
  const host=document.getElementById("prepBoardContentV35");
  try{
- const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:prepStationV35}),db.from("preparation_settings").select("*").eq("station",prepStationV35).maybeSingle()]);
+ const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:prepStationV35}),db.rpc("prep_get_settings",{p_station:prepStationV35})]);
  if(board.error)throw board.error;
  const threshold=settings.data||{warning_minutes:prepStationV35==="kitchen"?10:5,late_minutes:prepStationV35==="kitchen"?20:10};
  const tickets=board.data||[];
@@ -1190,14 +1190,14 @@ async function prepConfigV35(){
 }
 async function prepSaveRouteV35(id,station){
  if(me?.role!=="admin")return;
- const r=await db.from("preparation_item_routes").upsert({menu_item_id:id,station,updated_by:me.id,updated_at:new Date().toISOString()});
+ const r=await db.rpc("prep_update_route",{p_menu_item:id,p_station:station});
  if(r.error)alert("No se guardó: "+r.error.message);
 }
 async function prepSaveThresholdV35(station){
  if(me?.role!=="admin")return;
  const warning_minutes=Number(document.getElementById("warn_"+station).value),late_minutes=Number(document.getElementById("late_"+station).value);
  if(!Number.isInteger(warning_minutes)||!Number.isInteger(late_minutes)||warning_minutes<1||late_minutes<=warning_minutes){alert("El retraso debe ser mayor que la advertencia.");return}
- const r=await db.from("preparation_settings").update({warning_minutes,late_minutes}).eq("station",station);
+ const r=await db.rpc("prep_update_settings",{p_station:station,p_warning:warning_minutes,p_late:late_minutes});
  if(r.error)alert("No se guardó: "+r.error.message);else alert("Tiempos guardados");
 }
 setInterval(()=>{if(document.getElementById("prepBoardV35")?.classList.contains("on"))prepRefreshV35()},15000);
