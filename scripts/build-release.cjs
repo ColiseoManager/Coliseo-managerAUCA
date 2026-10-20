@@ -11,7 +11,7 @@ if (process.env.COLISEO_RELEASE_OUTPUT)
   throw Error(
     "El build real utiliza exclusivamente dist para evitar destinos inseguros.",
   );
-const files = ["index.html", "js/management.js", "manifest.webmanifest", "sw.js", "icons/icon.svg"];
+const files = ["index.html", "menu-qr.html", "js/management.js", "manifest.webmanifest", "sw.js", "icons/icon.svg"];
 const sources = files.map((file) => [
   file,
   fs.readFileSync(path.join(root, file), "utf8"),
