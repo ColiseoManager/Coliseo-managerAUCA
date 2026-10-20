@@ -192,6 +192,7 @@ button{cursor:pointer}
 <div class="notice">VISTA PREVIA · SOLO CONSULTA. Los artículos se agrupan provisionalmente por negocio. No cambia estados, comandas ni inventario. La clasificación definitiva por producto se habilitará después.</div>
 <div class="row" style="margin-top:14px"><button class="dark" onclick="preparationPreviewV34()">↻ Actualizar pedidos</button><span class="muted">Actualización automática cada 20 segundos mientras esta pantalla esté abierta.</span></div>
 <div class="notice">Los tiempos son informativos. Cocina: aviso desde 10 min, retraso desde 20 min. Barra: aviso desde 5 min, retraso desde 10 min. El administrador podrá editar estos límites cuando se active la configuración segura en la base de datos.</div>
+<div class="card"><h3>Clasificación por producto · simulación local</h3><div class="muted">Selecciona Cocina, Barra o Sin clasificar. Estas elecciones solo afectan esta vista previa y se perderán al cerrar o recargar; todavía no se guardan en la base de datos.</div><div id="preparationRoutingEditorV34"></div></div>
 <div id="preparationPreviewContentV34" role="status">Consultando comandas…</div>
 </section>
 
@@ -1092,6 +1093,12 @@ setup();
 
 <script>
 /* V34: vista previa segura de administración; no altera datos. */
+window.preparationLocalRoutesV34={};
+function preparationRouteLocalV34(el){
+ if(typeof me==="undefined"||me?.role!=="admin")return;
+ window.preparationLocalRoutesV34[el.getAttribute("data-prep-route")]=el.value;
+ preparationPreviewV34();
+}
 setInterval(()=>{const pane=document.getElementById("preparationPreviewV34");if(pane?.classList.contains("on")&&typeof me!=="undefined"&&me?.role==="admin")preparationPreviewV34()},20000);
 async function preparationPreviewV34(){
  if(typeof me==="undefined"||me?.role!=="admin"){alert("Solo administración");return}
@@ -1107,8 +1114,16 @@ async function preparationPreviewV34(){
   if(le)throw le;
   const byId=new Map((orders||[]).map(o=>[o.id,o]));
   const buckets={kitchen:[],bar:[],other:[]};
+  const {data:products,error:pe}=await db.from("menu_items").select("id,name,business").order("name");
+  if(pe)throw pe;
+  const productIds=new Map((products||[]).map(p=>[p.id,p]));
+  const routingHost=document.getElementById("preparationRoutingEditorV34");
+  routingHost.innerHTML=(products||[]).map(p=>'<div class="row" style="margin-top:9px"><span>'+esc(p.name)+' · '+esc(businessName(p.business))+'</span><select data-prep-route="'+esc(p.id)+'" onchange="preparationRouteLocalV34(this)"><option value="kitchen">🍳 Cocina</option><option value="bar">🍹 Barra</option><option value="other">Sin clasificar</option></select></div>').join("")||'<div class="empty">Sin productos.</div>';
+  for(const el of routingHost.querySelectorAll("[data-prep-route]")){const id=el.getAttribute("data-prep-route"),p=productIds.get(id);el.value=window.preparationLocalRoutesV34?.[id]||(p?.business==="Cuervos Pizza"?"kitchen":p?.business==="EL CLúB"?"bar":"other")}
+  const nameRoute=new Map((products||[]).map(p=>[p.name+"|"+p.business,window.preparationLocalRoutesV34?.[p.id]||(p.business==="Cuervos Pizza"?"kitchen":p.business==="EL CLúB"?"bar":"other")]));
+  
   for(const x of lines||[]){
-   const station=x.business==="Cuervos Pizza"?"kitchen":x.business==="EL CLúB"?"bar":"other";
+   const station=nameRoute.get(x.item_name+"|"+x.business)||(x.business==="Cuervos Pizza"?"kitchen":x.business==="EL CLúB"?"bar":"other");
    buckets[station].push({x,o:byId.get(x.order_id)});
   }
   const now=Date.now();
