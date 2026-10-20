@@ -170,7 +170,7 @@ button{cursor:pointer}
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
-<div class="module" onclick="preparationPreviewV34()"><b>🍳 Cocina y 🍹 Barra</b><span>Vista previa para administración · solo consulta</span></div>
+<div class="module" onclick="prepOpenV35('kitchen')"><b>🍳 Cocina y 🍹 Barra</b><span>Comandas y preparación en tiempo real</span></div>
 <div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
 <div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
@@ -185,6 +185,13 @@ button{cursor:pointer}
 <div class="msg">Coliseo Manager 2.9 · Cancelaciones claras y registro</div>
 </section>
 
+<section id="prepBoardV35" class="screen">
+<div class="top"><div><div class="brand">COLISEO APP</div><h2 id="prepBoardTitleV35">Preparación</h2><span class="role" id="prepBoardRoleV35"></span></div><button class="dark" onclick="logout()">Salir</button></div>
+<div id="prepAdminNavV35" class="actions hidden"><button class="dark" onclick="goAdmin()">← Administración</button><button class="dark" onclick="prepOpenV35('kitchen')">🍳 Cocina</button><button class="dark" onclick="prepOpenV35('bar')">🍹 Barra</button><button class="dark" onclick="prepConfigV35()">⚙️ Productos y tiempos</button></div>
+<div class="notice">Los cronómetros empiezan cuando se agrega cada artículo a la comanda. Solo puedes avanzar los estados de tu estación.</div>
+<div id="prepBoardContentV35">Cargando…</div>
+</section>
+<section id="prepConfigV35" class="screen"><button class="back" onclick="prepOpenV35('kitchen')">← Cocina</button><h2>⚙️ Configuración de preparación</h2><div class="notice">Solo Administrador. Clasifica cada producto y ajusta los límites de alertas.</div><div id="prepConfigContentV35">Cargando…</div></section>
 <section id="preparationPreviewV34" class="screen">
 <button class="back" onclick="goAdmin()">← Administración</button>
 <div class="brand">COLISEO APP · ADMINISTRACIÓN</div>
@@ -349,7 +356,7 @@ function orderName(o){if(o.order_type==="takeaway")return"Para llevar";if(o.orde
 
 async function login(){const btn=$("loginBtn"),msg=$("loginMsg");const email=$("email").value.trim(),password=$("password").value;if(!email||!password){msg.textContent="Escribe correo y contraseña.";return}btn.disabled=true;btn.textContent="Iniciando sesión…";msg.textContent="Conectando…";try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;await route(data.user)}catch(e){msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.")}finally{btn.disabled=false;btn.textContent="Iniciar sesión"}}
 async function logout(){await db.auth.signOut();me=null;show("login");$("loginMsg").textContent=""}
-async function route(u){const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}me={...p,id:u.id};if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin");await dashboardStockAlert()}else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}else{$("staffUser").textContent=p.full_name||u.email;await staff()}}
+async function route(u){const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}me={...p,id:u.id};if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin");await dashboardStockAlert()}else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}else if(p.role==="kitchen"||p.role==="bar"){await prepOpenV35(p.role)}else{$("staffUser").textContent=p.full_name||u.email;await staff()}}
 function goAdmin(){show("admin");dashboardStockAlert()}
 async function volverRol(){me.role==="cashier"?await caja():await staff()}
 
@@ -1133,6 +1140,67 @@ async function preparationPreviewV34(){
   host.innerHTML=section("🍳 Cocina · clasificación provisional",buckets.kitchen,"kitchen")+section("🍹 Barra · clasificación provisional",buckets.bar,"bar")+(buckets.other.length?section("Sin clasificación",buckets.other,"other"):"");
  }catch(e){host.textContent="No se pudo consultar la vista previa: "+(e.message||String(e))}
 }
+</script>
+<script>
+/* Cocina/Barra V35: acceso y cambios de estado verificados por RPC en Supabase. */
+let prepStationV35="kitchen",prepBusyV35=false;
+async function prepOpenV35(station){
+ if(!["kitchen","bar"].includes(station))return;
+ if(!me||!["admin",station].includes(me.role)){alert("No autorizado");return}
+ prepStationV35=station;show("prepBoardV35");
+ document.getElementById("prepBoardTitleV35").textContent=station==="kitchen"?"🍳 Cocina":"🍹 Barra";
+ document.getElementById("prepBoardRoleV35").textContent=me.role==="admin"?"ADMINISTRADOR":"PERSONAL DE PREPARACIÓN";
+ document.getElementById("prepAdminNavV35").classList.toggle("hidden",me.role!=="admin");
+ await prepRefreshV35();
+}
+async function prepRefreshV35(){
+ if(prepBusyV35||!document.getElementById("prepBoardV35").classList.contains("on"))return;
+ prepBusyV35=true;
+ const host=document.getElementById("prepBoardContentV35");
+ try{
+ const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:prepStationV35}),db.from("preparation_settings").select("*").eq("station",prepStationV35).maybeSingle()]);
+ if(board.error)throw board.error;
+ const threshold=settings.data||{warning_minutes:prepStationV35==="kitchen"?10:5,late_minutes:prepStationV35==="kitchen"?20:10};
+ const tickets=board.data||[];
+ const html=(status,title)=>'<h3 class="section">'+title+' · '+tickets.filter(t=>t.status===status).length+'</h3>'+tickets.filter(t=>t.status===status).map(t=>{
+ const min=Math.max(0,Math.floor((Date.now()-new Date(t.queued_at).getTime())/60000));
+ const urgency=min>=threshold.late_minutes?"🔴 Retrasado":min>=threshold.warning_minutes?"🟡 Atención":"🟢 En tiempo";
+ const location=t.order_type==="takeaway"?"Para llevar":t.order_type==="delivery"?"Delivery · "+(t.delivery_platform||""):"Mesa "+(t.table_number||"sin número");
+ const next=status==="pending"?"preparing":status==="preparing"?"ready":null;
+ return '<div class="card"><div class="row"><b>'+esc(location)+'</b><b>'+urgency+' · '+min+' min</b></div><div><b>'+Number(t.quantity)+' × '+esc(t.item_name)+'</b></div>'+(t.order_notes?'<div class="muted">Notas de cuenta: '+esc(t.order_notes)+'</div>':"")+(next?'<button class="yellow" onclick="prepAdvanceV35(\''+t.id+'\',\''+next+'\')">'+(next==="preparing"?"▶ Preparando":"✓ Listo")+'</button>':'<span class="badge">Listo</span>')+'</div>';
+ }).join("")||'<div class="empty">Sin artículos</div>';
+ host.innerHTML=html("pending","Pendiente")+html("preparing","Preparando")+html("ready","Listo");
+ }catch(e){host.textContent="Error al cargar preparación: "+(e.message||String(e))}
+ finally{prepBusyV35=false}
+}
+async function prepAdvanceV35(id,status){
+ if(!me||!["admin",prepStationV35].includes(me.role))return;
+ const r=await db.rpc("prep_advance_ticket",{p_item:id,p_status:status});
+ if(r.error){alert("No se pudo actualizar: "+r.error.message);return}
+ await prepRefreshV35();
+}
+async function prepConfigV35(){
+ if(me?.role!=="admin")return;
+ show("prepConfigV35");
+ const host=document.getElementById("prepConfigContentV35");host.textContent="Cargando…";
+ const [products,routes,settings]=await Promise.all([db.from("menu_items").select("id,name,business").order("name"),db.from("preparation_item_routes").select("*"),db.from("preparation_settings").select("*")]);
+ if(products.error||routes.error||settings.error){host.textContent="No se pudo cargar configuración.";return}
+ const map=new Map((routes.data||[]).map(x=>[x.menu_item_id,x.station]));
+ host.innerHTML=(settings.data||[]).map(x=>'<div class="card"><b>'+(x.station==="kitchen"?"🍳 Cocina":"🍹 Barra")+'</b><div class="row"><label>Advertencia (min)<input type="number" min="1" id="warn_'+x.station+'" value="'+Number(x.warning_minutes)+'"></label><label>Retraso (min)<input type="number" min="2" id="late_'+x.station+'" value="'+Number(x.late_minutes)+'"></label></div><button class="dark" onclick="prepSaveThresholdV35(\''+x.station+'\')">Guardar tiempos</button></div>').join("")+'<h3 class="section">Productos</h3>'+(products.data||[]).map(p=>'<div class="row card"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(businessName(p.business))+'</div></div><select onchange="prepSaveRouteV35(\''+p.id+'\',this.value)"><option value="kitchen" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":"bar"))==="kitchen"?"selected":"")+'>Cocina</option><option value="bar" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":"bar"))==="bar"?"selected":"")+'>Barra</option><option value="none" '+(map.get(p.id)==="none"?"selected":"")+'>Ninguna</option></select></div>').join("");
+}
+async function prepSaveRouteV35(id,station){
+ if(me?.role!=="admin")return;
+ const r=await db.from("preparation_item_routes").upsert({menu_item_id:id,station,updated_by:me.id,updated_at:new Date().toISOString()});
+ if(r.error)alert("No se guardó: "+r.error.message);
+}
+async function prepSaveThresholdV35(station){
+ if(me?.role!=="admin")return;
+ const warning_minutes=Number(document.getElementById("warn_"+station).value),late_minutes=Number(document.getElementById("late_"+station).value);
+ if(!Number.isInteger(warning_minutes)||!Number.isInteger(late_minutes)||warning_minutes<1||late_minutes<=warning_minutes){alert("El retraso debe ser mayor que la advertencia.");return}
+ const r=await db.from("preparation_settings").update({warning_minutes,late_minutes}).eq("station",station);
+ if(r.error)alert("No se guardó: "+r.error.message);else alert("Tiempos guardados");
+}
+setInterval(()=>{if(document.getElementById("prepBoardV35")?.classList.contains("on"))prepRefreshV35()},15000);
 </script>
 <script src="js/management.js"></script>
 </body>
