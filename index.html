@@ -170,6 +170,7 @@ button{cursor:pointer}
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
+<div class="module" onclick="preparationPreviewV34()"><b>🍳 Cocina y 🍹 Barra</b><span>Vista previa para administración · solo consulta</span></div>
 <div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
 <div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
@@ -182,6 +183,15 @@ button{cursor:pointer}
 <button class="module" onclick="openManagement('reservations')"><b>📅 Reservaciones</b><span>Agenda, anticipos y seguimiento</span></button>
 </div>
 <div class="msg">Coliseo Manager 2.9 · Cancelaciones claras y registro</div>
+</section>
+
+<section id="preparationPreviewV34" class="screen">
+<button class="back" onclick="goAdmin()">← Administración</button>
+<div class="brand">COLISEO APP · ADMINISTRACIÓN</div>
+<h2>🍳 Cocina y 🍹 Barra</h2>
+<div class="notice">VISTA PREVIA · SOLO CONSULTA. Los artículos se agrupan provisionalmente por negocio. No cambia estados, comandas ni inventario. La clasificación definitiva por producto se habilitará después.</div>
+<button class="dark" onclick="preparationPreviewV34()">↻ Actualizar pedidos</button>
+<div id="preparationPreviewContentV34" role="status">Consultando comandas…</div>
 </section>
 
 <section id="staff" class="screen">
@@ -1079,6 +1089,34 @@ setup();
 
 </script>
 
+<script>
+/* V34: vista previa segura de administración; no altera datos. */
+async function preparationPreviewV34(){
+ if(typeof me==="undefined"||me?.role!=="admin"){alert("Solo administración");return}
+ show("preparationPreviewV34");
+ const host=document.getElementById("preparationPreviewContentV34");
+ host.textContent="Consultando comandas abiertas…";
+ try{
+  const {data:orders,error:oe}=await db.from("orders").select("id,table_number,order_type,delivery_platform,notes,opened_at").eq("status","open").order("opened_at",{ascending:false});
+  if(oe)throw oe;
+  const ids=(orders||[]).map(o=>o.id);
+  if(!ids.length){host.innerHTML='<div class="empty">No hay comandas abiertas.</div>';return}
+  const {data:lines,error:le}=await db.from("order_items").select("id,order_id,item_name,quantity,business,created_at").in("order_id",ids).order("created_at",{ascending:true});
+  if(le)throw le;
+  const byId=new Map((orders||[]).map(o=>[o.id,o]));
+  const buckets={kitchen:[],bar:[],other:[]};
+  for(const x of lines||[]){
+   const station=x.business==="Cuervos Pizza"?"kitchen":x.business==="EL CLúB"?"bar":"other";
+   buckets[station].push({x,o:byId.get(x.order_id)});
+  }
+  const now=Date.now();
+  const elapsed=(created)=>{const seconds=Math.max(0,Math.floor((now-new Date(created).getTime())/1000));return Math.floor(seconds/60)+" min "+String(seconds%60).padStart(2,"0")+" s"};
+  const label=(o)=>o.order_type==="delivery"?"Delivery":o.order_type==="takeaway"?"Para llevar":"Mesa "+(o.table_number||"sin número");
+  const section=(title,list)=>'<h3 class="section">'+title+' · '+list.length+'</h3>'+(list.map(({x,o})=>'<div class="card"><div class="row"><b>'+esc(label(o||{}))+'</b><span class="badge open">'+esc(elapsed(x.created_at))+'</span></div><div>'+Number(x.quantity||0)+' × '+esc(x.item_name||"Artículo")+'</div>'+(o?.notes?'<div class="muted">Nota de cuenta: '+esc(o.notes)+'</div>':"")+'<div class="muted">Registrado: '+esc(new Date(x.created_at).toLocaleString("es-MX"))+'</div></div>').join("")||'<div class="empty">Sin artículos.</div>');
+  host.innerHTML=section("🍳 Cocina · clasificación provisional",buckets.kitchen)+section("🍹 Barra · clasificación provisional",buckets.bar)+(buckets.other.length?section("Sin clasificación",buckets.other):"");
+ }catch(e){host.textContent="No se pudo consultar la vista previa: "+(e.message||String(e))}
+}
+</script>
 <script src="js/management.js"></script>
 </body>
 </html>
