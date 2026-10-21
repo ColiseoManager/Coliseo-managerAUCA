@@ -274,7 +274,7 @@
         rows("cash_sessions_v31", "business_date", from, to),
       ]);
     if (token !== loading) return;
-    const closed = orders.filter((r) => r.status === "closed");
+    const closed = orders.filter((r) => r.status === "closed" && !r.is_test);
     const sum = (rs, key) =>
       rs.reduce((s, r) => s + Math.round(Number(r[key] || 0) * 100), 0) / 100;
     const sales = sum(closed, "total"),
