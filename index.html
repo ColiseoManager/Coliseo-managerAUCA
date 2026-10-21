@@ -511,7 +511,36 @@ async function verOrden(id){const [{data:o,error:oe},{data:i,error:ie}]=await Pr
 
 /* CAJA */
 async function caja(){show("cashier");const [{data:o},{data:p}]=await Promise.all([db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false}),db.from("profiles").select("id,full_name")]);$("cashOrders").innerHTML=(o||[]).map(x=>{const u=(p||[]).find(y=>y.id===x.assigned_to);return `<div class="order"><div class="row"><div><b>${orderName(x)}</b><div class="muted">${stamp(x.opened_at)} · ${esc(u?.full_name||"Personal")}</div></div><div><span class="badge cash">POR COBRAR</span><div class="amount">${money(x.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${x.id}')">Ver</button><button class="yellow" style="width:auto;margin:0" onclick="cobrar('${x.id}')">Cobrar</button></div></div>`}).join("")||'<div class="empty">No hay cuentas por cobrar.</div>'}
-async function cobrar(id){const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;const inv=await db.rpc("process_order_inventory",{p_order:id});if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}const {error}=await db.from("orders").update({status:"closed",payment_method:pay,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id);if(error){alert(error.message);return}await caja()}
+async function cobrar(id){
+ if(!me||!["admin","cashier"].includes(me.role)){alert("Solo Caja o Administración puede cobrar.");return}
+ const {data:order,error:orderError}=await db.from("orders").select("id,table_number,total,status").eq("id",id).single();
+ if(orderError||!order||order.status!=="open"){alert("No se pudo consultar una cuenta abierta.");return}
+ const total=Math.round(Number(order.total)*100);
+ if(!Number.isSafeInteger(total)||total<0){alert("Total inválido. No se puede cobrar.");return}
+ const pay=prompt("Método de pago: Efectivo, Tarjeta o Transferencia","Efectivo");
+ if(pay===null)return;
+ const method=pay.trim().toLowerCase();
+ if(!["efectivo","tarjeta","transferencia"].includes(method)){alert("Selecciona Efectivo, Tarjeta o Transferencia.");return}
+ let received=null,change=0;
+ if(method==="efectivo"){
+  const entry=prompt("Total: $"+(total/100).toFixed(2)+" MXN\\n¿Cuánto efectivo entrega el cliente?",""+(total/100).toFixed(2));
+  if(entry===null)return;
+  const clean=entry.trim().replace(",",".");
+  if(!/^\\d+(?:\\.\\d{1,2})?$/.test(clean)){alert("Ingresa un importe válido con hasta dos decimales.");return}
+  received=Math.round(Number(clean)*100);
+  if(!Number.isSafeInteger(received)||received<total){alert("Efectivo insuficiente. Faltan $"+((total-received)/100).toFixed(2));return}
+  change=received-total;
+  if(!confirm("Mesa "+order.table_number+"\\nTotal: $"+(total/100).toFixed(2)+"\\nRecibido: $"+(received/100).toFixed(2)+"\\nCAMBIO: $"+(change/100).toFixed(2)+"\\n\\n¿Confirmar cobro?"))return;
+ }else if(!confirm("Mesa "+order.table_number+"\\nTotal: $"+(total/100).toFixed(2)+"\\nMétodo: "+pay.trim()+"\\n\\n¿Pago recibido y confirmar cobro?"))return;
+ const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
+ if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total){alert("La cuenta cambió. Actualiza Caja antes de cobrar.");await caja();return}
+ const inv=await db.rpc("process_order_inventory",{p_order:id});
+ if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}
+ const {data:closed,error}=await db.from("orders").update({status:"closed",payment_method:method[0].toUpperCase()+method.slice(1),closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id).eq("status","open").select("id");
+ if(error||!closed?.length){alert("No se pudo confirmar el cierre. Verifica la cuenta antes de intentar de nuevo.");return}
+ alert(method==="efectivo"?"Cobro registrado. Cambio a entregar: $"+(change/100).toFixed(2):"Cobro registrado correctamente.");
+ await caja();
+}
 
 /* ADMIN COMANDAS */
 async function comandas(){show("orders");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);const card=o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div></div>`;$("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';$("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'}
