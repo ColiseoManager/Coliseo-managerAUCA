@@ -523,15 +523,15 @@ async function cobrar(id){
  if(!["efectivo","tarjeta","transferencia"].includes(method)){alert("Selecciona Efectivo, Tarjeta o Transferencia.");return}
  let received=null,change=0;
  if(method==="efectivo"){
-  const entry=prompt("Total: $"+(total/100).toFixed(2)+" MXN\\n¿Cuánto efectivo entrega el cliente?",""+(total/100).toFixed(2));
+  const entry=prompt("Total: $"+(total/100).toFixed(2)+" MXN\n¿Cuánto efectivo entrega el cliente?",""+(total/100).toFixed(2));
   if(entry===null)return;
   const clean=entry.trim().replace(",",".");
-  if(!/^\\d+(?:\\.\\d{1,2})?$/.test(clean)){alert("Ingresa un importe válido con hasta dos decimales.");return}
+  if(!/^\d+(?:\.\d{1,2})?$/.test(clean)){alert("Ingresa un importe válido con hasta dos decimales.");return}
   received=Math.round(Number(clean)*100);
   if(!Number.isSafeInteger(received)||received<total){alert("Efectivo insuficiente. Faltan $"+((total-received)/100).toFixed(2));return}
   change=received-total;
-  if(!confirm("Mesa "+order.table_number+"\\nTotal: $"+(total/100).toFixed(2)+"\\nRecibido: $"+(received/100).toFixed(2)+"\\nCAMBIO: $"+(change/100).toFixed(2)+"\\n\\n¿Confirmar cobro?"))return;
- }else if(!confirm("Mesa "+order.table_number+"\\nTotal: $"+(total/100).toFixed(2)+"\\nMétodo: "+pay.trim()+"\\n\\n¿Pago recibido y confirmar cobro?"))return;
+  if(!confirm("Mesa "+order.table_number+"\nTotal: $"+(total/100).toFixed(2)+"\nRecibido: $"+(received/100).toFixed(2)+"\nCAMBIO: $"+(change/100).toFixed(2)+"\n\n¿Confirmar cobro?"))return;
+ }else if(!confirm("Mesa "+order.table_number+"\nTotal: $"+(total/100).toFixed(2)+"\nMétodo: "+pay.trim()+"\n\n¿Pago recibido y confirmar cobro?"))return;
  const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
  if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total){alert("La cuenta cambió. Actualiza Caja antes de cobrar.");await caja();return}
  const inv=await db.rpc("process_order_inventory",{p_order:id});
