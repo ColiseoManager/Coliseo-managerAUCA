@@ -170,7 +170,7 @@ button{cursor:pointer}
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
-<div class="module" onclick="prepOpenV35('kitchen')"><b>🍳 Cocina y 🍹 Barra</b><span>Comandas y preparación en tiempo real</span></div>
+<div class="module" onclick="qrManageOpen()"><b>📱 Menú QR y mesas</b><span>Solicitudes y código de acceso</span></div><div class="module" onclick="prepOpenV35('kitchen')"><b>🍳 Cocina y 🍹 Barra</b><span>Comandas y preparación en tiempo real</span></div>
 <div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
 <div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
@@ -185,7 +185,7 @@ button{cursor:pointer}
 <div class="msg">Coliseo Manager 2.9 · Cancelaciones claras y registro</div>
 </section>
 
-<section id="prepBoardV35" class="screen">
+<section id="qrManageScreen" class="screen"><button class="back" onclick="qrManageBack()">← Volver</button><h2>📱 Solicitudes QR</h2><div id="qrAdminTools" class="card" style="display:none"><h3>Código de acceso</h3><p>Solo Administrador. El código vence al cambiar la hora de Tijuana. Genera uno nuevo cada hora.</p><button class="yellow" onclick="qrGenerateCode()">Generar código</button><h2 id="qrNewCode"></h2></div><h3>Solicitudes pendientes</h3><div id="qrStaffRequests"></div><button class="dark" onclick="qrManageRefresh()">Actualizar</button></section><section id="prepBoardV35" class="screen">
 <div class="top"><div><div class="brand">COLISEO APP</div><h2 id="prepBoardTitleV35">Preparación</h2><span class="role" id="prepBoardRoleV35"></span></div><button class="dark" onclick="logout()">Salir</button></div>
 <div id="prepAdminNavV35" class="actions hidden"><button class="dark" onclick="goAdmin()">← Administración</button><button class="dark" onclick="prepOpenV35('kitchen')">🍳 Cocina</button><button class="dark" onclick="prepOpenV35('bar')">🍹 Barra</button><button class="dark" onclick="prepConfigV35()">⚙️ Productos y tiempos</button></div>
 <div class="notice">Los cronómetros empiezan cuando se agrega cada artículo a la comanda. Solo puedes avanzar los estados de tu estación.</div>
@@ -208,7 +208,7 @@ button{cursor:pointer}
 <div id="staffUser" class="muted"></div><span class="role">PERSONAL</span></div>
 <button class="dark" onclick="logout()">Salir</button></div>
 <button class="yellow" onclick="nuevoPedido(false)">＋ Abrir nueva cuenta</button>
-<h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
+<button class="dark" onclick="qrManageOpen()">📱 Solicitudes QR</button><h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
 </section>
 
 <section id="cashier" class="screen">
@@ -1204,6 +1204,12 @@ async function prepSaveThresholdV35(station){
 }
 setInterval(()=>{if(document.getElementById("prepBoardV35")?.classList.contains("on"))prepRefreshV35()},15000);
 </script>
-<script src="js/management.js"></script>
+<script>
+async function qrManageOpen(){if(!me||!["admin","staff"].includes(me.role))return;show("qrManageScreen");document.getElementById("qrAdminTools").style.display=me.role==="admin"?"block":"none";await qrManageRefresh()}
+function qrManageBack(){if(me?.role==="admin")goAdmin();else staff()}
+async function qrGenerateCode(){if(me?.role!=="admin")return;const a=new Uint32Array(1);crypto.getRandomValues(a);const code=String(a[0]%1000000).padStart(6,"0");const {error}=await db.rpc("qr_rotate_code",{p_code:code});if(error){alert(error.message);return}document.getElementById("qrNewCode").textContent=code}
+async function qrManageRefresh(){const host=document.getElementById("qrStaffRequests");const {data,error}=await db.rpc("qr_staff_requests");if(error){host.textContent=error.message;return}host.replaceChildren();if(!data?.length){host.textContent="No hay solicitudes pendientes.";return}for(const r of data){const card=document.createElement("div");card.className="card";const p=document.createElement("p");p.textContent="Mesa "+r.table_number+" · "+r.customer;card.append(p);for(const [label,ok] of [["Autorizar",true],["Rechazar",false]]){const b=document.createElement("button");b.textContent=label;b.className=ok?"yellow":"dark";b.onclick=()=>qrReview(r.id,ok);card.append(b)}host.append(card)}}
+async function qrReview(id,approve){if(!confirm(approve?"¿Verificaste físicamente la mesa y su cuenta abierta?":"¿Rechazar esta solicitud?"))return;const {error}=await db.rpc("qr_review_request",{p_request:id,p_approve:approve});if(error)alert(error.message);await qrManageRefresh()}
+</script><script src="js/management.js"></script>
 </body>
 </html>
