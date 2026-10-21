@@ -548,9 +548,8 @@ async function cobrar(id){
   try{
    const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
    if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total)throw Error("La cuenta cambió. Actualiza Caja antes de cobrar.");
-   const inv=await db.rpc("process_order_inventory",{p_order:id});if(inv.error)throw inv.error;
-   const {data:closed,error}=await db.from("orders").update({status:"closed",payment_method:select.value,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id).eq("status","open").select("id");
-   if(error||!closed?.length)throw Error(error?.message||"No se confirmó el cierre. Revisa la cuenta.");
+   const {error}=await db.rpc("close_order_v2",{p_order:id,p_payment:select.value});
+   if(error)throw Error("No se pudo cerrar la cuenta: "+error.message);
    overlay.remove();alert(isCash?"Cobro registrado. Cambio a entregar: "+money(received-total):"Cobro registrado correctamente.");await caja();return;
   }catch(e){feedback.textContent=e.message||"Error al registrar el cobro."}
   busy=false;cancel.disabled=false;refresh();
@@ -596,14 +595,6 @@ guardarPedido = async function(){
   await volverRol();
  }catch(e){$("orderMsg").textContent="No se pudo confirmar: "+e.message+". Comprueba las cuentas antes de reintentar."}
  finally{btn.disabled=false;btn.textContent="Guardar cuenta"}
-};
-
-cobrar = async function(id){
- const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");
- if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;
- const {error}=await db.rpc("close_order_v2",{p_order:id,p_payment:pay});
- if(error){alert("No se pudo cerrar: "+error.message);return}
- await caja();
 };
 
 closeAdmin = async function(){
