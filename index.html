@@ -217,7 +217,7 @@ button{cursor:pointer}
 <div id="cashierUser" class="muted"></div><span class="role">CAJA</span></div>
 <button class="dark" onclick="logout()">Salir</button></div>
 <button class="yellow" onclick="nuevoPedido(true)">＋ Nueva venta</button>
-<h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
+<button class="dark" onclick="qrManageOpen()">📱 Solicitudes QR</button><h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
 </section>
 
 <section id="pos" class="screen">
@@ -1205,11 +1205,11 @@ async function prepSaveThresholdV35(station){
 setInterval(()=>{if(document.getElementById("prepBoardV35")?.classList.contains("on"))prepRefreshV35()},15000);
 </script>
 <script>
-async function qrManageOpen(){if(!me||!["admin","staff"].includes(me.role))return;show("qrManageScreen");document.getElementById("qrAdminTools").style.display=me.role==="admin"?"block":"none";await qrManageRefresh()}
-function qrManageBack(){if(me?.role==="admin")goAdmin();else staff()}
+async function qrManageOpen(){if(!me||!["admin","staff","cashier"].includes(me.role))return;show("qrManageScreen");document.getElementById("qrAdminTools").style.display=me.role==="admin"?"block":"none";await qrManageRefresh()}
+function qrManageBack(){if(me?.role==="admin")goAdmin();else if(me?.role==="cashier")caja();else staff()}
 async function qrGenerateCode(){if(me?.role!=="admin")return;const a=new Uint32Array(1);crypto.getRandomValues(a);const code=String(a[0]%1000000).padStart(6,"0");const {error}=await db.rpc("qr_rotate_code",{p_code:code});if(error){alert(error.message);return}document.getElementById("qrNewCode").textContent=code}
-async function qrManageRefresh(){const host=document.getElementById("qrStaffRequests");const {data,error}=await db.rpc("qr_staff_requests");if(error){host.textContent=error.message;return}host.replaceChildren();if(!data?.length){host.textContent="No hay solicitudes pendientes.";return}for(const r of data){const card=document.createElement("div");card.className="card";const p=document.createElement("p");p.textContent="Mesa "+r.table_number+" · "+r.customer;card.append(p);for(const [label,ok] of [["Autorizar",true],["Rechazar",false]]){const b=document.createElement("button");b.textContent=label;b.className=ok?"yellow":"dark";b.onclick=()=>qrReview(r.id,ok);card.append(b)}host.append(card)}}
-async function qrReview(id,approve){if(!confirm(approve?"¿Verificaste físicamente la mesa y su cuenta abierta?":"¿Rechazar esta solicitud?"))return;const {error}=await db.rpc("qr_review_request",{p_request:id,p_approve:approve});if(error)alert(error.message);await qrManageRefresh()}
+async function qrManageRefresh(){const host=document.getElementById("qrStaffRequests");const {data,error}=await db.rpc("qr_staff_requests");if(error){host.textContent=error.message;return}host.replaceChildren();if(!data?.length){host.textContent="No hay solicitudes pendientes.";return}for(const r of data){const card=document.createElement("div");card.className="card";const p=document.createElement("p");p.textContent="Cliente: "+r.customer;card.append(p);const tableSelect=document.createElement("select");tableSelect.setAttribute("aria-label","Seleccionar número de mesa");const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona la mesa";tableSelect.append(placeholder);for(let n=1;n<=99;n++){const o=document.createElement("option");o.value=String(n);o.textContent="Mesa "+n;tableSelect.append(o)}card.append(tableSelect);for(const [label,ok] of [["Autorizar",true],["Rechazar",false]]){const b=document.createElement("button");b.textContent=label;b.className=ok?"yellow":"dark";b.onclick=()=>qrReview(r.id,ok,ok?tableSelect.value:null);card.append(b)}host.append(card)}}
+async function qrReview(id,approve,table){if(approve&&!table){alert("Selecciona la mesa antes de autorizar");return}if(!confirm(approve?"¿Verificaste físicamente la mesa y su cuenta abierta?":"¿Rechazar esta solicitud?"))return;const {error}=await db.rpc("qr_review_request",{p_request:id,p_approve:approve,p_table:table});if(error)alert(error.message);await qrManageRefresh()}
 </script><script src="js/management.js"></script>
 </body>
 </html>
