@@ -682,7 +682,7 @@ async function resumenVentasV21(){
  host.textContent="Cargando…";
  const {data,error}=await db.from("orders").select("id,total,status,opened_at").order("opened_at",{ascending:false}).limit(1000);
  if(error){host.textContent="No se pudo consultar: "+error.message;return}
- const a=data||[],closed=a.filter(x=>x.status==="closed"),opened=a.filter(x=>x.status==="open");
+ const a=data||[],closed=a.filter(x=>x.status==="closed"&&!x.is_test),opened=a.filter(x=>x.status==="open");
  const sum=arr=>arr.reduce((v,x)=>v+Number(x.total||0),0);
  host.innerHTML='<div class="summary"><div class="card"><div class="muted">Cuentas cobradas</div><div class="big">'+closed.length+'</div><div class="amount">'+money(sum(closed))+'</div></div><div class="card"><div class="muted">Cuentas abiertas</div><div class="big">'+opened.length+'</div><div class="amount">'+money(sum(opened))+'</div></div></div><div class="muted">Últimas '+a.length+' cuentas registradas (máximo 1,000).</div>';
 }
@@ -1039,7 +1039,7 @@ window.consultarCortesV30=async()=>{
  host.textContent='Consultando ventas cobradas…';
  try{
  const [orders,split]=await Promise.all([page30('orders','id,total,status,payment_method,business_date',date),page30('v_order_business_split','order_id,business,status,payment_method,net_business,gross_business,business_date',date)]);
- const closed=orders.filter(o=>o.status==='closed'),open=orders.filter(o=>o.status==='open');
+ const closed=orders.filter(o=>o.status==='closed'&&!o.is_test),open=orders.filter(o=>o.status==='open');
  const byId=new Map(closed.map(o=>[o.id,o]));const sums={'Cuervos Pizza':{total:0,ids:new Set(),pay:{}},'EL CLúB':{total:0,ids:new Set(),pay:{}}};const perOrder=new Map(),seen=new Set();
  const payment=x=>{const s=String(x||'').trim().toLowerCase();return s==='efectivo'?'Efectivo':s==='tarjeta'?'Tarjeta':s==='transferencia'?'Transferencia':'Otro / sin especificar'};
  for(const row of split){if(row.status!=='closed')continue;const order=byId.get(row.order_id);if(!order)continue;const b=String(row.business||'').trim();const business=b==='Cuervo’s Pizza'?'Cuervos Pizza':b==='EL CLUB'?'EL CLúB':b;if(!sums[business])throw Error('Negocio no reconocido: '+b);const key=row.order_id+'|'+business;if(seen.has(key))throw Error('Desglose duplicado en una cuenta');seen.add(key);const amount=Number(row.net_business);if(!Number.isFinite(amount))throw Error('Importe inválido');sums[business].total+=amount;sums[business].ids.add(row.order_id);const pay=payment(order.payment_method);sums[business].pay[pay]=(sums[business].pay[pay]||0)+amount;perOrder.set(row.order_id,(perOrder.get(row.order_id)||0)+amount)}
