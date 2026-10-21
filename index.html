@@ -514,35 +514,51 @@ async function caja(){show("cashier");const [{data:o},{data:p}]=await Promise.al
 async function cobrar(id){
  if(!me||!["admin","cashier"].includes(me.role)){alert("Solo Caja o Administración puede cobrar.");return}
  const {data:order,error:orderError}=await db.from("orders").select("id,table_number,total,status").eq("id",id).single();
- if(orderError||!order||order.status!=="open"){alert("No se pudo consultar una cuenta abierta.");return}
+ if(orderError||!order||order.status!=="open"){alert("Esta cuenta ya no está abierta.");await caja();return}
  const total=Math.round(Number(order.total)*100);
- if(!Number.isSafeInteger(total)||total<0){alert("Total inválido. No se puede cobrar.");return}
- const pay=prompt("Método de pago: Efectivo, Tarjeta o Transferencia","Efectivo");
- if(pay===null)return;
- const method=pay.trim().toLowerCase();
- if(!["efectivo","tarjeta","transferencia"].includes(method)){alert("Selecciona Efectivo, Tarjeta o Transferencia.");return}
- let received=null,change=0;
- if(method==="efectivo"){
-  const entry=prompt("Total: $"+(total/100).toFixed(2)+" MXN\n¿Cuánto efectivo entrega el cliente?",""+(total/100).toFixed(2));
-  if(entry===null)return;
-  const clean=entry.trim().replace(",",".");
-  if(!/^\d+(?:\.\d{1,2})?$/.test(clean)){alert("Ingresa un importe válido con hasta dos decimales.");return}
-  received=Math.round(Number(clean)*100);
-  if(!Number.isSafeInteger(received)||received<total){alert("Efectivo insuficiente. Faltan $"+((total-received)/100).toFixed(2));return}
-  change=received-total;
-  if(!confirm("Mesa "+order.table_number+"\nTotal: $"+(total/100).toFixed(2)+"\nRecibido: $"+(received/100).toFixed(2)+"\nCAMBIO: $"+(change/100).toFixed(2)+"\n\n¿Confirmar cobro?"))return;
- }else if(!confirm("Mesa "+order.table_number+"\nTotal: $"+(total/100).toFixed(2)+"\nMétodo: "+pay.trim()+"\n\n¿Pago recibido y confirmar cobro?"))return;
- const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
- if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total){alert("La cuenta cambió. Actualiza Caja antes de cobrar.");await caja();return}
- const inv=await db.rpc("process_order_inventory",{p_order:id});
- if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}
- const {data:closed,error}=await db.from("orders").update({status:"closed",payment_method:method[0].toUpperCase()+method.slice(1),closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id).eq("status","open").select("id");
- if(error||!closed?.length){alert("No se pudo confirmar el cierre. Verifica la cuenta antes de intentar de nuevo.");return}
- alert(method==="efectivo"?"Cobro registrado. Cambio a entregar: $"+(change/100).toFixed(2):"Cobro registrado correctamente.");
- await caja();
+ if(!Number.isSafeInteger(total)||total<0){alert("Total inválido.");return}
+ const money=n=>"$"+(n/100).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const overlay=document.createElement("div");
+ overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
+ const panel=document.createElement("div");
+ panel.style.cssText="background:#191919;border:2px solid #e8bd54;border-radius:20px;padding:24px;width:min(100%,440px);color:#fff;box-sizing:border-box;font:inherit";
+ const heading=document.createElement("h2");heading.textContent="Cobrar · Mesa "+order.table_number;panel.append(heading);
+ const due=document.createElement("p");due.style.cssText="font-size:24px;font-weight:bold";due.textContent="Total: "+money(total);panel.append(due);
+ const label=document.createElement("label");label.textContent="Método de pago";label.style.display="block";panel.append(label);
+ const select=document.createElement("select");select.style.cssText="width:100%;padding:14px;margin:10px 0 18px;background:#292929;color:white;border:1px solid #777;border-radius:10px;font-size:18px";
+ for(const method of ["Efectivo","Tarjeta","Transferencia"]){const opt=document.createElement("option");opt.value=method;opt.textContent=method;select.append(opt)}panel.append(select);
+ const cashBox=document.createElement("div");const cashLabel=document.createElement("label");cashLabel.textContent="¿Cuánto efectivo entrega el cliente?";cashBox.append(cashLabel);
+ const cash=document.createElement("input");cash.type="number";cash.min="0";cash.step="0.01";cash.inputMode="decimal";cash.placeholder="Ej. 500.00";cash.style.cssText="display:block;width:100%;box-sizing:border-box;padding:14px;margin:10px 0;background:#292929;color:white;border:1px solid #777;border-radius:10px;font-size:22px";cashBox.append(cash);
+ const change=document.createElement("div");change.style.cssText="font-size:25px;font-weight:bold;color:#e8bd54;padding:14px 0";cashBox.append(change);panel.append(cashBox);
+ const feedback=document.createElement("p");feedback.style.cssText="min-height:22px;color:#f4a4a4";panel.append(feedback);
+ const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;flex-wrap:wrap";
+ const cancel=document.createElement("button");cancel.textContent="Cancelar";cancel.style.cssText="padding:14px 18px;border-radius:10px;background:#333;color:#fff;border:1px solid #777;flex:1";
+ const confirmBtn=document.createElement("button");confirmBtn.textContent="Confirmar cobro";confirmBtn.style.cssText="padding:14px 18px;border-radius:10px;background:#e8bd54;color:#111;border:0;font-weight:bold;flex:1";
+ actions.append(cancel,confirmBtn);panel.append(actions);overlay.append(panel);document.body.append(overlay);
+ let busy=false;
+ const cashCents=()=>{const value=cash.value.trim();if(!/^\d+(?:\.\d{1,2})?$/.test(value))return null;const cents=Math.round(Number(value)*100);return Number.isSafeInteger(cents)?cents:null};
+ const refresh=()=>{const isCash=select.value==="Efectivo";cashBox.style.display=isCash?"block":"none";const cents=cashCents();change.textContent=isCash?(cents===null?"Ingresa el efectivo recibido":cents<total?"Faltan "+money(total-cents):"CAMBIO A ENTREGAR: "+money(cents-total)):"Sin cálculo de cambio";confirmBtn.disabled=busy||(isCash&&(cents===null||cents<total));confirmBtn.style.opacity=confirmBtn.disabled?".45":"1"};
+ const close=()=>{if(!busy)overlay.remove()};
+ cancel.onclick=close;select.onchange=refresh;cash.oninput=refresh;refresh();
+ confirmBtn.onclick=async()=>{
+  if(busy)return;
+  const isCash=select.value==="Efectivo",received=cashCents();
+  if(isCash&&(received===null||received<total))return;
+  busy=true;cancel.disabled=true;feedback.textContent="Registrando cobro…";refresh();
+  try{
+   const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
+   if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total)throw Error("La cuenta cambió. Actualiza Caja antes de cobrar.");
+   const inv=await db.rpc("process_order_inventory",{p_order:id});if(inv.error)throw inv.error;
+   const {data:closed,error}=await db.from("orders").update({status:"closed",payment_method:select.value,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id).eq("status","open").select("id");
+   if(error||!closed?.length)throw Error(error?.message||"No se confirmó el cierre. Revisa la cuenta.");
+   overlay.remove();alert(isCash?"Cobro registrado. Cambio a entregar: "+money(received-total):"Cobro registrado correctamente.");await caja();return;
+  }catch(e){feedback.textContent=e.message||"Error al registrar el cobro."}
+  busy=false;cancel.disabled=false;refresh();
+ };
 }
 
 /* ADMIN COMANDAS */
+
 async function comandas(){show("orders");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);const card=o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div></div>`;$("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';$("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'}
 async function detalle(id){show("detail");const [{data:o},{data:i},{data:p}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id),db.from("profiles").select("id,full_name").eq("active",true)]);current={o,i:i||[],p:p||[]};const cv=current.i.filter(x=>x.business==="Cuervos Pizza").reduce((s,x)=>s+ +x.line_total,0);const cl=current.i.filter(x=>x.business==="EL CLúB").reduce((s,x)=>s+ +x.line_total,0);$("detailBody").innerHTML=`<div class="card"><div class="row"><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><h3>${orderName(o)}</h3></div><div class="amount">${money(o.total)}</div></div><div class="summary"><div class="card"><div class="muted">Cuervo’s Pizza</div><div class="big">${money(cv)}</div></div><div class="card"><div class="muted">EL CLúB</div><div class="big">${money(cl)}</div></div></div>${o.order_type==="table"?`<label>Mesa</label><input id="dTable" type="number" min="1" value="${esc(String(o.table_number).replace(/^mesa\s*/i,""))}">`:""}<label>Personal asignado</label><select id="dStaff">${(p||[]).map(x=>`<option value="${x.id}" ${x.id===o.assigned_to?"selected":""}>${esc(x.full_name||"Personal")}</option>`).join("")}</select><button class="yellow" onclick="saveOrder()">Guardar cambios</button></div><h3 class="section">Productos</h3>${current.i.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.item_name)}</b><div class="muted">${x.quantity} × ${money(x.unit_price)} · ${esc(businessName(x.business))}</div></div><b>${money(x.line_total)}</b></div><div class="actions"><button class="dark" onclick="qtyAdmin('${x.id}',${x.quantity})">Cantidad</button><button class="danger" onclick="removeItem('${x.id}')">Quitar</button></div></div>`).join("")}<div class="card"><label>Método de pago</label><select id="dPay"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Otro</option></select>${o.status==="open"?`<button class="yellow" onclick="closeAdmin()">Cerrar cuenta</button>`:`<button class="yellow" onclick="reopen()">Reabrir cuenta</button>`}<button class="danger" style="width:100%;margin-top:12px" onclick="deleteOrder()">Eliminar permanentemente</button></div>`}
 async function saveOrder(){const u={assigned_to:$("dStaff").value,updated_by:me.id};if(current.o.order_type==="table"){if(!$("dTable").value)return;u.table_number=$("dTable").value}const {error}=await db.from("orders").update(u).eq("id",current.o.id);if(error)alert(error.message);else await detalle(current.o.id)}
