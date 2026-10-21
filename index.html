@@ -1038,7 +1038,7 @@ window.consultarCortesV30=async()=>{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){host.textContent='Selecciona una fecha válida';return}
  host.textContent='Consultando ventas cobradas…';
  try{
- const [orders,split]=await Promise.all([page30('orders','id,total,status,payment_method,business_date',date),page30('v_order_business_split','order_id,business,status,payment_method,net_business,gross_business,business_date',date)]);
+ const [orders,split]=await Promise.all([page30('orders','id,total,status,payment_method,business_date,is_test',date),page30('v_order_business_split','order_id,business,status,payment_method,net_business,gross_business,business_date',date)]);
  const closed=orders.filter(o=>o.status==='closed'&&!o.is_test),open=orders.filter(o=>o.status==='open');
  const byId=new Map(closed.map(o=>[o.id,o]));const sums={'Cuervos Pizza':{total:0,ids:new Set(),pay:{}},'EL CLúB':{total:0,ids:new Set(),pay:{}}};const perOrder=new Map(),seen=new Set();
  const payment=x=>{const s=String(x||'').trim().toLowerCase();return s==='efectivo'?'Efectivo':s==='tarjeta'?'Tarjeta':s==='transferencia'?'Transferencia':'Otro / sin especificar'};
@@ -1103,7 +1103,7 @@ function setup(){
  }
 }
 async function paged(table,cols,field,value){const all=[];for(let i=0;i<10000;i+=500){let q=db.from(table).select(cols).order('id').range(i,i+499);if(field)q=q.eq(field,value);const {data,error}=await q;if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all;}throw Error('Hay más de 10,000 registros; requiere ampliar la consulta.')}
-async function sales(date,cutoff){const orders=await paged('orders','id,total,status,payment_method,business_date,closed_at','business_date',date);const sums={cash:0,card:0,transfer:0,other:0,open:0};for(const o of orders){if(o.status==='open'){sums.open++;continue}if(o.status!=='closed'||(cutoff&&o.closed_at&&o.closed_at<=cutoff))continue;const p=String(o.payment_method||'').trim().toLowerCase();const k=p==='efectivo'?'cash':p==='tarjeta'?'card':p==='transferencia'?'transfer':'other';sums[k]+=Number(o.total||0)}return sums}
+async function sales(date,cutoff){const orders=await paged('orders','id,total,status,payment_method,business_date,closed_at,is_test','business_date',date);const sums={cash:0,card:0,transfer:0,other:0,open:0};for(const o of orders){if(o.status==='open'){sums.open++;continue}if(o.status!=='closed'||o.is_test||(cutoff&&o.closed_at&&o.closed_at<=cutoff))continue;const p=String(o.payment_method||'').trim().toLowerCase();const k=p==='efectivo'?'cash':p==='tarjeta'?'card':p==='transferencia'?'transfer':'other';sums[k]+=Number(o.total||0)}return sums}
 const errorBox=e=>{const host=el('cashContentV31');if(host)host.innerHTML='<div class="notice">'+safe(e?.message||e)+'</div><button class="yellow" onclick="refreshCashV31()">Reintentar</button>'};
 window.openCashV31=async()=>{if(!allowed()){alert('Sin acceso a Caja diaria.');return}setup();show('cashV31');await window.refreshCashV31()};
 window.refreshCashV31=async()=>{
