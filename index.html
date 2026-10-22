@@ -526,10 +526,11 @@ async function cobrar(id){
  const due=document.createElement("p");due.style.cssText="font-size:24px;font-weight:bold";due.textContent="Total: "+money(total);panel.append(due);
  const label=document.createElement("label");label.textContent="Método de pago";label.style.display="block";panel.append(label);
  const select=document.createElement("select");select.style.cssText="width:100%;padding:14px;margin:10px 0 18px;background:#292929;color:white;border:1px solid #777;border-radius:10px;font-size:18px";
- for(const method of ["Efectivo","Tarjeta","Transferencia"]){const opt=document.createElement("option");opt.value=method;opt.textContent=method;select.append(opt)}panel.append(select);
+ for(const method of ["Efectivo","Tarjeta","Transferencia","Mixto"]){const opt=document.createElement("option");opt.value=method;opt.textContent=method;select.append(opt)}panel.append(select);
  const cashBox=document.createElement("div");const cashLabel=document.createElement("label");cashLabel.textContent="¿Cuánto efectivo entrega el cliente?";cashBox.append(cashLabel);
  const cash=document.createElement("input");cash.type="number";cash.min="0";cash.step="0.01";cash.inputMode="decimal";cash.placeholder="Ej. 500.00";cash.style.cssText="display:block;width:100%;box-sizing:border-box;padding:14px;margin:10px 0;background:#292929;color:white;border:1px solid #777;border-radius:10px;font-size:22px";cashBox.append(cash);
  const change=document.createElement("div");change.style.cssText="font-size:25px;font-weight:bold;color:#e8bd54;padding:14px 0";cashBox.append(change);panel.append(cashBox);
+ const mixedBox=document.createElement("div");mixedBox.style.cssText="display:none;padding:12px 0";const mixedInputs={};for(const method of ["Efectivo","Tarjeta","Transferencia"]){const lab=document.createElement("label");lab.textContent="Importe con "+method;const inp=document.createElement("input");inp.type="number";inp.min="0";inp.step="0.01";inp.value="0";inp.inputMode="decimal";inp.style.cssText="display:block;width:100%;box-sizing:border-box;padding:12px;margin:5px 0 12px;background:#292929;color:white;border:1px solid #777;border-radius:10px";mixedBox.append(lab,inp);mixedInputs[method]=inp;}panel.append(mixedBox);
  const feedback=document.createElement("p");feedback.style.cssText="min-height:22px;color:#f4a4a4";panel.append(feedback);
  const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;flex-wrap:wrap";
  const cancel=document.createElement("button");cancel.textContent="Cancelar";cancel.style.cssText="padding:14px 18px;border-radius:10px;background:#333;color:#fff;border:1px solid #777;flex:1";
@@ -537,20 +538,23 @@ async function cobrar(id){
  actions.append(cancel,confirmBtn);panel.append(actions);overlay.append(panel);document.body.append(overlay);
  let busy=false;
  const cashCents=()=>{const value=cash.value.trim();if(!/^\d+(?:\.\d{1,2})?$/.test(value))return null;const cents=Math.round(Number(value)*100);return Number.isSafeInteger(cents)?cents:null};
- const refresh=()=>{const isCash=select.value==="Efectivo";cashBox.style.display=isCash?"block":"none";const cents=cashCents();change.textContent=isCash?(cents===null?"Ingresa el efectivo recibido":cents<total?"Faltan "+money(total-cents):"CAMBIO A ENTREGAR: "+money(cents-total)):"Sin cálculo de cambio";confirmBtn.disabled=busy||(isCash&&(cents===null||cents<total));confirmBtn.style.opacity=confirmBtn.disabled?".45":"1"};
+ const mixedCents=method=>{const v=mixedInputs[method].value.trim();if(!/^\\d+(?:\\.\\d{1,2})?$/.test(v))return null;const n=Math.round(Number(v)*100);return Number.isSafeInteger(n)?n:null};
+ const refresh=()=>{const isCash=select.value==="Efectivo",isMixed=select.value==="Mixto";mixedBox.style.display=isMixed?"block":"none";cashBox.style.display=(isCash||isMixed)?"block":"none";const parts=isMixed?["Efectivo","Tarjeta","Transferencia"].map(mixedCents):[];const validParts=isMixed&&parts.every(x=>x!==null)&&parts.reduce((a,b)=>a+b,0)===total;const cashDue=isMixed?(parts[0]||0):total;const cents=cashCents();change.textContent=(isCash||isMixed)?(isMixed&&!validParts?"Los importes deben sumar "+money(total):cents===null?"Ingresa el efectivo recibido":cents<cashDue?"Faltan "+money(cashDue-cents):"CAMBIO A ENTREGAR: "+money(cents-cashDue)):"Sin cálculo de cambio";confirmBtn.disabled=busy||(isMixed&&!validParts)||((isCash||isMixed)&&(cents===null||cents<cashDue));confirmBtn.style.opacity=confirmBtn.disabled?".45":"1"};
  const close=()=>{if(!busy)overlay.remove()};
- cancel.onclick=close;select.onchange=refresh;cash.oninput=refresh;refresh();
+ cancel.onclick=close;select.onchange=refresh;cash.oninput=refresh;Object.values(mixedInputs).forEach(x=>x.oninput=refresh);refresh();
  confirmBtn.onclick=async()=>{
   if(busy)return;
-  const isCash=select.value==="Efectivo",received=cashCents();
-  if(isCash&&(received===null||received<total))return;
+  const isCash=select.value==="Efectivo",isMixed=select.value==="Mixto",received=cashCents();
+  const parts=isMixed?["Efectivo","Tarjeta","Transferencia"].map(mixedCents):[];const cashDue=isMixed?parts[0]:total;
+  if((isCash||isMixed)&&(received===null||received<cashDue))return;
+  if(isMixed&&(parts.some(x=>x===null)||parts.reduce((a,b)=>a+b,0)!==total))return;
   busy=true;cancel.disabled=true;feedback.textContent="Registrando cobro…";refresh();
   try{
    const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
    if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total)throw Error("La cuenta cambió. Actualiza Caja antes de cobrar.");
-   const {error}=await db.rpc("close_order_v2",{p_order:id,p_payment:select.value});
+   const {error}=isMixed?await db.rpc("close_order_mixed",{p_order:id,p_cash:parts[0]/100,p_card:parts[1]/100,p_transfer:parts[2]/100}):await db.rpc("close_order_v2",{p_order:id,p_payment:select.value});
    if(error)throw Error("No se pudo cerrar la cuenta: "+error.message);
-   overlay.remove();alert(isCash?"Cobro registrado. Cambio a entregar: "+money(received-total):"Cobro registrado correctamente.");await caja();return;
+   overlay.remove();alert(isCash||isMixed?"Cobro registrado. Cambio a entregar: "+money(received-cashDue):"Cobro registrado correctamente.");await caja();return;
   }catch(e){feedback.textContent=e.message||"Error al registrar el cobro."}
   busy=false;cancel.disabled=false;refresh();
  };
