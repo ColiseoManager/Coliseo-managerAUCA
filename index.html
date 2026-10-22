@@ -538,7 +538,7 @@ async function cobrar(id){
  actions.append(cancel,confirmBtn);panel.append(actions);overlay.append(panel);document.body.append(overlay);
  let busy=false;
  const cashCents=()=>{const value=cash.value.trim();if(!/^\d+(?:\.\d{1,2})?$/.test(value))return null;const cents=Math.round(Number(value)*100);return Number.isSafeInteger(cents)?cents:null};
- const mixedCents=method=>{const v=mixedInputs[method].value.trim();if(!/^\\d+(?:\\.\\d{1,2})?$/.test(v))return null;const n=Math.round(Number(v)*100);return Number.isSafeInteger(n)?n:null};
+ const mixedCents=method=>{const v=mixedInputs[method].value.trim();if(!/^\d+(?:\.\d{1,2})?$/.test(v))return null;const n=Math.round(Number(v)*100);return Number.isSafeInteger(n)?n:null};
  const refresh=()=>{const isCash=select.value==="Efectivo",isMixed=select.value==="Mixto";mixedBox.style.display=isMixed?"block":"none";cashBox.style.display=(isCash||isMixed)?"block":"none";const parts=isMixed?["Efectivo","Tarjeta","Transferencia"].map(mixedCents):[];const validParts=isMixed&&parts.every(x=>x!==null)&&parts.reduce((a,b)=>a+b,0)===total;const cashDue=isMixed?(parts[0]||0):total;const cents=cashCents();change.textContent=(isCash||isMixed)?(isMixed&&!validParts?"Los importes deben sumar "+money(total):cents===null?"Ingresa el efectivo recibido":cents<cashDue?"Faltan "+money(cashDue-cents):"CAMBIO A ENTREGAR: "+money(cents-cashDue)):"Sin cálculo de cambio";confirmBtn.disabled=busy||(isMixed&&!validParts)||((isCash||isMixed)&&(cents===null||cents<cashDue));confirmBtn.style.opacity=confirmBtn.disabled?".45":"1"};
  const close=()=>{if(!busy)overlay.remove()};
  cancel.onclick=close;select.onchange=refresh;cash.oninput=refresh;Object.values(mixedInputs).forEach(x=>x.oninput=refresh);refresh();
