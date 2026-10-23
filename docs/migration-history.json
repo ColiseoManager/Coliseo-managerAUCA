@@ -1,0 +1,95 @@
+{
+  "project_id": "vrxkxfsysfnlcuxdsxfx",
+  "checked_at": "2026-10-17T04:54:54.478564+00:00",
+  "remote_migrations": [
+    {
+      "version": "20261004083909",
+      "name": "coliseo_manager_v1_core",
+      "sql_sha256": "f28446df9d82cd31bc696975b24ebe2e1868ad8f751005a7e6604e61d3d14cb7"
+    },
+    {
+      "version": "20261004083915",
+      "name": "coliseo_manager_v1_rls",
+      "sql_sha256": "8267a07366503c9bf91e95fa8d61a7f87c2a38da572ad4101e34cf024f602d13"
+    },
+    {
+      "version": "20261005025953",
+      "name": "coliseo_roles_sales_audit_v1",
+      "sql_sha256": "38821b38573d7d3fc4c12a3d577f89082e9a887ed27eb771a75fce2560fa2c96"
+    },
+    {
+      "version": "20261005031222",
+      "name": "allow_admin_clear_sale_audit_v1",
+      "sql_sha256": "52dd73ed3a418a2d72f808e59b5e8b255818723dc3ba82dd70336a9ba799ad3d"
+    },
+    {
+      "version": "20261005041712",
+      "name": "coliseo_pos_menu_tables_v1",
+      "sql_sha256": "4c56c6efd5a14e5f746c130d9172d684bc3bf5dbf917762aeafd0e0a7cd95569"
+    },
+    {
+      "version": "20261005061028",
+      "name": "coliseo_comandas_v15",
+      "sql_sha256": "ac93a2bba2fcdcf70f3608afd1b68aa444aa43487669e7cbf4650673de3262ec"
+    },
+    {
+      "version": "20261005080333",
+      "name": "coliseo_caja_business_order_type_v16",
+      "sql_sha256": "bb45d19ef7d9a6ad66eeb451ce6bc272e9d15f82cd49e8b454eeb4b69a1088c8"
+    },
+    {
+      "version": "20261005082054",
+      "name": "coliseo_finanzas_rentabilidad_v17",
+      "sql_sha256": "52949a001844fb3a93308eb3c3a2a813ff0e7ec8222fc94fc8fe43cf625c79f9"
+    },
+    {
+      "version": "20261005191516",
+      "name": "coliseo_inventory_recipes_movements_v18",
+      "sql_sha256": "3820ecf57e12dd8fc8b18da3de99fa50492fc6623d7671853fae686e92c22781"
+    },
+    {
+      "version": "20261005191729",
+      "name": "coliseo_inventory_operations_v19",
+      "sql_sha256": "60abdd1894134117c373125b6ed50ec64f913ea94f6a64062eb5a71d6550b865"
+    },
+    {
+      "version": "20261005195412",
+      "name": "coliseo_inventory_units_v20",
+      "sql_sha256": "3f5d67affeb055a1eb2239bb3f60db6ba827f6db48aa7416391d1befe0cfcca1"
+    },
+    {
+      "version": "20261007063321",
+      "name": "inventory_bottle_serving_v21",
+      "sql_sha256": "6fe90b987ccc81c794696b1661cc90c98db3f9c060c1687d1edce8d7ee27a287"
+    },
+    {
+      "version": "20261008021110",
+      "name": "bottle_open_closed_tracking_v22",
+      "sql_sha256": "284dd0fa6a8d48f2d985a738b056524edfc687f29a72a7ee96a82d1b9ced225e"
+    },
+    {
+      "version": "20261009071533",
+      "name": "cash_register_sessions_v31",
+      "sql_sha256": "670a9fec622a44c9b9adca04e5e2190e6470fc1e7fb57943e2e2403551a33606"
+    },
+    {
+      "version": "20261012015436",
+      "name": "cashier_cash_permissions_and_business_v32",
+      "sql_sha256": "3e6c1a7acb58665fcc5542bc98b9783288070c675ec30a9839d3ba46adc92782"
+    }
+  ],
+  "new_migrations_applied": true,
+  "v33_applied": {
+    "local_file": "20261017045545_coliseo_operational_safety_v33.sql",
+    "remote_version": "20261017052418",
+    "name": "coliseo_operational_safety_v33",
+    "sql_sha256": "cdd10375158e2eb3e9cb7cf0d95d523ee3681a3fc4bf831e033358fdd5edfcfa",
+    "note": "Aplicada una sola vez. No ejecutar db push antes de conciliar las versiones local y remota."
+  },
+  "security_applied": {
+    "local_file": "20261017060524_coliseo_v33_security_preparation.sql",
+    "remote_version": "20261017060626",
+    "name": "coliseo_v33_security_preparation",
+    "sql_sha256": "c268ef3f93aea4893b890291013d16042e18ad1a1fa1a2abdcbbbe02588cebfb"
+  }
+}

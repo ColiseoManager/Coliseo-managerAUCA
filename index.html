@@ -3,7 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Coliseo Manager 3.2</title>
+<title>Coliseo Manager</title>
+<meta name="theme-color" content="#0b0b0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coliseo Manager">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+<link rel="apple-touch-icon" href="/icons/icon.svg">
+<script>
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* COLISEO MANAGER 2.5: CORTESIAS LIBRES DEL MENU */
@@ -71,7 +83,7 @@ h3{margin:12px 0}
 .muted{color:#8c8c8c;font-size:12px}
 .card,.module,.order,.product{background:#171717;border:1px solid #292929;border-radius:17px;padding:16px;margin:10px 0}
 .grid,.products,.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.module{min-height:105px;cursor:pointer}
+.module{min-height:105px;cursor:pointer;color:inherit;font-family:inherit;font-size:inherit;text-align:left}
 .module b{display:block;margin-bottom:7px}
 .module span{color:#888;font-size:12px}
 .top,.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -158,18 +170,37 @@ button{cursor:pointer}
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
+<div class="module" onclick="qrManageOpen()"><b>📱 Menú QR y mesas</b><span>Solicitudes y código de acceso</span></div><div class="module" onclick="prepOpenV35('kitchen')"><b>🍳 Cocina y 🍹 Barra</b><span>Comandas y preparación en tiempo real</span></div>
 <div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
 <div class="module" onclick="autorizacionesV21()"><b>🎁 Cortesías y descuentos</b><span>Autorizar, consultar y auditar</span></div>
 <div class="module" onclick="menuAdmin()"><b>🍽️ Menú</b><span>Productos, precios y disponibilidad</span></div>
 <div class="module" onclick="historial()"><b>📚 Historial</b><span>Ventas registradas</span></div>
 <div class="module" onclick="resumenVentasV21()"><b>📊 Resumen de ventas</b><span>Ventas cobradas y cuentas abiertas</span></div>
-<div class="module"><b>💰 Finanzas globales</b><span>Próximamente · pendiente de implementación</span></div>
-<div class="module"><b>🏢 Servicios y pagos</b><span>Próximamente · pendiente de implementación</span></div>
-<div class="module"><b>🔧 Mantenimiento</b><span>Próximamente · pendiente de implementación</span></div>
+<button class="module" onclick="openManagement('finance')"><b>💰 Finanzas globales</b><span>Ingresos y gastos por período</span></button>
+<button class="module" onclick="openManagement('services')"><b>🏢 Servicios y pagos</b><span>Pagos, periodicidad y vencimientos</span></button>
+<button class="module" onclick="openManagement('maintenance')"><b>🔧 Mantenimiento</b><span>Gastos, proveedores e historial</span></button>
 <div class="module" onclick="inventario()"><b>📦 Inventario</b><span>Existencias, recetas, mermas y consumos</span></div>
-<div class="module"><b>📅 Reservaciones</b><span>Próximamente · pendiente de implementación</span></div>
+<button class="module" onclick="openManagement('reservations')"><b>📅 Reservaciones</b><span>Agenda, anticipos y seguimiento</span></button>
 </div>
 <div class="msg">Coliseo Manager 2.9 · Cancelaciones claras y registro</div>
+</section>
+
+<section id="qrManageScreen" class="screen"><button class="back" onclick="qrManageBack()">← Volver</button><h2>📱 Solicitudes QR</h2><div id="qrAdminTools" class="card" style="display:none"><h3>Código de acceso</h3><p>Solo Administrador. El código vence al cambiar la hora de Tijuana. Genera uno nuevo cada hora.</p><button class="yellow" onclick="qrGenerateCode()">Generar código</button><h2 id="qrNewCode"></h2></div><h3>Solicitudes pendientes</h3><div id="qrStaffRequests"></div><button class="dark" onclick="qrManageRefresh()">Actualizar</button></section><section id="prepBoardV35" class="screen">
+<div class="top"><div><div class="brand">COLISEO APP</div><h2 id="prepBoardTitleV35">Preparación</h2><span class="role" id="prepBoardRoleV35"></span></div><button class="dark" onclick="logout()">Salir</button></div>
+<div id="prepAdminNavV35" class="actions hidden"><button class="dark" onclick="goAdmin()">← Administración</button><button class="dark" onclick="prepOpenV35('kitchen')">🍳 Cocina</button><button class="dark" onclick="prepOpenV35('bar')">🍹 Barra</button><button class="dark" onclick="prepConfigV35()">⚙️ Productos y tiempos</button></div>
+<div class="notice">Los cronómetros empiezan cuando se agrega cada artículo a la comanda. Solo puedes avanzar los estados de tu estación.</div>
+<div id="prepBoardContentV35">Cargando…</div>
+</section>
+<section id="prepConfigV35" class="screen"><button class="back" onclick="prepOpenV35('kitchen')">← Cocina</button><h2>⚙️ Configuración de preparación</h2><div class="notice">Solo Administrador. Clasifica cada producto y ajusta los límites de alertas.</div><div id="prepConfigContentV35">Cargando…</div></section>
+<section id="preparationPreviewV34" class="screen">
+<button class="back" onclick="goAdmin()">← Administración</button>
+<div class="brand">COLISEO APP · ADMINISTRACIÓN</div>
+<h2>🍳 Cocina y 🍹 Barra</h2>
+<div class="notice">VISTA PREVIA · SOLO CONSULTA. Los artículos se agrupan provisionalmente por negocio. No cambia estados, comandas ni inventario. La clasificación definitiva por producto se habilitará después.</div>
+<div class="row" style="margin-top:14px"><button class="dark" onclick="preparationPreviewV34()">↻ Actualizar pedidos</button><span class="muted">Actualización automática cada 20 segundos mientras esta pantalla esté abierta.</span></div>
+<div class="notice">Los tiempos son informativos. Cocina: aviso desde 10 min, retraso desde 20 min. Barra: aviso desde 5 min, retraso desde 10 min. El administrador podrá editar estos límites cuando se active la configuración segura en la base de datos.</div>
+<div class="card"><h3>Clasificación por producto · simulación local</h3><div class="muted">Selecciona Cocina, Barra o Sin clasificar. Estas elecciones solo afectan esta vista previa y se perderán al cerrar o recargar; todavía no se guardan en la base de datos.</div><div id="preparationRoutingEditorV34"></div></div>
+<div id="preparationPreviewContentV34" role="status">Consultando comandas…</div>
 </section>
 
 <section id="staff" class="screen">
@@ -177,7 +208,7 @@ button{cursor:pointer}
 <div id="staffUser" class="muted"></div><span class="role">PERSONAL</span></div>
 <button class="dark" onclick="logout()">Salir</button></div>
 <button class="yellow" onclick="nuevoPedido(false)">＋ Abrir nueva cuenta</button>
-<h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
+<button class="dark" onclick="qrManageOpen()">📱 Solicitudes QR</button><h3 class="section">Mis cuentas abiertas</h3><div id="staffOrders"></div>
 </section>
 
 <section id="cashier" class="screen">
@@ -186,7 +217,7 @@ button{cursor:pointer}
 <div id="cashierUser" class="muted"></div><span class="role">CAJA</span></div>
 <button class="dark" onclick="logout()">Salir</button></div>
 <button class="yellow" onclick="nuevoPedido(true)">＋ Nueva venta</button>
-<h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
+<button class="dark" onclick="qrManageOpen()">📱 Solicitudes QR</button><h3 class="section">Cuentas por cobrar</h3><div id="cashOrders"></div>
 </section>
 
 <section id="pos" class="screen">
@@ -325,7 +356,7 @@ function orderName(o){if(o.order_type==="takeaway")return"Para llevar";if(o.orde
 
 async function login(){const btn=$("loginBtn"),msg=$("loginMsg");const email=$("email").value.trim(),password=$("password").value;if(!email||!password){msg.textContent="Escribe correo y contraseña.";return}btn.disabled=true;btn.textContent="Iniciando sesión…";msg.textContent="Conectando…";try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;await route(data.user)}catch(e){msg.textContent="Error: "+(e.message||"No fue posible iniciar sesión.")}finally{btn.disabled=false;btn.textContent="Iniciar sesión"}}
 async function logout(){await db.auth.signOut();me=null;show("login");$("loginMsg").textContent=""}
-async function route(u){const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}me={...p,id:u.id};if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin");await dashboardStockAlert()}else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}else{$("staffUser").textContent=p.full_name||u.email;await staff()}}
+async function route(u){const {data:p,error}=await db.from("profiles").select("*").eq("id",u.id).maybeSingle();if(error||!p){$("loginMsg").textContent="No fue posible cargar el perfil.";show("login");return}if(!p.active){$("loginMsg").textContent="Esta cuenta está desactivada.";show("login");return}me={...p,id:u.id};if(p.role==="admin"){$("adminUser").textContent=p.full_name||u.email;show("admin");await dashboardStockAlert()}else if(p.role==="cashier"){$("cashierUser").textContent=p.full_name||u.email;await caja()}else if(p.role==="kitchen"||p.role==="bar"){await prepOpenV35(p.role)}else if(p.role==="customer"){await db.auth.signOut();me=null;$("loginMsg").textContent="Esta cuenta es de cliente. Accede desde el menú QR.";show("login");return}else if(p.role==="staff"){$("staffUser").textContent=p.full_name||u.email;await staff()}}
 function goAdmin(){show("admin");dashboardStockAlert()}
 async function volverRol(){me.role==="cashier"?await caja():await staff()}
 
@@ -480,9 +511,57 @@ async function verOrden(id){const [{data:o,error:oe},{data:i,error:ie}]=await Pr
 
 /* CAJA */
 async function caja(){show("cashier");const [{data:o},{data:p}]=await Promise.all([db.from("orders").select("*").eq("status","open").order("opened_at",{ascending:false}),db.from("profiles").select("id,full_name")]);$("cashOrders").innerHTML=(o||[]).map(x=>{const u=(p||[]).find(y=>y.id===x.assigned_to);return `<div class="order"><div class="row"><div><b>${orderName(x)}</b><div class="muted">${stamp(x.opened_at)} · ${esc(u?.full_name||"Personal")}</div></div><div><span class="badge cash">POR COBRAR</span><div class="amount">${money(x.total)}</div></div></div><div class="actions"><button class="dark" onclick="verOrden('${x.id}')">Ver</button><button class="yellow" style="width:auto;margin:0" onclick="cobrar('${x.id}')">Cobrar</button></div></div>`}).join("")||'<div class="empty">No hay cuentas por cobrar.</div>'}
-async function cobrar(id){const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;const inv=await db.rpc("process_order_inventory",{p_order:id});if(inv.error){alert("No se puede cerrar: "+inv.error.message);return}const {error}=await db.from("orders").update({status:"closed",payment_method:pay,closed_at:new Date().toISOString(),updated_by:me.id}).eq("id",id);if(error){alert(error.message);return}await caja()}
+async function cobrar(id){
+ if(!me||!["admin","cashier"].includes(me.role)){alert("Solo Caja o Administración puede cobrar.");return}
+ const {data:order,error:orderError}=await db.from("orders").select("id,table_number,total,status").eq("id",id).single();
+ if(orderError||!order||order.status!=="open"){alert("Esta cuenta ya no está abierta.");await caja();return}
+ const total=Math.round(Number(order.total)*100);
+ if(!Number.isSafeInteger(total)||total<0){alert("Total inválido.");return}
+ const money=n=>"$"+(n/100).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const overlay=document.createElement("div");
+ overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto";
+ const panel=document.createElement("div");
+ panel.style.cssText="background:#191919;border:2px solid #e8bd54;border-radius:20px;padding:24px;width:min(100%,440px);color:#fff;box-sizing:border-box;font:inherit";
+ const heading=document.createElement("h2");heading.textContent="Cobrar · Mesa "+order.table_number;panel.append(heading);
+ const due=document.createElement("p");due.style.cssText="font-size:24px;font-weight:bold";due.textContent="Total: "+money(total);panel.append(due);
+ const label=document.createElement("label");label.textContent="Método de pago";label.style.display="block";panel.append(label);
+ const select=document.createElement("select");select.style.cssText="width:100%;padding:14px;margin:10px 0 18px;background:#292929;color:white;border:1px solid #777;border-radius:10px;font-size:18px";
+ for(const method of ["Efectivo","Tarjeta","Transferencia","Mixto"]){const opt=document.createElement("option");opt.value=method;opt.textContent=method;select.append(opt)}panel.append(select);
+ const cashBox=document.createElement("div");const cashLabel=document.createElement("label");cashLabel.textContent="¿Cuánto efectivo entrega el cliente?";cashBox.append(cashLabel);
+ const cash=document.createElement("input");cash.type="number";cash.min="0";cash.step="0.01";cash.inputMode="decimal";cash.placeholder="Ej. 500.00";cash.style.cssText="display:block;width:100%;box-sizing:border-box;padding:14px;margin:10px 0;background:#292929;color:white;border:1px solid #777;border-radius:10px;font-size:22px";cashBox.append(cash);
+ const change=document.createElement("div");change.style.cssText="font-size:25px;font-weight:bold;color:#e8bd54;padding:14px 0";cashBox.append(change);panel.append(cashBox);
+ const mixedBox=document.createElement("div");mixedBox.style.cssText="display:none;padding:12px 0";const mixedInputs={};for(const method of ["Efectivo","Tarjeta","Transferencia"]){const lab=document.createElement("label");lab.textContent="Importe con "+method;const inp=document.createElement("input");inp.type="number";inp.min="0";inp.step="0.01";inp.value="0";inp.inputMode="decimal";inp.style.cssText="display:block;width:100%;box-sizing:border-box;padding:12px;margin:5px 0 12px;background:#292929;color:white;border:1px solid #777;border-radius:10px";mixedBox.append(lab,inp);mixedInputs[method]=inp;}panel.append(mixedBox);
+ const feedback=document.createElement("p");feedback.style.cssText="min-height:22px;color:#f4a4a4";panel.append(feedback);
+ const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;flex-wrap:wrap";
+ const cancel=document.createElement("button");cancel.textContent="Cancelar";cancel.style.cssText="padding:14px 18px;border-radius:10px;background:#333;color:#fff;border:1px solid #777;flex:1";
+ const confirmBtn=document.createElement("button");confirmBtn.textContent="Confirmar cobro";confirmBtn.style.cssText="padding:14px 18px;border-radius:10px;background:#e8bd54;color:#111;border:0;font-weight:bold;flex:1";
+ actions.append(cancel,confirmBtn);panel.append(actions);overlay.append(panel);document.body.append(overlay);
+ let busy=false;
+ const cashCents=()=>{const value=cash.value.trim();if(!/^\d+(?:\.\d{1,2})?$/.test(value))return null;const cents=Math.round(Number(value)*100);return Number.isSafeInteger(cents)?cents:null};
+ const mixedCents=method=>{const v=mixedInputs[method].value.trim();if(!/^\d+(?:\.\d{1,2})?$/.test(v))return null;const n=Math.round(Number(v)*100);return Number.isSafeInteger(n)?n:null};
+ const refresh=()=>{const isCash=select.value==="Efectivo",isMixed=select.value==="Mixto";mixedBox.style.display=isMixed?"block":"none";cashBox.style.display=(isCash||isMixed)?"block":"none";const parts=isMixed?["Efectivo","Tarjeta","Transferencia"].map(mixedCents):[];const validParts=isMixed&&parts.every(x=>x!==null)&&parts.reduce((a,b)=>a+b,0)===total;const cashDue=isMixed?(parts[0]||0):total;const cents=cashCents();change.textContent=(isCash||isMixed)?(isMixed&&!validParts?"Los importes deben sumar "+money(total):cents===null?"Ingresa el efectivo recibido":cents<cashDue?"Faltan "+money(cashDue-cents):"CAMBIO A ENTREGAR: "+money(cents-cashDue)):"Sin cálculo de cambio";confirmBtn.disabled=busy||(isMixed&&!validParts)||((isCash||isMixed)&&(cents===null||cents<cashDue));confirmBtn.style.opacity=confirmBtn.disabled?".45":"1"};
+ const close=()=>{if(!busy)overlay.remove()};
+ cancel.onclick=close;select.onchange=refresh;cash.oninput=refresh;Object.values(mixedInputs).forEach(x=>x.oninput=refresh);refresh();
+ confirmBtn.onclick=async()=>{
+  if(busy)return;
+  const isCash=select.value==="Efectivo",isMixed=select.value==="Mixto",received=cashCents();
+  const parts=isMixed?["Efectivo","Tarjeta","Transferencia"].map(mixedCents):[];const cashDue=isMixed?parts[0]:total;
+  if((isCash||isMixed)&&(received===null||received<cashDue))return;
+  if(isMixed&&(parts.some(x=>x===null)||parts.reduce((a,b)=>a+b,0)!==total))return;
+  busy=true;cancel.disabled=true;feedback.textContent="Registrando cobro…";refresh();
+  try{
+   const {data:latest,error:checkError}=await db.from("orders").select("total,status").eq("id",id).single();
+   if(checkError||latest.status!=="open"||Math.round(Number(latest.total)*100)!==total)throw Error("La cuenta cambió. Actualiza Caja antes de cobrar.");
+   const {error}=isMixed?await db.rpc("close_order_mixed",{p_order:id,p_cash:parts[0]/100,p_card:parts[1]/100,p_transfer:parts[2]/100}):await db.rpc("close_order_v2",{p_order:id,p_payment:select.value});
+   if(error)throw Error("No se pudo cerrar la cuenta: "+error.message);
+   overlay.remove();alert(isCash||isMixed?"Cobro registrado. Cambio a entregar: "+money(received-cashDue):"Cobro registrado correctamente.");await caja();return;
+  }catch(e){feedback.textContent=e.message||"Error al registrar el cobro."}
+  busy=false;cancel.disabled=false;refresh();
+ };
+}
 
 /* ADMIN COMANDAS */
+
 async function comandas(){show("orders");const {data}=await db.from("orders").select("*").order("opened_at",{ascending:false}).limit(200);const card=o=>`<div class="order"><div class="row"><div><b>${orderName(o)}</b><div class="muted">${stamp(o.opened_at)}</div></div><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><div class="amount">${money(o.total)}</div></div></div><div class="actions"><button class="dark" onclick="detalle('${o.id}')">Administrar</button></div></div>`;$("openOrders").innerHTML=(data||[]).filter(x=>x.status==="open").map(card).join("")||'<div class="empty">Sin cuentas abiertas</div>';$("closedOrders").innerHTML=(data||[]).filter(x=>x.status==="closed").slice(0,40).map(card).join("")||'<div class="empty">Sin cuentas cerradas</div>'}
 async function detalle(id){show("detail");const [{data:o},{data:i},{data:p}]=await Promise.all([db.from("orders").select("*").eq("id",id).single(),db.from("order_items").select("*").eq("order_id",id),db.from("profiles").select("id,full_name").eq("active",true)]);current={o,i:i||[],p:p||[]};const cv=current.i.filter(x=>x.business==="Cuervos Pizza").reduce((s,x)=>s+ +x.line_total,0);const cl=current.i.filter(x=>x.business==="EL CLúB").reduce((s,x)=>s+ +x.line_total,0);$("detailBody").innerHTML=`<div class="card"><div class="row"><div><span class="badge ${o.status==="open"?"open":"closed"}">${o.status==="open"?"ABIERTA":"CERRADA"}</span><h3>${orderName(o)}</h3></div><div class="amount">${money(o.total)}</div></div><div class="summary"><div class="card"><div class="muted">Cuervo’s Pizza</div><div class="big">${money(cv)}</div></div><div class="card"><div class="muted">EL CLúB</div><div class="big">${money(cl)}</div></div></div>${o.order_type==="table"?`<label>Mesa</label><input id="dTable" type="number" min="1" value="${esc(String(o.table_number).replace(/^mesa\s*/i,""))}">`:""}<label>Personal asignado</label><select id="dStaff">${(p||[]).map(x=>`<option value="${x.id}" ${x.id===o.assigned_to?"selected":""}>${esc(x.full_name||"Personal")}</option>`).join("")}</select><button class="yellow" onclick="saveOrder()">Guardar cambios</button></div><h3 class="section">Productos</h3>${current.i.map(x=>`<div class="card"><div class="row"><div><b>${esc(x.item_name)}</b><div class="muted">${x.quantity} × ${money(x.unit_price)} · ${esc(businessName(x.business))}</div></div><b>${money(x.line_total)}</b></div><div class="actions"><button class="dark" onclick="qtyAdmin('${x.id}',${x.quantity})">Cantidad</button><button class="danger" onclick="removeItem('${x.id}')">Quitar</button></div></div>`).join("")}<div class="card"><label>Método de pago</label><select id="dPay"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option><option>Otro</option></select>${o.status==="open"?`<button class="yellow" onclick="closeAdmin()">Cerrar cuenta</button>`:`<button class="yellow" onclick="reopen()">Reabrir cuenta</button>`}<button class="danger" style="width:100%;margin-top:12px" onclick="deleteOrder()">Eliminar permanentemente</button></div>`}
 async function saveOrder(){const u={assigned_to:$("dStaff").value,updated_by:me.id};if(current.o.order_type==="table"){if(!$("dTable").value)return;u.table_number=$("dTable").value}const {error}=await db.from("orders").update(u).eq("id",current.o.id);if(error)alert(error.message);else await detalle(current.o.id)}
@@ -520,14 +599,6 @@ guardarPedido = async function(){
   await volverRol();
  }catch(e){$("orderMsg").textContent="No se pudo confirmar: "+e.message+". Comprueba las cuentas antes de reintentar."}
  finally{btn.disabled=false;btn.textContent="Guardar cuenta"}
-};
-
-cobrar = async function(id){
- const pay=prompt("Método de pago: Efectivo, Tarjeta, Transferencia u Otro","Efectivo");
- if(!pay||!confirm("¿Pago recibido y cerrar cuenta?"))return;
- const {error}=await db.rpc("close_order_v2",{p_order:id,p_payment:pay});
- if(error){alert("No se pudo cerrar: "+error.message);return}
- await caja();
 };
 
 closeAdmin = async function(){
@@ -615,7 +686,7 @@ async function resumenVentasV21(){
  host.textContent="Cargando…";
  const {data,error}=await db.from("orders").select("id,total,status,opened_at").order("opened_at",{ascending:false}).limit(1000);
  if(error){host.textContent="No se pudo consultar: "+error.message;return}
- const a=data||[],closed=a.filter(x=>x.status==="closed"),opened=a.filter(x=>x.status==="open");
+ const a=data||[],closed=a.filter(x=>x.status==="closed"&&!x.is_test),opened=a.filter(x=>x.status==="open");
  const sum=arr=>arr.reduce((v,x)=>v+Number(x.total||0),0);
  host.innerHTML='<div class="summary"><div class="card"><div class="muted">Cuentas cobradas</div><div class="big">'+closed.length+'</div><div class="amount">'+money(sum(closed))+'</div></div><div class="card"><div class="muted">Cuentas abiertas</div><div class="big">'+opened.length+'</div><div class="amount">'+money(sum(opened))+'</div></div></div><div class="muted">Últimas '+a.length+' cuentas registradas (máximo 1,000).</div>';
 }
@@ -963,7 +1034,7 @@ function create30(){
  if(!document.getElementById('moduloCortesV30')){const after=document.querySelector('.module[onclick="resumenVentasV21()"]');if(after){const mod=document.createElement('div');mod.id='moduloCortesV30';mod.className='module';mod.innerHTML='<b>🏦 Ventas por negocio</b><span>Cuervo’s Pizza, EL CLúB y total Coliseo</span>';mod.onclick=()=>abrirCortesV30();after.insertAdjacentElement('afterend',mod)}}
  if(!document.getElementById('cortesV30')){const sec=document.createElement('section');sec.id='cortesV30';sec.className='screen';sec.innerHTML='<button class="back" onclick="goAdmin()">← Volver a administración</button><div class="brand">COLISEO FOOD PARK</div><h2>🏦 Ventas por negocio</h2><div class="notice">Ventas cobradas por negocio. No representa utilidades ni sustituye el conteo físico del efectivo.</div><label>Selecciona la fecha</label><input id="fechaCortesV30" type="date"><button class="yellow" onclick="consultarCortesV30()">Consultar ventas</button><div id="resultadoCortesV30" style="margin-top:18px"></div>';document.querySelector('main.app').appendChild(sec)}
 }
-async function page30(table,cols,date){let all=[];for(let i=0;i<10000;i+=500){const {data,error}=await db.from(table).select(cols).eq('business_date',date).range(i,i+499);if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all}throw Error('Hay demasiados registros para este reporte')}
+async function page30(table,cols,date){let all=[];for(let i=0;i<10000;i+=500){let q=db.from(table).select(cols);if(date)q=q.eq('business_date',date);const {data,error}=await q.range(i,i+499);if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all}throw Error('Hay demasiados registros para este reporte')}
 window.abrirCortesV30=async()=>{if(me?.role!=='admin'){alert('Solo administración');return}document.getElementById('fechaCortesV30').value=date30();show('cortesV30');await consultarCortesV30()};
 window.consultarCortesV30=async()=>{
  if(me?.role!=='admin')return;
@@ -971,18 +1042,18 @@ window.consultarCortesV30=async()=>{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){host.textContent='Selecciona una fecha válida';return}
  host.textContent='Consultando ventas cobradas…';
  try{
- const [orders,split]=await Promise.all([page30('orders','id,total,status,payment_method,business_date',date),page30('v_order_business_split','order_id,business,status,payment_method,net_business,gross_business,business_date',date)]);
- const closed=orders.filter(o=>o.status==='closed'),open=orders.filter(o=>o.status==='open');
+ const [orders,split,payments]=await Promise.all([page30('orders','id,total,status,payment_method,business_date,is_test',date),page30('v_order_business_split','order_id,business,status,payment_method,net_business,gross_business,business_date',date),page30('order_payments','order_id,method,amount',null)]);const paymentMap=new Map();for(const p of payments){if(!paymentMap.has(p.order_id))paymentMap.set(p.order_id,[]);paymentMap.get(p.order_id).push(p)}
+ const closed=orders.filter(o=>o.status==='closed'&&!o.is_test),open=orders.filter(o=>o.status==='open');
  const byId=new Map(closed.map(o=>[o.id,o]));const sums={'Cuervos Pizza':{total:0,ids:new Set(),pay:{}},'EL CLúB':{total:0,ids:new Set(),pay:{}}};const perOrder=new Map(),seen=new Set();
  const payment=x=>{const s=String(x||'').trim().toLowerCase();return s==='efectivo'?'Efectivo':s==='tarjeta'?'Tarjeta':s==='transferencia'?'Transferencia':'Otro / sin especificar'};
- for(const row of split){if(row.status!=='closed')continue;const order=byId.get(row.order_id);if(!order)continue;const b=String(row.business||'').trim();const business=b==='Cuervo’s Pizza'?'Cuervos Pizza':b==='EL CLUB'?'EL CLúB':b;if(!sums[business])throw Error('Negocio no reconocido: '+b);const key=row.order_id+'|'+business;if(seen.has(key))throw Error('Desglose duplicado en una cuenta');seen.add(key);const amount=Number(row.net_business);if(!Number.isFinite(amount))throw Error('Importe inválido');sums[business].total+=amount;sums[business].ids.add(row.order_id);const pay=payment(order.payment_method);sums[business].pay[pay]=(sums[business].pay[pay]||0)+amount;perOrder.set(row.order_id,(perOrder.get(row.order_id)||0)+amount)}
+ for(const row of split){if(row.status!=='closed')continue;const order=byId.get(row.order_id);if(!order)continue;const b=String(row.business||'').trim();const business=b==='Cuervo’s Pizza'?'Cuervos Pizza':b==='EL CLUB'?'EL CLúB':b;if(!sums[business])throw Error('Negocio no reconocido: '+b);const key=row.order_id+'|'+business;if(seen.has(key))throw Error('Desglose duplicado en una cuenta');seen.add(key);const amount=Number(row.net_business);if(!Number.isFinite(amount))throw Error('Importe inválido');sums[business].total+=amount;sums[business].ids.add(row.order_id);if(String(order.payment_method||'').trim().toLowerCase()==='mixto'){const parts=paymentMap.get(order.id)||[];const grand=Number(order.total);if(grand<=0||Math.abs(parts.reduce((n,p)=>n+Number(p.amount),0)-grand)>.011)throw Error('Desglose de pago mixto inválido');for(const part of parts){const pay=payment(part.method);sums[business].pay[pay]=(sums[business].pay[pay]||0)+amount*Number(part.amount)/grand}}else{const pay=payment(order.payment_method);sums[business].pay[pay]=(sums[business].pay[pay]||0)+amount}perOrder.set(row.order_id,(perOrder.get(row.order_id)||0)+amount)}
  const differences=closed.filter(o=>Math.abs(Number(o.total||0)-(perOrder.get(o.id)||0))>.011);if(differences.length)throw Error('Hay '+differences.length+' cuenta(s) con diferencias entre ventas y desglose. Revisa los datos antes del corte.');
  const methods=['Efectivo','Tarjeta','Transferencia','Otro / sin especificar'];
  const lines=pay=>methods.map(m=>'<div class="row" style="padding:9px 0"><span>'+m+'</span><b>'+fmt30(pay[m]||0)+'</b></div>').join('');
  const card=b=>'<div class="card"><h3>'+(b==='Cuervos Pizza'?'Cuervo’s Pizza':b)+'</h3><div class="amount">'+fmt30(sums[b].total)+'</div><div class="muted">Cuentas con productos de este negocio: '+sums[b].ids.size+'</div><div class="divider"></div>'+lines(sums[b].pay)+'</div>';
  const general={};for(const m of methods)general[m]=(sums['Cuervos Pizza'].pay[m]||0)+(sums['EL CLúB'].pay[m]||0);
  const total=sums['Cuervos Pizza'].total+sums['EL CLúB'].total,charged=closed.reduce((a,o)=>a+Number(o.total||0),0);
- host.innerHTML='<div class="success">✓ Importes conciliados con cuentas cobradas.</div><div class="summary"><div class="card"><div class="muted">CUENTAS COBRADAS</div><div class="big">'+closed.length+'</div></div><div class="card"><div class="muted">CUENTAS ABIERTAS</div><div class="big">'+open.length+'</div></div></div>'+card('Cuervos Pizza')+card('EL CLúB')+'<div class="card"><h3>🏛️ TOTAL COLISEO FOOD PARK</h3><div class="amount">'+fmt30(total)+'</div><div class="divider"></div>'+lines(general)+'<div class="divider"></div><div class="row"><span>Total registrado en cuentas</span><b>'+fmt30(charged)+'</b></div><div class="row"><span>Diferencia</span><b>'+fmt30(total-charged)+'</b></div></div><div class="notice">Las cuentas con productos de ambos negocios se distribuyen según el desglose de Supabase. El método de pago se aplica a la cuenta completa; no admite dos métodos distintos en la misma cuenta.</div>';
+ host.innerHTML='<div class="success">✓ Importes conciliados con cuentas cobradas.</div><div class="summary"><div class="card"><div class="muted">CUENTAS COBRADAS</div><div class="big">'+closed.length+'</div></div><div class="card"><div class="muted">CUENTAS ABIERTAS</div><div class="big">'+open.length+'</div></div></div>'+card('Cuervos Pizza')+card('EL CLúB')+'<div class="card"><h3>🏛️ TOTAL COLISEO FOOD PARK</h3><div class="amount">'+fmt30(total)+'</div><div class="divider"></div>'+lines(general)+'<div class="divider"></div><div class="row"><span>Total registrado en cuentas</span><b>'+fmt30(charged)+'</b></div><div class="row"><span>Diferencia</span><b>'+fmt30(total-charged)+'</b></div></div><div class="notice">Las cuentas con productos de ambos negocios se distribuyen según el desglose de Supabase. Los pagos mixtos se distribuyen proporcionalmente entre ambos negocios.</div>';
  }catch(e){host.innerHTML='<div class="notice">⚠️ No se puede generar un reporte confiable: '+esc30(e.message||String(e))+'</div>'}
 };
 create30();
@@ -1005,7 +1076,7 @@ async function getSales(date){let all=[];for(let i=0;i<10000;i+=500){const {data
 function block(){if(field(ID))return;const admin=document.querySelector('.module[onclick="resumenVentasV21()"]');if(admin){const btn=document.createElement('div');btn.className='module';btn.innerHTML='<b>💵 Caja diaria</b><span>Fondo, movimientos, cierre e historial</span>';btn.onclick=window.openCashV31;admin.insertAdjacentElement('afterend',btn);}const el=document.createElement('section');el.className='screen';el.id=ID;el.innerHTML=`<button class="back" onclick="goAdmin()">← Volver a administración</button><div class="brand">COLISEO FOOD PARK</div><h2>💵 Caja diaria</h2><div class="notice">Una caja física para ambos negocios. El fondo no es una venta. Solo administración puede registrar y confirmar cierres.</div><div id="cashContentV31">Cargando…</div>`;document.querySelector('main.app').appendChild(el);}
 function notice(s){field('cashContentV31').innerHTML='<div class="notice">'+clean(s)+'</div><button class="yellow" onclick="refreshCashV31()">Reintentar</button>';}
 window.openCashV31=async()=>{if(me?.role!=='admin'){alert('Solo administración');return;}show(ID);await refreshCashV31();};
-window.refreshCashV31=async()=>{if(me?.role!=='admin')return;const host=field('cashContentV31');host.textContent='Consultando caja…';try{const {data,error}=await db.from('cash_sessions_v31').select('*').order('opened_at',{ascending:false}).limit(40);if(error)throw error;const rows=data||[];active=rows.find(x=>x.status==='open')||null;if(!active){host.innerHTML=`<div class="card"><h3>Abrir caja</h3><p>Indica el fondo de efectivo que recibes al comenzar el turno.</p><label>Fondo inicial (MXN)</label><input id="fundV31" type="number" min="0" step="0.01" placeholder="Ej. 1000.00"><button class="yellow" onclick="startCashV31()">Abrir caja</button></div>`;}else{const [sales,movements]=await Promise.all([getSales(active.business_date),loadRows('cash_movements_v31','id,created_at,kind,amount,reason','session_id',active.id)]);const entries=movements.filter(x=>x.kind==='entry').reduce((s,x)=>s+Number(x.amount),0);const out=movements.filter(x=>x.kind!=='entry').reduce((s,x)=>s+Number(x.amount),0);const expected=Number(active.opening_fund)+sales.efectivo+entries-out;host.innerHTML=`<div class="card"><h3>Caja abierta · ${clean(active.business_date)}</h3><div class="row"><span>Fondo inicial</span><b>${fmt(active.opening_fund)}</b></div><div class="row"><span>Ventas en efectivo</span><b>${fmt(sales.efectivo)}</b></div><div class="row"><span>Entradas adicionales</span><b>${fmt(entries)}</b></div><div class="row"><span>Gastos y retiros</span><b>−${fmt(out)}</b></div><div class="divider"></div><div class="row"><b>Efectivo esperado</b><b>${fmt(expected)}</b></div><div class="divider"></div><div class="row"><span>Ventas tarjeta</span><b>${fmt(sales.tarjeta)}</b></div><div class="row"><span>Ventas transferencia</span><b>${fmt(sales.transferencia)}</b></div>${sales.otro?`<div class="notice">⚠️ ${fmt(sales.otro)} sin método de pago reconocido; revisa esas cuentas.</div>`:''}${sales.abiertas?`<div class="notice">⚠️ ${sales.abiertas} cuenta(s) abiertas. Debes cobrarlas antes de cerrar.</div>`:''}</div><div class="card"><h3>Registrar movimiento de efectivo</h3><label>Tipo de movimiento</label><select id="kindV31"><option value="expense">Gasto pagado de caja</option><option value="withdrawal">Retiro de efectivo</option><option value="entry">Entrada adicional (no venta)</option></select><label>Importe (MXN)</label><input id="movementAmountV31" type="number" min="0.01" step="0.01"><label>Motivo</label><input id="movementReasonV31" placeholder="Explica el movimiento"><button class="yellow" onclick="moveCashV31()">Guardar movimiento</button><div class="divider"></div><h3>Movimientos del turno</h3>${movements.length?movements.map(x=>`<div class="row"><span>${x.kind==='entry'?'Entrada':x.kind==='expense'?'Gasto':'Retiro'} · ${clean(x.reason)}</span><b>${x.kind==='entry'?'+':'−'}${fmt(x.amount)}</b></div>`).join(''):'<p>Sin movimientos.</p>'}</div><div class="card"><h3>Realizar cierre</h3><p>Cuenta físicamente todo el efectivo, incluyendo el fondo inicial.</p><label>Efectivo contado (MXN)</label><input id="countedV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><label>Fondo que dejarás para el siguiente turno</label><input id="nextFundV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><div id="previewV31" class="notice">Ingresa el efectivo contado para calcular la diferencia.</div><label>Observaciones</label><textarea id="notesV31" rows="3" placeholder="Faltantes, sobrantes o aclaraciones"></textarea><button class="yellow" onclick="closeCashV31()">Confirmar cierre de caja</button></div>`;window.expectedCashV31=expected;}
+window.refreshCashV31=async()=>{if(me?.role!=='admin')return;const host=field('cashContentV31');host.textContent='Consultando caja…';try{const {data,error}=await db.from('cash_sessions_v31').select('*').order('opened_at',{ascending:false}).limit(40);if(error)throw error;const rows=data||[];active=rows.find(x=>x.status==='open')||null;if(!active){host.innerHTML=`<div class="card"><h3>Abrir caja</h3><p>Indica el fondo de efectivo que recibes al comenzar el turno.</p><label>Fondo inicial (MXN)</label><input id="fundV31" type="number" min="0" step="0.01" placeholder="Ej. 1000.00"><button class="yellow" onclick="startCashV31()">Abrir caja</button></div>`;}else{const [sales,movements]=await Promise.all([getSales(active.business_date),loadRows('cash_movements_v31','id,created_at,kind,amount,reason','session_id',active.id)]);const entries=movements.filter(x=>!x.is_test&&x.kind==='entry').reduce((s,x)=>s+Number(x.amount),0);const out=movements.filter(x=>x.kind!=='entry').reduce((s,x)=>s+Number(x.amount),0);const expected=Number(active.opening_fund)+sales.efectivo+entries-out;host.innerHTML=`<div class="card"><h3>Caja abierta · ${clean(active.business_date)}</h3><div class="row"><span>Fondo inicial</span><b>${fmt(active.opening_fund)}</b></div><div class="row"><span>Ventas en efectivo</span><b>${fmt(sales.efectivo)}</b></div><div class="row"><span>Entradas adicionales</span><b>${fmt(entries)}</b></div><div class="row"><span>Gastos y retiros</span><b>−${fmt(out)}</b></div><div class="divider"></div><div class="row"><b>Efectivo esperado</b><b>${fmt(expected)}</b></div><div class="divider"></div><div class="row"><span>Ventas tarjeta</span><b>${fmt(sales.tarjeta)}</b></div><div class="row"><span>Ventas transferencia</span><b>${fmt(sales.transferencia)}</b></div>${sales.otro?`<div class="notice">⚠️ ${fmt(sales.otro)} sin método de pago reconocido; revisa esas cuentas.</div>`:''}${sales.abiertas?`<div class="notice">⚠️ ${sales.abiertas} cuenta(s) abiertas. Debes cobrarlas antes de cerrar.</div>`:''}</div><div class="card"><h3>Registrar movimiento de efectivo</h3><label>Tipo de movimiento</label><select id="kindV31"><option value="expense">Gasto pagado de caja</option><option value="withdrawal">Retiro de efectivo</option><option value="entry">Entrada adicional (no venta)</option></select><label>Importe (MXN)</label><input id="movementAmountV31" type="number" min="0.01" step="0.01"><label>Motivo</label><input id="movementReasonV31" placeholder="Explica el movimiento"><button class="yellow" onclick="moveCashV31()">Guardar movimiento</button><div class="divider"></div><h3>Movimientos del turno</h3>${movements.length?movements.map(x=>`<div class="row"><span>${x.kind==='entry'?'Entrada':x.kind==='expense'?'Gasto':'Retiro'} · ${clean(x.reason)}</span><b>${x.kind==='entry'?'+':'−'}${fmt(x.amount)}</b></div>`).join(''):'<p>Sin movimientos.</p>'}</div><div class="card"><h3>Realizar cierre</h3><p>Cuenta físicamente todo el efectivo, incluyendo el fondo inicial.</p><label>Efectivo contado (MXN)</label><input id="countedV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><label>Fondo que dejarás para el siguiente turno</label><input id="nextFundV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><div id="previewV31" class="notice">Ingresa el efectivo contado para calcular la diferencia.</div><label>Observaciones</label><textarea id="notesV31" rows="3" placeholder="Faltantes, sobrantes o aclaraciones"></textarea><button class="yellow" onclick="closeCashV31()">Confirmar cierre de caja</button></div>`;window.expectedCashV31=expected;}
 host.insertAdjacentHTML('beforeend',`<div class="card"><h3>Historial de caja</h3>${rows.filter(x=>x.status==='closed').length?rows.filter(x=>x.status==='closed').map(x=>`<div style="padding:10px 0;border-bottom:1px solid #7775"><b>${clean(x.business_date)}</b><div class="row"><span>Fondo inicial</span><b>${fmt(x.opening_fund)}</b></div><div class="row"><span>Esperado / Contado</span><b>${fmt(x.expected_cash)} / ${fmt(x.counted_cash)}</b></div><div class="row"><span>Diferencia</span><b>${fmt(x.difference)}</b></div><div class="row"><span>Fondo reservado</span><b>${fmt(x.next_fund)}</b></div><div class="muted">${clean(x.notes)}</div></div>`).join(''):'Todavía no hay cierres guardados.'}</div>`);}catch(e){notice(e.message||String(e));}};
 window.startCashV31=async()=>{try{if(!confirm('¿Abrir caja con el fondo capturado?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:amount('fundV31')});if(error)throw error;await refreshCashV31();}catch(e){alert('No se abrió la caja: '+e.message);}};
 window.moveCashV31=async()=>{try{if(!active)throw Error('No hay caja abierta');const kind=field('kindV31').value,reason=field('movementReasonV31').value.trim(),value=amount('movementAmountV31');if(value<=0||!reason)throw Error('Captura importe positivo y motivo.');if(!confirm('¿Guardar '+fmt(value)+' como '+kind+'?'))return;const {error}=await db.rpc('cash_move_v31',{p_session:active.id,p_kind:kind,p_amount:value,p_reason:reason});if(error)throw error;await refreshCashV31();}catch(e){alert('No se guardó el movimiento: '+e.message);}};
@@ -1024,7 +1095,7 @@ const fmt=n=>money(Number(n||0));
 const safe=s=>esc(String(s??''));
 const allowed=()=>['admin','cashier'].includes(me?.role);
 const isAdmin=()=>me?.role==='admin';
-let session=null;
+let session=null,openingCash=false,closingCash=false;
 function amount(id){const raw=el(id)?.value?.trim()??'';if(!/^\d+(\.\d{1,2})?$/.test(raw))throw Error('Indica un importe válido con máximo dos decimales.');return Number(raw)}
 function setup(){
  const screen=el('cashV31');if(!screen)return;
@@ -1035,23 +1106,22 @@ function setup(){
  const top=cashier.querySelector('.top');top?.insertAdjacentElement('afterend',btn);
  }
 }
-async function paged(table,cols,field,value){const all=[];for(let i=0;i<10000;i+=500){let q=db.from(table).select(cols).range(i,i+499);if(field)q=q.eq(field,value);const {data,error}=await q;if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all;}throw Error('Hay más de 10,000 registros; requiere ampliar la consulta.')}
-async function sales(date){const orders=await paged('orders','id,total,status,payment_method,business_date','business_date',date);const sums={cash:0,card:0,transfer:0,other:0,open:0};for(const o of orders){if(o.status==='open'){sums.open++;continue}if(o.status!=='closed')continue;const p=String(o.payment_method||'').trim().toLowerCase();const k=p==='efectivo'?'cash':p==='tarjeta'?'card':p==='transferencia'?'transfer':'other';sums[k]+=Number(o.total||0)}return sums}
+async function paged(table,cols,field,value){const all=[];for(let i=0;i<10000;i+=500){let q=db.from(table).select(cols).order('id').range(i,i+499);if(field)q=q.eq(field,value);const {data,error}=await q;if(error)throw error;all.push(...(data||[]));if((data||[]).length<500)return all;}throw Error('Hay más de 10,000 registros; requiere ampliar la consulta.')}
+async function sales(date,cutoff){const [orders,payments]=await Promise.all([paged('orders','id,total,status,payment_method,business_date,closed_at,is_test','business_date',date),paged('order_payments','order_id,method,amount')]);const sums={cash:0,card:0,transfer:0,other:0,open:0};const byOrder=new Map();for(const p of payments){if(!byOrder.has(p.order_id))byOrder.set(p.order_id,[]);byOrder.get(p.order_id).push(p)}for(const o of orders){if(o.status==='open'){sums.open++;continue}if(o.status!=='closed'||o.is_test||(cutoff&&o.closed_at&&o.closed_at<=cutoff))continue;const method=String(o.payment_method||'').trim().toLowerCase();if(method==='mixto'){const parts=byOrder.get(o.id)||[];if(Math.abs(parts.reduce((n,p)=>n+Number(p.amount),0)-Number(o.total))>0.001)throw Error('Cobro mixto incompleto: '+o.id);for(const p of parts){const k=p.method==='Efectivo'?'cash':p.method==='Tarjeta'?'card':p.method==='Transferencia'?'transfer':'other';sums[k]+=Number(p.amount)}continue}const k=method==='efectivo'?'cash':method==='tarjeta'?'card':method==='transferencia'?'transfer':'other';sums[k]+=Number(o.total||0)}return sums}
 const errorBox=e=>{const host=el('cashContentV31');if(host)host.innerHTML='<div class="notice">'+safe(e?.message||e)+'</div><button class="yellow" onclick="refreshCashV31()">Reintentar</button>'};
 window.openCashV31=async()=>{if(!allowed()){alert('Sin acceso a Caja diaria.');return}setup();show('cashV31');await window.refreshCashV31()};
 window.refreshCashV31=async()=>{
  if(!allowed())return;setup();const host=el('cashContentV31');if(!host)return;host.textContent='Consultando caja…';
  try{
- const {data,error}=await db.from('cash_sessions_v31').select('*').order('opened_at',{ascending:false}).limit(100);if(error)throw error;
- const rows=data||[];session=rows.find(x=>x.status==='open')||null;
+ const rows=await paged('cash_sessions_v31','*');rows.sort((a,b)=>String(b.opened_at).localeCompare(String(a.opened_at)));session=rows.find(x=>x.status==='open')||null;
  if(!session){host.innerHTML='<div class="card"><h3>Abrir caja</h3><p>Captura el fondo que se recibe al iniciar el turno. El fondo no es una venta.</p><label>Fondo inicial (MXN)</label><input id="fundV31" type="number" min="0" step="0.01" placeholder="Ej. 1000.00"><button class="yellow" onclick="startCashV31()">Abrir caja</button></div>'}
  else{
- const movements=await paged('cash_movements_v31','id,session_id,created_at,created_by,kind,amount,reason,business','session_id',session.id);
+ const movements=await paged('cash_movements_v31','id,session_id,created_at,created_by,kind,amount,reason,business,is_test','session_id',session.id);
  movements.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
  const entries=movements.filter(x=>x.kind==='entry').reduce((s,x)=>s+Number(x.amount),0);
- const outgoing=movements.filter(x=>x.kind!=='entry').reduce((s,x)=>s+Number(x.amount),0);
+ const outgoing=movements.filter(x=>!x.is_test&&x.kind!=='entry').reduce((s,x)=>s+Number(x.amount),0);
  let salesData=null,expected=null;
- if(isAdmin()){salesData=await sales(session.business_date);expected=Number(session.opening_fund)+salesData.cash+entries-outgoing;window.expectedCashV31=expected;}
+ if(isAdmin()){const cutoff=rows.filter(r=>r.status==='closed'&&r.business_date===session.business_date).map(r=>r.closed_at).filter(Boolean).sort().at(-1);salesData=await sales(session.business_date,cutoff);expected=Number(session.opening_fund)+salesData.cash+entries-outgoing;window.expectedCashV31=expected;}
  const cashSummary=isAdmin()?`<div class="row"><span>Ventas en efectivo</span><b>${fmt(salesData.cash)}</b></div><div class="row"><span>Tarjeta</span><b>${fmt(salesData.card)}</b></div><div class="row"><span>Transferencia</span><b>${fmt(salesData.transfer)}</b></div>${salesData.other?'<div class="notice">⚠️ Pagos no reconocidos: '+fmt(salesData.other)+'</div>':''}${salesData.open?'<div class="notice">⚠️ Hay '+salesData.open+' cuenta(s) abierta(s). Deben cobrarse antes del cierre.</div>':''}<div class="divider"></div><div class="row"><b>Efectivo esperado</b><b>${fmt(expected)}</b></div>`:'<div class="muted">El conteo y cierre definitivo están reservados a Administración.</div>';
  const close=isAdmin()?`<div class="card"><h3>🔒 Cierre definitivo · Solo Administración</h3><p>Cuenta físicamente todo el efectivo, incluido el fondo.</p><label>Efectivo contado</label><input id="countedV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><label>Fondo para el siguiente turno</label><input id="nextFundV31" type="number" min="0" step="0.01" oninput="previewCashV31()"><div id="previewV31" class="notice">Captura ambos importes.</div><label>Observaciones</label><textarea id="notesV31" placeholder="Aclaraciones o motivos de diferencias"></textarea><button class="yellow" onclick="closeCashV31()">Confirmar cierre definitivo</button></div>`:'';
  host.innerHTML=`<div class="card"><h3>Caja abierta · ${safe(session.business_date)}</h3><div class="row"><span>Fondo inicial</span><b>${fmt(session.opening_fund)}</b></div><div class="row"><span>Entradas adicionales</span><b>${fmt(entries)}</b></div><div class="row"><span>Gastos y retiros</span><b>−${fmt(outgoing)}</b></div>${cashSummary}</div><div class="card"><h3>Registrar movimiento de efectivo</h3><label>Tipo</label><select id="kindV31"><option value="expense">Gasto pagado de caja</option><option value="withdrawal">Retiro de efectivo</option><option value="entry">Entrada adicional (no venta)</option></select><label>Negocio al que corresponde</label><select id="businessV32"><option value="General">General · Coliseo</option><option value="Cuervos Pizza">Cuervo’s Pizza</option><option value="EL CLúB">EL CLúB</option></select><label>Importe (MXN)</label><input id="movementAmountV31" type="number" min="0.01" step="0.01"><label>Motivo obligatorio</label><textarea id="movementReasonV31" maxlength="500" placeholder="Explica qué se pagó o por qué se movió el efectivo"></textarea><button id="saveMovementV32" class="yellow" onclick="moveCashV31()">Guardar movimiento</button><div class="divider"></div><h3>Movimientos del turno</h3>${movements.length?movements.map(x=>`<div class="card"><div class="row"><b>${x.kind==='entry'?'Entrada':x.kind==='expense'?'Gasto':'Retiro'} · ${safe(businessName(x.business||'General'))}</b><b>${x.kind==='entry'?'+':'−'}${fmt(x.amount)}</b></div><div>${safe(x.reason)}</div><div class="muted">${stamp(x.created_at)} · Usuario: ${safe(x.created_by||'Sin identificar')}</div></div>`).join(''):'<div class="muted">Sin movimientos registrados.</div>'}</div>${close}`;
@@ -1059,14 +1129,127 @@ window.refreshCashV31=async()=>{
  if(isAdmin())host.insertAdjacentHTML('beforeend',`<div class="card"><h3>Historial de cierres</h3>${rows.filter(x=>x.status==='closed').length?rows.filter(x=>x.status==='closed').map(x=>`<div class="card"><b>${safe(x.business_date)}</b><div>Fondo: ${fmt(x.opening_fund)}</div><div>Esperado: ${fmt(x.expected_cash)} · Contado: ${fmt(x.counted_cash)}</div><div>Diferencia: ${fmt(x.difference)}</div><div>Fondo reservado: ${fmt(x.next_fund)}</div><div class="muted">${safe(x.notes||'')}</div></div>`).join(''):'Aún no hay cierres.'}</div>`);
  }catch(e){errorBox(e)}
 };
-window.startCashV31=async()=>{if(!allowed())return;try{const fund=amount('fundV31');if(!confirm('¿Abrir caja con fondo de '+fmt(fund)+'?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:fund});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se abrió caja: '+e.message)}};
+window.startCashV31=async()=>{if(!allowed()||openingCash)return;try{openingCash=true;const fund=amount('fundV31');if(!confirm('¿Abrir caja con fondo de '+fmt(fund)+'?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:fund});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se abrió caja: '+e.message)}finally{openingCash=false}};
 window.moveCashV31=async()=>{if(!allowed())return;const btn=el('saveMovementV32');if(btn?.disabled)return;try{if(!session)throw Error('No hay caja abierta.');const kind=el('kindV31').value,business=el('businessV32').value,reason=el('movementReasonV31').value.trim(),value=amount('movementAmountV31');if(value<=0||!reason)throw Error('Indica un importe positivo y el motivo obligatorio.');if(reason.length>500)throw Error('El motivo supera 500 caracteres.');if(!confirm('¿Registrar '+fmt(value)+' como '+kind+' de '+business+'?'))return;if(btn)btn.disabled=true;const {error}=await db.rpc('cash_move_v32',{p_session:session.id,p_kind:kind,p_amount:value,p_reason:reason,p_business:business});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se guardó el movimiento: '+e.message)}finally{if(btn?.isConnected)btn.disabled=false}};
 window.previewCashV31=()=>{if(!isAdmin())return;try{const counted=amount('countedV31'),next=amount('nextFundV31');if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;el('previewV31').innerHTML='Diferencia: <b>'+fmt(diff)+'</b> ('+(diff<-.009?'faltante':diff>.009?'sobrante':'sin diferencia')+')<div>Efectivo que se retira después del cierre: <b>'+fmt(counted-next)+'</b></div>'}catch(e){el('previewV31').textContent=e.message}};
-window.closeCashV31=async()=>{if(!isAdmin()){alert('Solo Administración puede cerrar la caja.');return}try{if(!session)throw Error('No hay caja abierta.');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=el('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(Math.abs(diff)>.009&&!notes)throw Error('Escribe una observación para justificar la diferencia.');if(!confirm('¿Confirmar el cierre definitivo?\nContado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:session.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;alert('Cierre guardado correctamente.');await window.refreshCashV31()}catch(e){alert('No se cerró la caja: '+e.message)}};
+window.closeCashV31=async()=>{if(!isAdmin()){alert('Solo Administración puede cerrar la caja.');return}if(closingCash)return;try{closingCash=true;if(!session)throw Error('No hay caja abierta.');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=el('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(!notes)throw Error('Escribe una observación de cierre (o Sin incidencias). El servidor recalculará las ventas al confirmar.');if(!confirm('¿Confirmar el cierre definitivo?\nContado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:session.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;alert('Cierre guardado correctamente.');await window.refreshCashV31()}catch(e){alert('No se cerró la caja: '+e.message)}finally{closingCash=false}};
 setup();
 })();
 
 </script>
 
+<script>
+/* V34: vista previa segura de administración; no altera datos. */
+window.preparationLocalRoutesV34={};
+function preparationRouteLocalV34(el){
+ if(typeof me==="undefined"||me?.role!=="admin")return;
+ window.preparationLocalRoutesV34[el.getAttribute("data-prep-route")]=el.value;
+ preparationPreviewV34();
+}
+setInterval(()=>{const pane=document.getElementById("preparationPreviewV34");if(pane?.classList.contains("on")&&typeof me!=="undefined"&&me?.role==="admin")preparationPreviewV34()},20000);
+async function preparationPreviewV34(){
+ if(typeof me==="undefined"||me?.role!=="admin"){alert("Solo administración");return}
+ show("preparationPreviewV34");
+ const host=document.getElementById("preparationPreviewContentV34");
+ host.textContent="Consultando comandas abiertas…";
+ try{
+  const {data:orders,error:oe}=await db.from("orders").select("id,table_number,order_type,delivery_platform,notes,opened_at").eq("status","open").order("opened_at",{ascending:false});
+  if(oe)throw oe;
+  const ids=(orders||[]).map(o=>o.id);
+  if(!ids.length){host.innerHTML='<div class="empty">No hay comandas abiertas.</div>';return}
+  const {data:lines,error:le}=await db.from("order_items").select("id,order_id,item_name,quantity,business,created_at").in("order_id",ids).order("created_at",{ascending:true});
+  if(le)throw le;
+  const byId=new Map((orders||[]).map(o=>[o.id,o]));
+  const buckets={kitchen:[],bar:[],other:[]};
+  const {data:products,error:pe}=await db.from("menu_items").select("id,name,business").order("name");
+  if(pe)throw pe;
+  const productIds=new Map((products||[]).map(p=>[p.id,p]));
+  const routingHost=document.getElementById("preparationRoutingEditorV34");
+  routingHost.innerHTML=(products||[]).map(p=>'<div class="row" style="margin-top:9px"><span>'+esc(p.name)+' · '+esc(businessName(p.business))+'</span><select data-prep-route="'+esc(p.id)+'" onchange="preparationRouteLocalV34(this)"><option value="kitchen">🍳 Cocina</option><option value="bar">🍹 Barra</option><option value="other">Sin clasificar</option></select></div>').join("")||'<div class="empty">Sin productos.</div>';
+  for(const el of routingHost.querySelectorAll("[data-prep-route]")){const id=el.getAttribute("data-prep-route"),p=productIds.get(id);el.value=window.preparationLocalRoutesV34?.[id]||(p?.business==="Cuervos Pizza"?"kitchen":p?.business==="EL CLúB"?"bar":"other")}
+  const nameRoute=new Map((products||[]).map(p=>[p.name+"|"+p.business,window.preparationLocalRoutesV34?.[p.id]||(p.business==="Cuervos Pizza"?"kitchen":p.business==="EL CLúB"?"bar":"other")]));
+  
+  for(const x of lines||[]){
+   const station=nameRoute.get(x.item_name+"|"+x.business)||(x.business==="Cuervos Pizza"?"kitchen":x.business==="EL CLúB"?"bar":"other");
+   buckets[station].push({x,o:byId.get(x.order_id)});
+  }
+  const now=Date.now();
+  const elapsed=(created)=>{const seconds=Math.max(0,Math.floor((now-new Date(created).getTime())/1000));return Math.floor(seconds/60)+" min "+String(seconds%60).padStart(2,"0")+" s"};
+  const label=(o)=>o.order_type==="delivery"?"Delivery":o.order_type==="takeaway"?"Para llevar":"Mesa "+(o.table_number||"sin número");
+  const section=(title,list,station)=>'<h3 class="section">'+title+' · '+list.length+'</h3>'+(list.map(({x,o})=>{const minutes=Math.max(0,(now-new Date(x.created_at).getTime())/60000),warn=station==="bar"?5:10,late=station==="bar"?10:20;const state=minutes>=late?"RETRASO":minutes>=warn?"ATENCIÓN":"EN TIEMPO",badge=minutes>=late?"out":minutes>=warn?"low":"open";return '<div class="card"><div class="row"><b>'+esc(label(o||{}))+'</b><span class="badge '+badge+'">'+state+' · '+esc(elapsed(x.created_at))+'</span></div><div>'+Number(x.quantity||0)+' × '+esc(x.item_name||"Artículo")+'</div>'+(o?.notes?'<div class="muted">Nota de cuenta: '+esc(o.notes)+'</div>':"")+'<div class="muted">Registrado: '+esc(new Date(x.created_at).toLocaleString("es-MX"))+'</div></div>'}).join("")||'<div class="empty">Sin artículos.</div>');
+  host.innerHTML=section("🍳 Cocina · clasificación provisional",buckets.kitchen,"kitchen")+section("🍹 Barra · clasificación provisional",buckets.bar,"bar")+(buckets.other.length?section("Sin clasificación",buckets.other,"other"):"");
+ }catch(e){host.textContent="No se pudo consultar la vista previa: "+(e.message||String(e))}
+}
+</script>
+<script>
+/* Cocina/Barra V35: acceso y cambios de estado verificados por RPC en Supabase. */
+let prepStationV35="kitchen",prepBusyV35=false;
+async function prepOpenV35(station){
+ if(!["kitchen","bar"].includes(station))return;
+ if(!me||!["admin",station].includes(me.role)){alert("No autorizado");return}
+ prepStationV35=station;show("prepBoardV35");
+ document.getElementById("prepBoardTitleV35").textContent=station==="kitchen"?"🍳 Cocina":"🍹 Barra";
+ document.getElementById("prepBoardRoleV35").textContent=me.role==="admin"?"ADMINISTRADOR":"PERSONAL DE PREPARACIÓN";
+ document.getElementById("prepAdminNavV35").classList.toggle("hidden",me.role!=="admin");
+ await prepRefreshV35();
+}
+async function prepRefreshV35(){
+ if(prepBusyV35||!document.getElementById("prepBoardV35").classList.contains("on"))return;
+ prepBusyV35=true;
+ const host=document.getElementById("prepBoardContentV35");
+ try{
+ const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:prepStationV35}),db.rpc("prep_get_settings",{p_station:prepStationV35})]);
+ if(board.error)throw board.error;
+ const threshold=settings.data||{warning_minutes:prepStationV35==="kitchen"?10:5,late_minutes:prepStationV35==="kitchen"?20:10};
+ const tickets=board.data||[];
+ const html=(status,title)=>'<h3 class="section">'+title+' · '+tickets.filter(t=>t.status===status).length+'</h3>'+tickets.filter(t=>t.status===status).map(t=>{
+ const elapsedMs=Math.max(0,(status==="ready"&&t.ready_at?new Date(t.ready_at).getTime():Date.now())-new Date(t.queued_at).getTime());
+ const min=Math.floor(elapsedMs/60000);
+ const duration=min<1?Math.max(0,Math.round(elapsedMs/1000))+" seg":min+" min";
+ const urgency=status==="ready"?"✓ Terminado":min>=threshold.late_minutes?"🔴 Retrasado":min>=threshold.warning_minutes?"🟡 Atención":"🟢 En tiempo";
+ const location=t.order_type==="takeaway"?"Para llevar":t.order_type==="delivery"?"Delivery · "+(t.delivery_platform||""):"Mesa "+(t.table_number||"sin número");
+ const next=status==="pending"?"preparing":status==="preparing"?"ready":null;
+ return '<div class="card"><div class="row"><b>'+esc(location)+'</b><b>'+urgency+' · '+duration+'</b></div><div><b>'+Number(t.quantity)+' × '+esc(t.item_name)+'</b></div>'+(t.order_notes?'<div class="muted">Notas de cuenta: '+esc(t.order_notes)+'</div>':"")+(next?'<button class="yellow" onclick="prepAdvanceV35(\''+t.id+'\',\''+next+'\')">'+(next==="preparing"?"▶ Preparando":"✓ Listo")+'</button>':'<span class="badge">Listo</span>')+'</div>';
+ }).join("")||'<div class="empty">Sin artículos</div>';
+ host.innerHTML=html("pending","Pendiente")+html("preparing","Preparando")+html("ready","Listo");
+ }catch(e){host.textContent="Error al cargar preparación: "+(e.message||String(e))}
+ finally{prepBusyV35=false}
+}
+async function prepAdvanceV35(id,status){
+ if(!me||!["admin",prepStationV35].includes(me.role))return;
+ const r=await db.rpc("prep_advance_ticket",{p_item:id,p_status:status});
+ if(r.error){alert("No se pudo actualizar: "+r.error.message);return}
+ await prepRefreshV35();
+}
+async function prepConfigV35(){
+ if(me?.role!=="admin")return;
+ show("prepConfigV35");
+ const host=document.getElementById("prepConfigContentV35");host.textContent="Cargando…";
+ const [products,routes,settings]=await Promise.all([db.from("menu_items").select("id,name,business").order("name"),db.from("preparation_item_routes").select("*"),db.from("preparation_settings").select("*")]);
+ if(products.error||routes.error||settings.error){host.textContent="No se pudo cargar configuración.";return}
+ const map=new Map((routes.data||[]).map(x=>[x.menu_item_id,x.station]));
+ host.innerHTML=(settings.data||[]).map(x=>'<div class="card"><b>'+(x.station==="kitchen"?"🍳 Cocina":"🍹 Barra")+'</b><div class="row"><label>Advertencia (min)<input type="number" min="1" id="warn_'+x.station+'" value="'+Number(x.warning_minutes)+'"></label><label>Retraso (min)<input type="number" min="2" id="late_'+x.station+'" value="'+Number(x.late_minutes)+'"></label></div><button class="dark" onclick="prepSaveThresholdV35(\''+x.station+'\')">Guardar tiempos</button></div>').join("")+'<h3 class="section">Productos</h3>'+(products.data||[]).map(p=>'<div class="row card"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(businessName(p.business))+'</div></div><select onchange="prepSaveRouteV35(\''+p.id+'\',this.value)"><option value="kitchen" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":"bar"))==="kitchen"?"selected":"")+'>Cocina</option><option value="bar" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":"bar"))==="bar"?"selected":"")+'>Barra</option><option value="none" '+(map.get(p.id)==="none"?"selected":"")+'>Ninguna</option></select></div>').join("");
+}
+async function prepSaveRouteV35(id,station){
+ if(me?.role!=="admin")return;
+ const r=await db.rpc("prep_update_route",{p_menu_item:id,p_station:station});
+ if(r.error)alert("No se guardó: "+r.error.message);
+}
+async function prepSaveThresholdV35(station){
+ if(me?.role!=="admin")return;
+ const warning_minutes=Number(document.getElementById("warn_"+station).value),late_minutes=Number(document.getElementById("late_"+station).value);
+ if(!Number.isInteger(warning_minutes)||!Number.isInteger(late_minutes)||warning_minutes<1||late_minutes<=warning_minutes){alert("El retraso debe ser mayor que la advertencia.");return}
+ const r=await db.rpc("prep_update_settings",{p_station:station,p_warning:warning_minutes,p_late:late_minutes});
+ if(r.error)alert("No se guardó: "+r.error.message);else alert("Tiempos guardados");
+}
+setInterval(()=>{if(document.getElementById("prepBoardV35")?.classList.contains("on"))prepRefreshV35()},15000);
+</script>
+<script>
+async function qrManageOpen(){if(!me||!["admin","staff","cashier"].includes(me.role))return;show("qrManageScreen");document.getElementById("qrAdminTools").style.display=me.role==="admin"?"block":"none";await qrManageRefresh()}
+function qrManageBack(){if(me?.role==="admin")goAdmin();else if(me?.role==="cashier")caja();else staff()}
+async function qrGenerateCode(){if(me?.role!=="admin")return;const a=new Uint32Array(1);crypto.getRandomValues(a);const code=String(a[0]%1000000).padStart(6,"0");const {error}=await db.rpc("qr_rotate_code",{p_code:code});if(error){alert(error.message);return}document.getElementById("qrNewCode").textContent=code}
+async function qrManageRefresh(){const host=document.getElementById("qrStaffRequests");const {data,error}=await db.rpc("qr_staff_requests");if(error){host.textContent=error.message;return}host.replaceChildren();if(!data?.length){host.textContent="No hay solicitudes pendientes.";return}for(const r of data){const card=document.createElement("div");card.className="card";const p=document.createElement("p");p.textContent="Cliente: "+r.customer;card.append(p);const tableSelect=document.createElement("select");tableSelect.setAttribute("aria-label","Seleccionar número de mesa");const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona la mesa";tableSelect.append(placeholder);for(let n=1;n<=99;n++){const o=document.createElement("option");o.value=String(n);o.textContent="Mesa "+n;tableSelect.append(o)}card.append(tableSelect);for(const [label,ok] of [["Autorizar",true],["Rechazar",false]]){const b=document.createElement("button");b.textContent=label;b.className=ok?"yellow":"dark";b.onclick=()=>qrReview(r.id,ok,ok?tableSelect.value:null);card.append(b)}host.append(card)}}
+async function qrReview(id,approve,table){if(approve&&!table){alert("Selecciona la mesa antes de autorizar");return}if(!confirm(approve?"¿Verificaste físicamente la mesa y su cuenta abierta?":"¿Rechazar esta solicitud?"))return;const {error}=await db.rpc("qr_review_request",{p_request:id,p_approve:approve,p_table:table});if(error)alert(error.message);await qrManageRefresh()}
+</script><script src="js/management.js"></script>
 </body>
 </html>
