@@ -306,8 +306,19 @@
     };
     const closedIds = new Set(closed.map((order) => order.id));
     const paidSplits = splits.filter((split) => closedIds.has(split.order_id));
-    const splitIds = new Set(paidSplits.map((split) => split.order_id));
-    const unallocated = closed.filter((order) => !splitIds.has(order.id));
+    const splitTotals = new Map();
+    for (const split of paidSplits) {
+      const cents = Math.round(Number(split.net_business) * 100);
+      splitTotals.set(split.order_id, (splitTotals.get(split.order_id) ?? 0) + cents);
+    }
+    const inconsistent = closed.some((order) =>
+      splitTotals.has(order.id)
+      && splitTotals.get(order.id) !== Math.round(Number(order.total) * 100),
+    );
+    if (inconsistent) {
+      throw Error("Hay cuentas cuyo desglose por negocio no coincide con el total cobrado.");
+    }
+    const unallocated = closed.filter((order) => !splitTotals.has(order.id));
     const businesses = scopes.map((scope) => {
       const belongs = (name) => businessScope(name) === scope;
       const ordersTotal = sum(paidSplits.filter((row) => belongs(row.business)), "net_business")
