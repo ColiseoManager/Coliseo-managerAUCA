@@ -16,11 +16,16 @@ fs.writeFileSync(path.join(root, "dist/seed.sql"), "ficticio");
 const result = build({ COLISEO_RELEASE_AUTHORIZED: "v33-reviewed" });
 assert.equal(result.status, 0, result.stderr);
 assert.deepEqual(fs.readdirSync(path.join(root, "dist")).sort(), [
+  "icons",
   "index.html",
   "js",
+  "manifest.webmanifest",
+  "menu-qr.html",
+  "sw.js",
 ]);
 assert.deepEqual(fs.readdirSync(path.join(root, "dist/js")), ["management.js"]);
-for (const file of ["index.html", "js/management.js"])
+assert.deepEqual(fs.readdirSync(path.join(root, "dist/icons")), ["icon.svg"]);
+for (const file of ["index.html", "menu-qr.html", "js/management.js", "manifest.webmanifest", "sw.js", "icons/icon.svg"])
   assert.equal(
     fs.readFileSync(path.join(root, "dist", file), "utf8"),
     fs.readFileSync(path.join(root, file), "utf8"),
