@@ -277,6 +277,24 @@
     const closed = orders.filter((r) => r.status === "closed" && !r.is_test);
     const sum = (rs, key) =>
       rs.reduce((s, r) => s + Math.round(Number(r[key] || 0) * 100), 0) / 100;
+    const hasMixedPayments = closed.some(
+      (order) => String(order.payment_method || "").trim().toLowerCase() === "mixto",
+    );
+    const payments = hasMixedPayments ? await rows("order_payments", "order_id") : [];
+    if (token !== loading) return;
+    const paymentsByOrder = new Map();
+    for (const payment of payments) {
+      const breakdown = paymentsByOrder.get(payment.order_id) || [];
+      breakdown.push({ method: payment.method, total: payment.amount });
+      paymentsByOrder.set(payment.order_id, breakdown);
+    }
+    const paymentTotals = closed.flatMap((order) =>
+      paymentsByOrder.get(order.id) || [
+        { method: order.payment_method, total: order.total },
+      ],
+    );
+    const paymentMethod = (payment) =>
+      String(payment.method || "").trim().toLowerCase();
     const sales = sum(closed, "total"),
       operating = sum(services, "amount"),
       maint = sum(maintenance, "amount");
@@ -301,22 +319,15 @@
         (p) =>
           `<div class="card">${p}: <b>${money(
             sum(
-              closed.filter(
-                (r) =>
-                  String(r.payment_method).trim().toLowerCase() ===
-                  p.toLowerCase(),
-              ),
+              paymentTotals.filter((r) => paymentMethod(r) === p.toLowerCase()),
               "total",
             ),
           )}</b></div>`,
       )
       .join("")}<div class="card">Otros métodos: ${money(
       sum(
-        closed.filter(
-          (r) =>
-            !["efectivo", "tarjeta", "transferencia"].includes(
-              String(r.payment_method).trim().toLowerCase(),
-            ),
+        paymentTotals.filter((r) =>
+          !["efectivo", "tarjeta", "transferencia"].includes(paymentMethod(r)),
         ),
         "total",
       ),
@@ -338,7 +349,7 @@
       sum(
         movements.filter(
           (r) =>
-            r.kind === "expense" && sessions.some((s) => s.id === r.session_id),
+            r.kind === "expense" && !r.is_test && sessions.some((s) => s.id === r.session_id),
         ),
         "amount",
       ),
