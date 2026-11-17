@@ -71,15 +71,15 @@
   function select(name, label, values) {
     return `<label for="mg-${name}">${label}</label><select id="mg-${name}" name="${name}">${options(values)}</select>`;
   }
-  async function rows(table, dateColumn, from, to) {
+  async function rows(table, dateColumn, from, to, sortColumns = ["id"]) {
     const all = [];
     for (let offset = 0; ; offset += 500) {
       let q = db
         .from(table)
         .select("*")
-        .order(dateColumn)
-        .order("id")
-        .range(offset, offset + 499);
+        .order(dateColumn);
+      for (const column of sortColumns) q = q.order(column);
+      q = q.range(offset, offset + 499);
       if (from) q = q.gte(dateColumn, from);
       if (to) q = q.lte(dateColumn, to);
       const { data, error } = await q;
@@ -265,13 +265,16 @@
       );
   }
   async function finance(from, to, token) {
-    const [orders, services, maintenance, movements, sessions] =
+    const [orders, services, maintenance, movements, sessions, splits, purchases, manualSales] =
       await Promise.all([
         rows("orders", "business_date", from, to),
         rows("operating_expenses", "expense_date", from, to),
         rows("maintenance_expenses", "expense_date", from, to),
         rows("cash_movements_v31", "created_at"),
         rows("cash_sessions_v31", "business_date", from, to),
+        rows("v_order_business_split", "business_date", from, to, ["order_id", "business"]),
+        rows("expenses", "expense_date", from, to),
+        rows("sales", "business_date", from, to),
       ]);
     if (token !== loading) return;
     const closed = orders.filter((r) => r.status === "closed" && !r.is_test);
@@ -295,14 +298,37 @@
     );
     const paymentMethod = (payment) =>
       String(payment.method || "").trim().toLowerCase();
-    const sales = sum(closed, "total"),
-      operating = sum(services, "amount"),
-      maint = sum(maintenance, "amount");
-    el("mg-list").innerHTML = `<div class="summary">${[
-      ["Ventas cobradas", sales],
-      ["Servicios pagados", operating],
-      ["Mantenimiento pagado", maint],
-      ["Ventas menos gastos registrados", sales - operating - maint],
+    const businessScope = (name) => {
+      const normalized = String(name || "").trim().toLowerCase().replace(/[’']/g, "");
+      if (normalized === "cuervos pizza") return "Cuervos Pizza";
+      if (["el clúb", "el club"].includes(normalized)) return "EL CLúB";
+      return "Coliseo General";
+    };
+    const closedIds = new Set(closed.map((order) => order.id));
+    const paidSplits = splits.filter((split) => closedIds.has(split.order_id));
+    const splitIds = new Set(paidSplits.map((split) => split.order_id));
+    const unallocated = closed.filter((order) => !splitIds.has(order.id));
+    const businesses = scopes.map((scope) => {
+      const belongs = (name) => businessScope(name) === scope;
+      const ordersTotal = sum(paidSplits.filter((row) => belongs(row.business)), "net_business")
+        + sum(unallocated.filter((row) => belongs(row.business)), "total");
+      const manualTotal = sum(manualSales.filter((row) => belongs(row.business)), "amount");
+      const costs = sum(services.filter((row) => belongs(row.scope)), "amount")
+        + sum(maintenance.filter((row) => belongs(row.scope)), "amount")
+        + sum(purchases.filter((row) => belongs(row.business)), "amount");
+      return {
+        name: scope === "Coliseo General" ? "Coliseo Food Park" : businessName(scope),
+        sales: ordersTotal + manualTotal,
+        costs,
+      };
+    });
+    const sales = sum(businesses, "sales");
+    const costs = sum(businesses, "costs");
+    el("mg-list").innerHTML = `<h3>Consolidado general</h3><div class="summary">${[
+      ["Ventas cobradas", sum(closed, "total")],
+      ["Ventas registradas manualmente", sum(manualSales, "amount")],
+      ["Gastos registrados", costs],
+      ["Ventas menos gastos registrados", sales - costs],
     ]
       .map(
         ([title, value]) =>
@@ -331,19 +357,9 @@
         ),
         "total",
       ),
-    )}</div><h3>Gastos por negocio</h3>${scopes
-      .map(
-        (s) =>
-          `<div class="card">${esc(businessName(s))}: ${money(
-            sum(
-              services.filter((r) => r.scope === s),
-              "amount",
-            ) +
-              sum(
-                maintenance.filter((r) => r.scope === s),
-                "amount",
-              ),
-          )}</div>`,
+    )}</div><h3>Resultados por negocio</h3>${businesses
+      .map(({ name, sales, costs }) =>
+        `<article class="card"><h4>${esc(name)}</h4><div>Ventas ${money(sales)}</div><div>Gastos ${money(costs)}</div><div>Saldo ${money(sales - costs)}</div></article>`,
       )
       .join("")}<div class="notice">Gastos de caja del intervalo: ${money(
       sum(
