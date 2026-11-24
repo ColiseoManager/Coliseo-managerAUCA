@@ -610,7 +610,7 @@ guardarPedido = async function(){
   if(error)throw error;
   basket=[];
   const bottles=(data?.opened_bottles||[]).map(x=>`🍾 ${x.count} ${x.count===1?"botella abierta":"botellas abiertas"} de ${x.name} (${x.ml} ml)`);
-  alert("✓ Pedido confirmado. Inventario actualizado."+(bottles.length?"\n"+bottles.join("\n"):""));
+  coliseoNotice("✓ Pedido confirmado. Inventario actualizado."+(bottles.length?"\n"+bottles.join("\n"):""));
   await volverRol();
  }catch(e){$("orderMsg").textContent="No se pudo confirmar: "+e.message+". Comprueba las cuentas antes de reintentar."}
  finally{btn.disabled=false;btn.textContent="Guardar cuenta"}
@@ -1266,5 +1266,19 @@ async function qrGenerateCode(){if(me?.role!=="admin")return;const a=new Uint32A
 async function qrManageRefresh(){const host=document.getElementById("qrStaffRequests");const {data,error}=await db.rpc("qr_staff_requests");if(error){host.textContent=error.message;return}host.replaceChildren();if(!data?.length){host.textContent="No hay solicitudes pendientes.";return}for(const r of data){const card=document.createElement("div");card.className="card";const p=document.createElement("p");p.textContent="Cliente: "+r.customer;card.append(p);const tableSelect=document.createElement("select");tableSelect.setAttribute("aria-label","Seleccionar número de mesa");const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona la mesa";tableSelect.append(placeholder);for(let n=1;n<=99;n++){const o=document.createElement("option");o.value=String(n);o.textContent="Mesa "+n;tableSelect.append(o)}card.append(tableSelect);for(const [label,ok] of [["Autorizar",true],["Rechazar",false]]){const b=document.createElement("button");b.textContent=label;b.className=ok?"yellow":"dark";b.onclick=()=>qrReview(r.id,ok,ok?tableSelect.value:null);card.append(b)}host.append(card)}}
 async function qrReview(id,approve,table){if(approve&&!table){alert("Selecciona la mesa antes de autorizar");return}if(!confirm(approve?"¿Verificaste físicamente la mesa y su cuenta abierta?":"¿Rechazar esta solicitud?"))return;const {error}=await db.rpc("qr_review_request",{p_request:id,p_approve:approve,p_table:table});if(error)alert(error.message);await qrManageRefresh()}
 </script><script src="js/management.js"></script>
+
+<dialog id="coliseoNotice" aria-labelledby="coliseoNoticeTitle" style="background:#191919;color:#fff;border:1px solid #766124;border-radius:20px;padding:24px;width:calc(100% - 48px);max-width:440px;box-sizing:border-box">
+<h2 id="coliseoNoticeTitle" style="margin-top:0">Coliseo Manager</h2>
+<p id="coliseoNoticeText" style="white-space:pre-wrap;overflow-wrap:anywhere"></p>
+<form method="dialog"><button class="yellow" autofocus style="width:100%">Aceptar</button></form>
+</dialog>
+<style>#coliseoNotice::backdrop{background:rgba(0,0,0,.7)}</style>
+<script>
+function coliseoNotice(message){
+ const dialog=document.getElementById("coliseoNotice");
+ document.getElementById("coliseoNoticeText").textContent=String(message);
+ if(!dialog.open)dialog.showModal();
+}
+</script>
 </body>
 </html>
