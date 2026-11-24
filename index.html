@@ -1096,7 +1096,7 @@ host.insertAdjacentHTML('beforeend',`<div class="card"><h3>Historial de caja</h3
 window.startCashV31=async()=>{try{if(!confirm('¿Abrir caja con el fondo capturado?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:amount('fundV31')});if(error)throw error;await refreshCashV31();}catch(e){alert('No se abrió la caja: '+e.message);}};
 window.moveCashV31=async()=>{try{if(!active)throw Error('No hay caja abierta');const kind=field('kindV31').value,reason=field('movementReasonV31').value.trim(),value=amount('movementAmountV31');if(value<=0||!reason)throw Error('Captura importe positivo y motivo.');if(!confirm('¿Guardar '+fmt(value)+' como '+kind+'?'))return;const {error}=await db.rpc('cash_move_v31',{p_session:active.id,p_kind:kind,p_amount:value,p_reason:reason});if(error)throw error;await refreshCashV31();}catch(e){alert('No se guardó el movimiento: '+e.message);}};
 window.previewCashV31=()=>{try{const counted=amount('countedV31'),next=amount('nextFundV31');if(next>counted)throw Error('El fondo reservado no puede superar el efectivo contado.');const diff=counted-window.expectedCashV31;field('previewV31').innerHTML=`Diferencia: <b>${fmt(diff)}</b> (${diff<-.009?'faltante':diff>.009?'sobrante':'sin diferencia'})<div>Efectivo a retirar después del cierre: <b>${fmt(counted-next)}</b></div>`;}catch(e){field('previewV31').textContent=e.message;}};
-window.closeCashV31=async()=>{try{if(!active)throw Error('No hay caja abierta');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=field('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(Math.abs(diff)>.009&&!notes)throw Error('Escribe una observación para justificar la diferencia.');if(!confirm('¿Confirmas el cierre definitivo?\nEfectivo contado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:active.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;alert('Cierre guardado correctamente.');await refreshCashV31();}catch(e){alert('No se cerró la caja: '+e.message);}};
+window.closeCashV31=async()=>{try{if(!active)throw Error('No hay caja abierta');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=field('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(Math.abs(diff)>.009&&!notes)throw Error('Escribe una observación para justificar la diferencia.');if(!await coliseoConfirm('¿Confirmas el cierre definitivo?\nEfectivo contado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:active.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;coliseoNotice('Cierre guardado correctamente.');await refreshCashV31();}catch(e){alert('No se cerró la caja: '+e.message);}};
 block();
 })();
 </script>
@@ -1147,7 +1147,7 @@ window.refreshCashV31=async()=>{
 window.startCashV31=async()=>{if(!allowed()||openingCash)return;try{openingCash=true;const fund=amount('fundV31');if(!confirm('¿Abrir caja con fondo de '+fmt(fund)+'?'))return;const {error}=await db.rpc('cash_open_v31',{p_fund:fund});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se abrió caja: '+e.message)}finally{openingCash=false}};
 window.moveCashV31=async()=>{if(!allowed())return;const btn=el('saveMovementV32');if(btn?.disabled)return;try{if(!session)throw Error('No hay caja abierta.');const kind=el('kindV31').value,business=el('businessV32').value,reason=el('movementReasonV31').value.trim(),value=amount('movementAmountV31');if(value<=0||!reason)throw Error('Indica un importe positivo y el motivo obligatorio.');if(reason.length>500)throw Error('El motivo supera 500 caracteres.');if(!confirm('¿Registrar '+fmt(value)+' como '+kind+' de '+business+'?'))return;if(btn)btn.disabled=true;const {error}=await db.rpc('cash_move_v32',{p_session:session.id,p_kind:kind,p_amount:value,p_reason:reason,p_business:business});if(error)throw error;await window.refreshCashV31()}catch(e){alert('No se guardó el movimiento: '+e.message)}finally{if(btn?.isConnected)btn.disabled=false}};
 window.previewCashV31=()=>{if(!isAdmin())return;try{const counted=amount('countedV31'),next=amount('nextFundV31');if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;el('previewV31').innerHTML='Diferencia: <b>'+fmt(diff)+'</b> ('+(diff<-.009?'faltante':diff>.009?'sobrante':'sin diferencia')+')<div>Efectivo que se retira después del cierre: <b>'+fmt(counted-next)+'</b></div>'}catch(e){el('previewV31').textContent=e.message}};
-window.closeCashV31=async()=>{if(!isAdmin()){alert('Solo Administración puede cerrar la caja.');return}if(closingCash)return;try{closingCash=true;if(!session)throw Error('No hay caja abierta.');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=el('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(!notes)throw Error('Escribe una observación de cierre (o Sin incidencias). El servidor recalculará las ventas al confirmar.');if(!confirm('¿Confirmar el cierre definitivo?\nContado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:session.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;alert('Cierre guardado correctamente.');await window.refreshCashV31()}catch(e){alert('No se cerró la caja: '+e.message)}finally{closingCash=false}};
+window.closeCashV31=async()=>{if(!isAdmin()){alert('Solo Administración puede cerrar la caja.');return}if(closingCash)return;try{closingCash=true;if(!session)throw Error('No hay caja abierta.');const counted=amount('countedV31'),next=amount('nextFundV31'),notes=el('notesV31').value.trim();if(next>counted)throw Error('El fondo reservado supera el efectivo contado.');const diff=counted-window.expectedCashV31;if(!notes)throw Error('Escribe una observación de cierre (o Sin incidencias). El servidor recalculará las ventas al confirmar.');if(!await coliseoConfirm('¿Confirmar el cierre definitivo?\nContado: '+fmt(counted)+'\nDiferencia: '+fmt(diff)+'\nFondo reservado: '+fmt(next)))return;const {error}=await db.rpc('cash_close_v31',{p_session:session.id,p_counted:counted,p_next:next,p_notes:notes});if(error)throw error;coliseoNotice('Cierre guardado correctamente.');await window.refreshCashV31()}catch(e){alert('No se cerró la caja: '+e.message)}finally{closingCash=false}};
 setup();
 })();
 
@@ -1278,6 +1278,24 @@ function coliseoNotice(message){
  const dialog=document.getElementById("coliseoNotice");
  document.getElementById("coliseoNoticeText").textContent=String(message);
  if(!dialog.open)dialog.showModal();
+}
+</script>
+
+<dialog id="coliseoConfirm" aria-labelledby="coliseoConfirmTitle" style="background:#191919;color:#fff;border:1px solid #766124;border-radius:20px;padding:24px;width:calc(100% - 48px);max-width:440px;box-sizing:border-box">
+<h2 id="coliseoConfirmTitle" style="margin-top:0">Coliseo Manager</h2>
+<p id="coliseoConfirmText" style="white-space:pre-wrap;overflow-wrap:anywhere"></p>
+<form method="dialog" style="display:flex;gap:12px"><button class="dark" value="cancel" autofocus>Cancelar</button><button class="yellow" value="accept">Confirmar</button></form>
+</dialog>
+<style>#coliseoConfirm::backdrop{background:rgba(0,0,0,.7)}</style>
+<script>
+function coliseoConfirm(message){
+ const dialog=document.getElementById("coliseoConfirm");
+ document.getElementById("coliseoConfirmText").textContent=String(message);
+ dialog.returnValue="";
+ return new Promise(resolve=>{
+  dialog.addEventListener("close",()=>resolve(dialog.returnValue==="accept"),{once:true});
+  dialog.showModal();
+ });
 }
 </script>
 </body>
