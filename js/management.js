@@ -296,13 +296,15 @@
         { method: order.payment_method, total: order.total },
       ],
     );
+    paymentTotals.push(...manualSales.map((sale) => ({ method: sale.payment_method, total: sale.amount })));
     const paymentMethod = (payment) =>
       String(payment.method || "").trim().toLowerCase();
     const businessScope = (name) => {
       const normalized = String(name || "").trim().toLowerCase().replace(/[’']/g, "");
       if (normalized === "cuervos pizza") return "Cuervos Pizza";
       if (["el clúb", "el club"].includes(normalized)) return "EL CLúB";
-      return "Coliseo General";
+      if (["", "coliseo", "coliseo general", "coliseo food park"].includes(normalized)) return "Coliseo General";
+      throw Error("Negocio no reconocido: " + name);
     };
     const closedIds = new Set(closed.map((order) => order.id));
     const paidSplits = splits.filter((split) => closedIds.has(split.order_id));
@@ -347,7 +349,7 @@
       )
       .join(
         "",
-      )}</div><div class="notice">Resultado parcial: no incluye costo de mercancía, impuestos ni nómina sin registrar. Los anticipos de reservaciones no se suman a ventas. El fondo, entradas y retiros de caja no son ingresos ni gastos operativos.</div><h3>Ventas por método de pago</h3>${[
+      )}</div><div class="notice">Resultado parcial: no incluye costo de mercancía, impuestos ni nómina sin registrar. Los anticipos de reservaciones no se suman a ventas. El fondo, entradas y retiros de caja no son ingresos ni gastos operativos.</div><h3>Ventas por método de pago (incluye registros manuales)</h3>${[
       "Efectivo",
       "Tarjeta",
       "Transferencia",
