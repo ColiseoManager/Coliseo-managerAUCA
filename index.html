@@ -169,6 +169,7 @@ button{cursor:pointer}
 </div><button class="dark" onclick="logout()">Salir</button></div>
 <div id="stockAlert"></div>
 <div class="grid" style="margin-top:22px">
+<button class="module" onclick="openTeam()"><b>👥 Usuarios y permisos</b><span>Personal, Caja, Cocina y Barra</span></button>
 <div class="module" onclick="comandas()"><b>🧾 Comandas</b><span>Cuentas abiertas y cerradas</span></div>
 <div class="module" onclick="qrManageOpen()"><b>📱 Menú QR y mesas</b><span>Solicitudes y código de acceso</span></div><div class="module" onclick="prepOpenV35('kitchen')"><b>🍳 Cocina y 🍹 Barra</b><span>Comandas y preparación en tiempo real</span></div>
 <div class="module" onclick="abrirCajaV23()"><b>💳 Caja y cobros</b><span>Cobrar cuentas y agregar consumos</span></div>
@@ -1213,8 +1214,11 @@ async function prepRefreshV35(){
  prepBusyV35=true;
  const host=document.getElementById("prepBoardContentV35");
  try{
- const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:prepStationV35}),db.rpc("prep_get_settings",{p_station:prepStationV35})]);
+ const station=prepStationV35;
+ const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:station}),db.rpc("prep_get_settings",{p_station:station})]);
+ if(station!==prepStationV35||!document.getElementById("prepBoardV35").classList.contains("on"))return;
  if(board.error)throw board.error;
+ if(settings.error)throw settings.error;
  const threshold=settings.data||{warning_minutes:prepStationV35==="kitchen"?10:5,late_minutes:prepStationV35==="kitchen"?20:10};
  const tickets=board.data||[];
  const html=(status,title)=>'<h3 class="section">'+title+' · '+tickets.filter(t=>t.status===status).length+'</h3>'+tickets.filter(t=>t.status===status).map(t=>{
@@ -1265,7 +1269,7 @@ function qrManageBack(){if(me?.role==="admin")goAdmin();else if(me?.role==="cash
 async function qrGenerateCode(){if(me?.role!=="admin")return;const a=new Uint32Array(1);crypto.getRandomValues(a);const code=String(a[0]%1000000).padStart(6,"0");const {error}=await db.rpc("qr_rotate_code",{p_code:code});if(error){alert(error.message);return}document.getElementById("qrNewCode").textContent=code}
 async function qrManageRefresh(){const host=document.getElementById("qrStaffRequests");const {data,error}=await db.rpc("qr_staff_requests");if(error){host.textContent=error.message;return}host.replaceChildren();if(!data?.length){host.textContent="No hay solicitudes pendientes.";return}for(const r of data){const card=document.createElement("div");card.className="card";const p=document.createElement("p");p.textContent="Cliente: "+r.customer;card.append(p);const tableSelect=document.createElement("select");tableSelect.setAttribute("aria-label","Seleccionar número de mesa");const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Selecciona la mesa";tableSelect.append(placeholder);for(let n=1;n<=99;n++){const o=document.createElement("option");o.value=String(n);o.textContent="Mesa "+n;tableSelect.append(o)}card.append(tableSelect);for(const [label,ok] of [["Autorizar",true],["Rechazar",false]]){const b=document.createElement("button");b.textContent=label;b.className=ok?"yellow":"dark";b.onclick=()=>qrReview(r.id,ok,ok?tableSelect.value:null);card.append(b)}host.append(card)}}
 async function qrReview(id,approve,table){if(approve&&!table){alert("Selecciona la mesa antes de autorizar");return}if(!confirm(approve?"¿Verificaste físicamente la mesa y su cuenta abierta?":"¿Rechazar esta solicitud?"))return;const {error}=await db.rpc("qr_review_request",{p_request:id,p_approve:approve,p_table:table});if(error)alert(error.message);await qrManageRefresh()}
-</script><script src="js/management.js"></script>
+</script><script src="js/management.js"></script><script src="js/team.js"></script>
 
 <dialog id="coliseoNotice" aria-labelledby="coliseoNoticeTitle" style="background:#191919;color:#fff;border:1px solid #766124;border-radius:20px;padding:24px;width:calc(100% - 48px);max-width:440px;box-sizing:border-box">
 <h2 id="coliseoNoticeTitle" style="margin-top:0">Coliseo Manager</h2>

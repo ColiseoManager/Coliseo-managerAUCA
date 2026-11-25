@@ -337,7 +337,8 @@
     });
     const sales = sum(businesses, "sales");
     const costs = sum(businesses, "costs");
-    el("mg-list").innerHTML = `<h3>Consolidado general</h3><div class="summary">${[
+    const exportRows = [["Desde", "Hasta", "Negocio", "Ventas", "Gastos", "Saldo"], ...businesses.map(b => [from, to, b.name, b.sales.toFixed(2), b.costs.toFixed(2), (b.sales - b.costs).toFixed(2)]), [from, to, "Consolidado general", sales.toFixed(2), costs.toFixed(2), (sales - costs).toFixed(2)]];
+    el("mg-list").innerHTML = `<button id="mg-export" class="dark">Descargar resultados CSV</button><h3>Consolidado general</h3><div class="summary">${[
       ["Ventas cobradas", sum(closed, "total")],
       ["Ventas registradas manualmente", sum(manualSales, "amount")],
       ["Gastos registrados", costs],
@@ -383,6 +384,17 @@
         "amount",
       ),
     )}. Se presentan por separado: no hay vínculo con servicios o mantenimiento para evitar duplicarlos automáticamente. Los movimientos de caja se agrupan por la fecha operativa de su turno.</div>`;
+    el("mg-export").onclick = () => {
+      try {
+        admin();
+        const csv = exportRows.map(row => row.map(value => '"' + String(value).replace(/"/g, '""') + '"').join(",")).join("\r\n");
+        const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url; link.download = "Coliseo_Finanzas_" + from + "_" + to + ".csv";
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) { error(e); }
+    };
   }
   async function refresh() {
     const token = ++loading;

@@ -23,9 +23,9 @@ assert.deepEqual(fs.readdirSync(path.join(root, "dist")).sort(), [
   "menu-qr.html",
   "sw.js",
 ]);
-assert.deepEqual(fs.readdirSync(path.join(root, "dist/js")), ["management.js"]);
+assert.deepEqual(fs.readdirSync(path.join(root, "dist/js")), ["management.js", "team.js"]);
 assert.deepEqual(fs.readdirSync(path.join(root, "dist/icons")), ["icon.svg"]);
-for (const file of ["index.html", "menu-qr.html", "js/management.js", "manifest.webmanifest", "sw.js", "icons/icon.svg"])
+for (const file of ["index.html", "menu-qr.html", "js/management.js", "js/team.js", "manifest.webmanifest", "sw.js", "icons/icon.svg"])
   assert.equal(
     fs.readFileSync(path.join(root, "dist", file), "utf8"),
     fs.readFileSync(path.join(root, file), "utf8"),
