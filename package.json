@@ -10,7 +10,8 @@
     "build:release": "node scripts/build-release.cjs",
     "test:release": "node tests/release.cjs",
     "test:finance": "node tests/finance.cjs",
-    "test:team": "node tests/team.cjs"
+    "test:team": "node tests/team.cjs",
+    "test:preparation": "node tests/preparation.cjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.3.14"

@@ -1,3 +1,5 @@
+> Documento histórico de diseño. El estado de implementación y la revisión actual están en [COCINA_BARRA.md](COCINA_BARRA.md).
+
 # Coliseo App — etapa 1: Cocina y Barra
 
 Estado: diseño técnico preparado; NO implementado ni publicado.

@@ -190,7 +190,7 @@ button{cursor:pointer}
 <div class="top"><div><div class="brand">COLISEO APP</div><h2 id="prepBoardTitleV35">Preparación</h2><span class="role" id="prepBoardRoleV35"></span></div><button class="dark" onclick="logout()">Salir</button></div>
 <div id="prepAdminNavV35" class="actions hidden"><button class="dark" onclick="goAdmin()">← Administración</button><button class="dark" onclick="prepOpenV35('kitchen')">🍳 Cocina</button><button class="dark" onclick="prepOpenV35('bar')">🍹 Barra</button><button class="dark" onclick="prepConfigV35()">⚙️ Productos y tiempos</button></div>
 <div class="notice">Los cronómetros empiezan cuando se agrega cada artículo a la comanda. Solo puedes avanzar los estados de tu estación.</div>
-<div id="prepBoardContentV35">Cargando…</div>
+<button class="dark" onclick="prepRefreshV35()">↻ Actualizar pedidos</button><p class="muted">Actualización automática cada 15 segundos.</p><div id="prepBoardContentV35" role="status" aria-live="polite">Cargando…</div>
 </section>
 <section id="prepConfigV35" class="screen"><button class="back" onclick="prepOpenV35('kitchen')">← Cocina</button><h2>⚙️ Configuración de preparación</h2><div class="notice">Solo Administrador. Clasifica cada producto y ajusta los límites de alertas.</div><div id="prepConfigContentV35">Cargando…</div></section>
 <section id="preparationPreviewV34" class="screen">
@@ -1199,27 +1199,32 @@ async function preparationPreviewV34(){
 </script>
 <script>
 /* Cocina/Barra V35: acceso y cambios de estado verificados por RPC en Supabase. */
-let prepStationV35="kitchen",prepBusyV35=false;
+let prepStationV35="kitchen",prepBusyV35=null,prepVersionV35=0;
+const prepUpdatingV35=new Set();
 async function prepOpenV35(station){
  if(!["kitchen","bar"].includes(station))return;
- if(!me||!["admin",station].includes(me.role)){alert("No autorizado");return}
- prepStationV35=station;show("prepBoardV35");
+ if(!me?.active||!["admin",station].includes(me.role)){coliseoNotice("No autorizado");return}
+ prepStationV35=station;prepVersionV35++;show("prepBoardV35");
+ document.getElementById("prepBoardContentV35").textContent="Cargando pedidos…";
  document.getElementById("prepBoardTitleV35").textContent=station==="kitchen"?"🍳 Cocina":"🍹 Barra";
  document.getElementById("prepBoardRoleV35").textContent=me.role==="admin"?"ADMINISTRADOR":"PERSONAL DE PREPARACIÓN";
  document.getElementById("prepAdminNavV35").classList.toggle("hidden",me.role!=="admin");
  await prepRefreshV35();
 }
 async function prepRefreshV35(){
- if(prepBusyV35||!document.getElementById("prepBoardV35").classList.contains("on"))return;
- prepBusyV35=true;
+ if(!me?.active||!["admin",prepStationV35].includes(me.role)||!document.getElementById("prepBoardV35").classList.contains("on"))return;
+ const version=prepVersionV35;
+ if(prepBusyV35===version)return;
+ prepBusyV35=version;
  const host=document.getElementById("prepBoardContentV35");
  try{
  const station=prepStationV35;
  const [board,settings]=await Promise.all([db.rpc("prep_get_board",{p_station:station}),db.rpc("prep_get_settings",{p_station:station})]);
- if(station!==prepStationV35||!document.getElementById("prepBoardV35").classList.contains("on"))return;
+ if(version!==prepVersionV35||!me?.active||!["admin",station].includes(me.role)||!document.getElementById("prepBoardV35").classList.contains("on"))return;
  if(board.error)throw board.error;
  if(settings.error)throw settings.error;
- const threshold=settings.data||{warning_minutes:prepStationV35==="kitchen"?10:5,late_minutes:prepStationV35==="kitchen"?20:10};
+ const threshold=settings.data;
+ if(!threshold||!Number.isFinite(Number(threshold.warning_minutes))||Number(threshold.warning_minutes)<1||!Number.isFinite(Number(threshold.late_minutes))||Number(threshold.late_minutes)<=Number(threshold.warning_minutes))throw Error("Configura los tiempos de esta estación desde Administración.");
  const tickets=board.data||[];
  const html=(status,title)=>'<h3 class="section">'+title+' · '+tickets.filter(t=>t.status===status).length+'</h3>'+tickets.filter(t=>t.status===status).map(t=>{
  const elapsedMs=Math.max(0,(status==="ready"&&t.ready_at?new Date(t.ready_at).getTime():Date.now())-new Date(t.queued_at).getTime());
@@ -1228,38 +1233,70 @@ async function prepRefreshV35(){
  const urgency=status==="ready"?"✓ Terminado":min>=threshold.late_minutes?"🔴 Retrasado":min>=threshold.warning_minutes?"🟡 Atención":"🟢 En tiempo";
  const location=t.order_type==="takeaway"?"Para llevar":t.order_type==="delivery"?"Delivery · "+(t.delivery_platform||""):"Mesa "+(t.table_number||"sin número");
  const next=status==="pending"?"preparing":status==="preparing"?"ready":null;
- return '<div class="card"><div class="row"><b>'+esc(location)+'</b><b>'+urgency+' · '+duration+'</b></div><div><b>'+Number(t.quantity)+' × '+esc(t.item_name)+'</b></div>'+(t.order_notes?'<div class="muted">Notas de cuenta: '+esc(t.order_notes)+'</div>':"")+(next?'<button class="yellow" onclick="prepAdvanceV35(\''+t.id+'\',\''+next+'\')">'+(next==="preparing"?"▶ Preparando":"✓ Listo")+'</button>':'<span class="badge">Listo</span>')+'</div>';
+ return '<div class="card"><div class="row"><b>'+esc(location)+'</b><b>'+urgency+' · '+duration+'</b></div><div><b>'+Number(t.quantity)+' × '+esc(t.item_name)+'</b></div>'+(t.order_notes?'<div class="muted">Notas de cuenta: '+esc(t.order_notes)+'</div>':"")+(next?'<button class="yellow" onclick="prepAdvanceV35(\''+t.id+'\',\''+next+'\',this)">'+(next==="preparing"?"▶ Preparando":"✓ Listo")+'</button>':'<span class="badge">Listo</span>')+'</div>';
  }).join("")||'<div class="empty">Sin artículos</div>';
  host.innerHTML=html("pending","Pendiente")+html("preparing","Preparando")+html("ready","Listo");
- }catch(e){host.textContent="Error al cargar preparación: "+(e.message||String(e))}
- finally{prepBusyV35=false}
+ }catch(e){if(version===prepVersionV35)host.textContent="Error al cargar preparación: "+(e.message||String(e))}
+ finally{if(prepBusyV35===version)prepBusyV35=null}
 }
-async function prepAdvanceV35(id,status){
- if(!me||!["admin",prepStationV35].includes(me.role))return;
+async function prepAdvanceV35(id,status,button){
+ if(!me?.active||!["admin",prepStationV35].includes(me.role)||!["preparing","ready"].includes(status)||prepUpdatingV35.has(id))return;
+ const version=prepVersionV35;
+ prepUpdatingV35.add(id);if(button)button.disabled=true;
+ try{
  const r=await db.rpc("prep_advance_ticket",{p_item:id,p_status:status});
- if(r.error){alert("No se pudo actualizar: "+r.error.message);return}
- await prepRefreshV35();
+ if(r.error)throw r.error;
+ }catch(e){coliseoNotice("No se pudo actualizar: "+(e.message||String(e)))}
+ finally{
+ prepUpdatingV35.delete(id);if(button)button.disabled=false;
+ if(version===prepVersionV35)await prepRefreshV35();
+ }
+}
+async function prepReadAllV35(table,columns,key){
+ const rows=[];
+ for(let offset=0;;offset+=500){
+  const {data,error}=await db.from(table).select(columns).order(key).range(offset,offset+499);
+  if(error)throw error;
+  rows.push(...(data||[]));if((data||[]).length<500)return rows;
+ }
 }
 async function prepConfigV35(){
- if(me?.role!=="admin")return;
+ if(me?.role!=="admin"||!me.active)return;
  show("prepConfigV35");
  const host=document.getElementById("prepConfigContentV35");host.textContent="Cargando…";
- const [products,routes,settings]=await Promise.all([db.from("menu_items").select("id,name,business").order("name"),db.from("preparation_item_routes").select("*"),db.from("preparation_settings").select("*")]);
- if(products.error||routes.error||settings.error){host.textContent="No se pudo cargar configuración.";return}
+ let products,routes,settings;
+ try{
+ const result=await Promise.all([prepReadAllV35("menu_items","id,name,business","id"),prepReadAllV35("preparation_item_routes","*","menu_item_id"),prepReadAllV35("preparation_settings","*","station")]);
+ [products,routes,settings]=result.map(data=>({data}));
+ products.data.sort((a,b)=>a.name.localeCompare(b.name,"es"));
+ }catch(e){host.textContent="No se pudo cargar configuración: "+(e.message||String(e));return}
+ if(me?.role!=="admin"||!me.active||!document.getElementById("prepConfigV35").classList.contains("on"))return;
  const map=new Map((routes.data||[]).map(x=>[x.menu_item_id,x.station]));
- host.innerHTML=(settings.data||[]).map(x=>'<div class="card"><b>'+(x.station==="kitchen"?"🍳 Cocina":"🍹 Barra")+'</b><div class="row"><label>Advertencia (min)<input type="number" min="1" id="warn_'+x.station+'" value="'+Number(x.warning_minutes)+'"></label><label>Retraso (min)<input type="number" min="2" id="late_'+x.station+'" value="'+Number(x.late_minutes)+'"></label></div><button class="dark" onclick="prepSaveThresholdV35(\''+x.station+'\')">Guardar tiempos</button></div>').join("")+'<h3 class="section">Productos</h3>'+(products.data||[]).map(p=>'<div class="row card"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(businessName(p.business))+'</div></div><select onchange="prepSaveRouteV35(\''+p.id+'\',this.value)"><option value="kitchen" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":"bar"))==="kitchen"?"selected":"")+'>Cocina</option><option value="bar" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":"bar"))==="bar"?"selected":"")+'>Barra</option><option value="none" '+(map.get(p.id)==="none"?"selected":"")+'>Ninguna</option></select></div>').join("");
+ host.innerHTML=(settings.data||[]).map(x=>'<div class="card"><b>'+(x.station==="kitchen"?"🍳 Cocina":"🍹 Barra")+'</b><div class="row"><label>Advertencia (min)<input type="number" min="1" id="warn_'+x.station+'" value="'+Number(x.warning_minutes)+'"></label><label>Retraso (min)<input type="number" min="2" id="late_'+x.station+'" value="'+Number(x.late_minutes)+'"></label></div><button class="dark" onclick="prepSaveThresholdV35(\''+x.station+'\',this)">Guardar tiempos</button></div>').join("")+'<div class="notice">La estación se aplica a los artículos nuevos. Los pedidos ya registrados conservan su estación de preparación.</div><h3 class="section">Productos</h3>'+(products.data||[]).map(p=>'<div class="row card"><div><b>'+esc(p.name)+'</b><div class="muted">'+esc(businessName(p.business))+'</div></div><select data-saved="'+(map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":p.business==="EL CLúB"?"bar":"none"))+'" aria-label="Estación de preparación" onchange="prepSaveRouteV35(\''+p.id+'\',this.value,this)"><option value="kitchen" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":p.business==="EL CLúB"?"bar":"none"))==="kitchen"?"selected":"")+'>Cocina</option><option value="bar" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":p.business==="EL CLúB"?"bar":"none"))==="bar"?"selected":"")+'>Barra</option><option value="none" '+((map.get(p.id)||(p.business==="Cuervos Pizza"?"kitchen":p.business==="EL CLúB"?"bar":"none"))==="none"?"selected":"")+'>Ninguna</option></select></div>').join("");
 }
-async function prepSaveRouteV35(id,station){
- if(me?.role!=="admin")return;
+async function prepSaveRouteV35(id,station,input){
+ if(me?.role!=="admin"||!me.active||!["kitchen","bar","none"].includes(station))return;
+ if(input)input.disabled=true;
+ try{
  const r=await db.rpc("prep_update_route",{p_menu_item:id,p_station:station});
- if(r.error)alert("No se guardó: "+r.error.message);
+ if(r.error)throw r.error;
+ if(input)input.dataset.saved=station;
+ }catch(e){if(input)input.value=input.dataset.saved;coliseoNotice("No se guardó la estación: "+(e.message||String(e)))}
+ finally{if(input)input.disabled=false}
 }
-async function prepSaveThresholdV35(station){
- if(me?.role!=="admin")return;
+async function prepSaveThresholdV35(station,button){
+ if(me?.role!=="admin"||!me.active||!["kitchen","bar"].includes(station))return;
+ const key="settings:"+station;
+ if(prepUpdatingV35.has(key))return;
  const warning_minutes=Number(document.getElementById("warn_"+station).value),late_minutes=Number(document.getElementById("late_"+station).value);
- if(!Number.isInteger(warning_minutes)||!Number.isInteger(late_minutes)||warning_minutes<1||late_minutes<=warning_minutes){alert("El retraso debe ser mayor que la advertencia.");return}
+ if(!Number.isInteger(warning_minutes)||!Number.isInteger(late_minutes)||warning_minutes<1||late_minutes<=warning_minutes){coliseoNotice("El retraso debe ser mayor que la advertencia.");return}
+ prepUpdatingV35.add(key);if(button)button.disabled=true;
+ try{
  const r=await db.rpc("prep_update_settings",{p_station:station,p_warning:warning_minutes,p_late:late_minutes});
- if(r.error)alert("No se guardó: "+r.error.message);else alert("Tiempos guardados");
+ if(r.error)throw r.error;
+ coliseoNotice("Tiempos guardados");
+ }catch(e){coliseoNotice("No se guardaron los tiempos: "+(e.message||String(e)))}
+ finally{prepUpdatingV35.delete(key);if(button)button.disabled=false}
 }
 setInterval(()=>{if(document.getElementById("prepBoardV35")?.classList.contains("on"))prepRefreshV35()},15000);
 </script>
