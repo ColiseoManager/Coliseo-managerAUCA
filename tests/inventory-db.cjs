@@ -1,0 +1,38 @@
+const { PGlite } = require('@electric-sql/pglite');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { createSQL } = require('../scripts/test-schema.cjs');
+(async () => {
+  const pg = new PGlite();
+  await pg.exec(createSQL());
+  await pg.exec(fs.readFileSync(require.resolve('../preview/seed.sql'), 'utf8'));
+  const bottle = '90000000-0000-4000-8000-000000000001';
+  await pg.query("insert into inventory_items(id,business,name,unit,base_unit,display_unit,quantity_per_display_unit,serving_size,current_stock,minimum_stock) values($1,'EL CLúB','Botella ensayo','ml','ml','botella',1000,50,3000,1000)", [bottle]);
+  const as = (role, sql, args) => pg.transaction(async tx => {
+    await tx.query("select set_config('request.jwt.claim.sub',$1,true)", [role === 'admin' ? '10000000-0000-4000-8000-000000000001' : '10000000-0000-4000-8000-000000000003']);
+    await tx.exec('set local role authenticated');
+    return tx.query(sql, args);
+  });
+  const stock = async () => (await pg.query('select current_stock,open_bottle_ml,open_bottle_count from inventory_items where id=$1', [bottle])).rows[0];
+  await as('admin', 'select open_inventory_bottle($1,1000)', [bottle]);
+  let row = await stock();
+  assert.equal(Number(row.current_stock), 3000); assert.equal(Number(row.open_bottle_ml), 1000);
+  await as('admin', "select record_inventory_movement($1,'empleado','Consumo de empleado',100,'salida','EL CLúB','Barra','Ensayo',null,null)", [bottle]);
+  row = await stock();
+  assert.equal(Number(row.current_stock), 2900); assert.equal(Number(row.open_bottle_ml), 900);
+  const audit = (await pg.query("select employee_name,employee_area,quantity from inventory_movements where inventory_item_id=$1 and movement_type='empleado'", [bottle])).rows[0];
+  assert.equal(audit.employee_name, 'Ensayo'); assert.equal(audit.employee_area, 'Barra'); assert.equal(Number(audit.quantity), 100);
+  await as('admin', 'select open_inventory_bottle($1,500)', [bottle]);
+  row = await stock();
+  assert.equal(Number(row.current_stock), 2400); assert.equal(Number(row.open_bottle_ml), 1400);
+  await as('admin', "select record_inventory_movement($1,'merma','Ensayo',1500,'salida')", [bottle]);
+  row = await stock();
+  assert.equal(Number(row.current_stock), 900); assert.equal(Number(row.open_bottle_ml), 900); assert.equal(Number(row.open_bottle_count), 1);
+  await assert.rejects(as('admin', 'select open_inventory_bottle($1,1000)', [bottle]), /No quedan botellas cerradas/);
+  await assert.rejects(as('admin', "select record_inventory_movement($1,'merma','Ensayo',1000,'salida')", [bottle]), /Existencia insuficiente/);
+  await assert.rejects(as('staff', 'select open_inventory_bottle($1,1000)', [bottle]), /administrador/);
+  await assert.rejects(as('staff', "select record_inventory_movement($1,'empleado','Ensayo',50,'salida')", [bottle]), /administrador/);
+  assert.equal(Number((await stock()).current_stock), 900);
+  await pg.close();
+  console.log('PASS: isolated PostgreSQL bottle opening, partial volume, employee audit, outflow tracking, insufficient stock rollback and role restrictions.');
+})().catch(error => { console.error(error); process.exitCode = 1; });
