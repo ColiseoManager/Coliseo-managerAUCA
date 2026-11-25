@@ -12,7 +12,8 @@
     "test:finance": "node tests/finance.cjs",
     "test:team": "node tests/team.cjs",
     "test:preparation": "node tests/preparation.cjs",
-    "test:inventory": "node tests/inventory-ui.cjs && node tests/inventory-db.cjs"
+    "test:inventory": "node tests/inventory-ui.cjs && node tests/inventory-db.cjs",
+    "test:reports": "node tests/reports.cjs && node tests/reports-ui.cjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.3.14"
